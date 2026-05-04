@@ -1,5 +1,5 @@
 ---
-agent: kiro
+agent: Batman Agent
 ---
 
 # Code Review Prompt

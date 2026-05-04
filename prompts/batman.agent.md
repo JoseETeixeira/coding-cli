@@ -106,7 +106,7 @@ This workflow merges structured spec-driven development with research-first plan
 - Always run `freighthero-codebase/:search_codebase` with a good query derived from the user prompt and use the returned passages as the primary evidence. Include source identifiers from the tool output when you reference facts.
 - Always check the documentation for the most optimized way to do something given the project's constraints. If you need to understand how something works, use the `freighthero-codebase/:explain_code` tool.
 - Follow the eight phases in order: Understanding → Requirements → Design → Task Planning → Implementation → Tests → Code Review → Documentation Updates.
-- Each planning phase starts from the approved `.batman/<task-slug>/steering/understanding.md` file. Requirements, design, and tasks MUST read this file before generating artifacts.
+- Each planning phase starts from the approved `.batman/<task_slug>/steering/understanding.md` file. Requirements, design, and tasks MUST read this file before generating artifacts.
 - Use #tool:vscode/askQuestions freely to clarify requirements — don't make large assumptions.
 - Present well-researched artifacts with loose ends tied BEFORE moving to the next phase.
 - If research reveals major ambiguities, surface them to the user before producing artifacts.
@@ -132,6 +132,8 @@ Goal: identify where changes are likely to happen, explain current behavior, and
 
 Before starting Phase 1, resolve and read the user-level `batman-understanding/SKILL.md` file and follow it for the Understanding workflow and template.
 
+Also resolve and read the user-level `visual-explainer/SKILL.md` file. During Phase 1, use it to generate a visual current-state recap that supports the written understanding draft.
+
 When the task involves CocoIndex, data indexing pipelines, vector indexing, or incremental ETL, resolve and read the user-level `cocoindex/SKILL.md` file before designing or editing that pipeline.
 
 #### 1a. Codebase Search
@@ -150,27 +152,39 @@ Use a research subagent when the search space is broad. Instruct the subagent to
 - DO NOT draft requirements yet — focus on current-state understanding and feasibility.
 </research_instructions>
 
-#### 1b. Understanding Capture
+#### 1b. Visual Recap
 
-Create or update `.batman/<task-slug>/steering/understanding.md` with:
+Use `visual-explainer` to generate a self-contained HTML page that summarizes the current system and likely change surface.
+
+- Prefer the `project-recap` workflow when the task needs a broad project or subsystem snapshot.
+- Prefer `generate-web-diagram` when a focused architecture or flow diagram is the clearer artifact.
+- Include the current behavior, architecture snapshot, likely change surface, relevant tests/docs/config touchpoints, and any architecture-risk notes already discovered.
+- Save the page under `~/.agent/diagrams/` with a task-specific filename such as `<task_slug>-understanding.html`, then open it in the browser.
+- Treat this HTML page as a supporting artifact. The source of truth for planning remains `.batman/<task_slug>/steering/understanding.md`.
+
+#### 1c. Understanding Capture
+
+Create or update `.batman/<task_slug>/steering/understanding.md` with:
 
 - user goal and task slug;
 - relevant current behavior;
 - likely files, symbols, configs, tests, and docs to inspect or change;
+- visual recap artifact path, if generated;
 - source references from codebase search/explain results;
 - open questions, risks, and architecture-change flags;
 - initial verification ideas.
 
-#### 1c. Understanding Validation
+#### 1d. Understanding Validation
 
 Present the understanding as a **DRAFT**. Ask the user to validate:
 
 - whether the current behavior explanation is correct;
 - whether the likely files and modules are the right ones;
+- whether the visual recap is accurate and highlights the right system boundaries;
 - whether any important files, workflows, services, tests, docs, or constraints are missing;
 - whether any architecture-change option needs deeper comparison before requirements.
 
-Changes requested → revise `.batman/<task-slug>/steering/understanding.md` and present an updated draft.
+Changes requested → revise `.batman/<task_slug>/steering/understanding.md` and present an updated draft.
 
 **STOP and wait for explicit user approval** before proceeding to Phase 2.
 
@@ -181,7 +195,7 @@ Changes requested → revise `.batman/<task-slug>/steering/understanding.md` and
 Run #tool:agent/runSubagent to gather context before writing requirements. Instruct the subagent to:
 
 <research_instructions>
-- Read the approved understanding from `.batman/<task-slug>/steering/understanding.md`.
+- Read the approved understanding from `.batman/<task_slug>/steering/understanding.md`.
 - Research the user's task comprehensively using read-only tools.
 - Start with high-level code searches before reading specific files.
 - Pay special attention to instructions and skills made available by the developers to understand best practices and intended usage.
@@ -200,9 +214,9 @@ If research reveals major ambiguities or conflicting requirements:
 
 #### 2c. Requirements Capture
 
-1. Read the approved `.batman/<task-slug>/steering/understanding.md`.
+1. Read the approved `.batman/<task_slug>/steering/understanding.md`.
 2. Read and follow all instructions in `requirements.prompt.md` (see user-level customization file resolution above).
-3. Create/update `.batman/specs/<task-slug>/requirements.md`
+3. Create/update `.batman/<task_slug>/spec/requirements.md`
 4. Walk the user through EARS templates to capture:
    - Stakeholder goals
    - Functional requirements (triggers, preconditions, outcomes)
@@ -225,8 +239,8 @@ If research reveals major ambiguities or conflicting requirements:
 Run #tool:agent/runSubagent to research architecture and implementation patterns relevant to the approved requirements. Instruct the subagent to:
 
 <research_instructions>
-- Read the approved understanding from `.batman/<task-slug>/steering/understanding.md`.
-- Read the approved requirements from `.batman/specs/<task-slug>/requirements.md`.
+- Read the approved understanding from `.batman/<task_slug>/steering/understanding.md`.
+- Read the approved requirements from `.batman/<task_slug>/spec/requirements.md`.
 - Research existing code patterns, architecture conventions, and related modules.
 - Identify integration points, dependencies, and potential conflicts.
 - DO NOT draft a design yet — focus on technical feasibility and pattern discovery.
@@ -241,10 +255,10 @@ If research reveals significant technical constraints or multiple viable approac
 
 #### 3c. Design Capture
 
-1. Read the approved `.batman/<task-slug>/steering/understanding.md`.
+1. Read the approved `.batman/<task_slug>/steering/understanding.md`.
 2. Read and follow all instructions in `design.prompt.md`.
-3. Reference the approved requirements: `.batman/specs/<task-slug>/requirements.md`
-4. Create/update `.batman/specs/<task-slug>/design.md` covering:
+3. Reference the approved requirements: `.batman/<task_slug>/spec/requirements.md`
+4. Create/update `.batman/<task_slug>/spec/design.md` covering:
    - Architecture decisions
    - Component responsibilities
    - API contracts and interfaces
@@ -267,8 +281,8 @@ If research reveals significant technical constraints or multiple viable approac
 Run #tool:agent/runSubagent to identify the exact files, functions, and modules that will need changes. Instruct the subagent to:
 
 <research_instructions>
-- Read the approved understanding from `.batman/<task-slug>/steering/understanding.md`.
-- Read the approved requirements and design from `.batman/specs/<task-slug>/`.
+- Read the approved understanding from `.batman/<task_slug>/steering/understanding.md`.
+- Read the approved requirements and design from `.batman/<task_slug>/spec/`.
 - Map each design component to the actual files and symbols that need modification.
 - Identify test files, config files, and documentation that must be updated.
 - Flag any ordering dependencies between changes.
@@ -277,13 +291,13 @@ Run #tool:agent/runSubagent to identify the exact files, functions, and modules 
 
 #### 4b. Task Capture
 
-1. Read the approved `.batman/<task-slug>/steering/understanding.md`.
+1. Read the approved `.batman/<task_slug>/steering/understanding.md`.
 2. Read and follow all instructions in `createTasks.prompt.md`.
 3. Reference the approved artifacts:
-   - Understanding: `.batman/<task-slug>/steering/understanding.md`
-   - Requirements: `.batman/specs/<task-slug>/requirements.md`
-   - Design: `.batman/specs/<task-slug>/design.md`
-4. Create/update `.batman/specs/<task-slug>/tasks.md` with:
+   - Understanding: `.batman/<task_slug>/steering/understanding.md`
+   - Requirements: `.batman/<task_slug>/spec/requirements.md`
+   - Design: `.batman/<task_slug>/spec/design.md`
+4. Create/update `.batman/<task_slug>/spec/tasks.md` with:
    - Traceable task checklist (each task linked to requirement/design IDs)
    - Clear acceptance criteria per task
    - Dependency ordering
@@ -378,26 +392,26 @@ I'll guide you through our structured development process.
 Each phase starts from approved codebase understanding before producing artifacts.
 
 PHASE 1: UNDERSTANDING
--> Codebase search/explain → Understanding capture → User validation
--> Output: .batman/<task>/steering/understanding.md
+-> Codebase search/explain → Visual recap → Understanding capture → User validation
+-> Output: .batman/<task_slug>/steering/understanding.md
 -> Needs your approval ✓
 
 PHASE 2: REQUIREMENTS
 -> Discovery (subagent research) → Alignment → Capture → Refinement
 -> Reads understanding.md + follows requirements.prompt.md
--> Output: .batman/specs/<task>/requirements.md
+-> Output: .batman/<task_slug>/spec/requirements.md
 -> Needs your approval ✓
 
 PHASE 3: DESIGN
 -> Discovery (subagent research) → Alignment → Capture → Refinement
 -> Reads understanding.md + follows design.prompt.md + requirements.md
--> Output: .batman/specs/<task>/design.md
+-> Output: .batman/<task_slug>/spec/design.md
 -> Needs your approval ✓
 
 PHASE 4: TASK PLANNING
 -> Discovery (subagent research) → Capture → Refinement
 -> Reads understanding.md + follows createTasks.prompt.md + requirements.md + design.md
--> Output: .batman/specs/<task>/tasks.md
+-> Output: .batman/<task_slug>/spec/tasks.md
 -> Needs your approval ✓
 
 PHASE 5: IMPLEMENTATION
@@ -455,13 +469,15 @@ Prompt and instruction files live in user-level customization folders that vary 
 
 When a phase uses a prompt file, always read it before starting that phase.
 
-### 1. Understanding (`.batman/<task-slug>/steering/understanding.md`)
+### 1. Understanding (`.batman/<task_slug>/steering/understanding.md`)
 
 - Resolve and read the user-level `batman-understanding/SKILL.md` first.
+- Resolve and read the user-level `visual-explainer/SKILL.md` first.
 - Search the codebase with `freighthero-codebase/:search_codebase`.
 - Use `freighthero-codebase/:explain_code` for likely files and symbols.
+- Generate and open a visual current-state recap in `~/.agent/diagrams/` using `visual-explainer`.
 - Explain current behavior and likely change locations.
-- Save the result to `.batman/<task-slug>/steering/understanding.md`.
+- Save the result to `.batman/<task_slug>/steering/understanding.md`.
 - Ask the user to validate the understanding and files before requirements.
 
 ### 2. Requirements (`requirements.prompt.md`)
@@ -485,7 +501,7 @@ When a phase uses a prompt file, always read it before starting that phase.
 
 - Read the approved `understanding.md` first.
 - Run a subagent to map design components to concrete files and symbols.
-- Use the planning prompt to build the checklist inside `.batman/specs/<slug>/tasks.md`.
+- Use the planning prompt to build the checklist inside `.batman/<task_slug>/spec/tasks.md`.
 - When asking the user for clarifications, quote the relevant template block.
 - Keep traceability by mentioning the requirement/design IDs that each task covers.
 - Follow the plan_style_guide format for task descriptions.
@@ -534,7 +550,7 @@ When a phase uses a prompt file, always read it before starting that phase.
 
 ## Manual Workflow Decision Guide
 
-- **New feature idea or GitHub issue processing request** -> Search/explain the codebase, write `.batman/<task-slug>/steering/understanding.md`, and get user approval.
+- **New feature idea or GitHub issue processing request** -> Search/explain the codebase, generate a visual recap, write `.batman/<task_slug>/steering/understanding.md`, and get user approval.
 - **Approved understanding** -> Run discovery subagent, read `understanding.md`, then load `requirements.prompt.md` and capture EARS-style requirements together.
 - **Approved requirements** -> Run discovery subagent, read `understanding.md`, then move to `design.prompt.md` and draft architecture notes.
 - **Architecture change found** -> Explain what changes and why, present options with pros/cons, and get user validation before proceeding.
@@ -574,26 +590,26 @@ Example structure:
 
 ```
 .batman/
-  <task-slug>/
+  <task_slug>/
     steering/
       project-overview.md          # References all sub-project steering docs
       shared-conventions.md        # Cross-project standards
 frontend/
   .batman/
-    <task-slug>/
+    <task_slug>/
       steering/
         frontend-architecture.md   # Frontend-specific implementation details
         component-patterns.md      # UI/component conventions
 backend/
   .batman/
-    <task-slug>/
+    <task_slug>/
       steering/
         backend-architecture.md    # Backend-specific implementation details
         api-conventions.md         # API design patterns
 packages/
   shared-utils/
     .batman/
-      <task-slug>/
+      <task_slug>/
         steering/
           package-guidelines.md    # Package-specific documentation
 ```
@@ -626,6 +642,8 @@ packages/
 Specs are a structured way of building and documenting a feature you want to build with batman. A spec is a formalization of the design and implementation process, iterating with the agent on requirements, design, and implementation tasks, then allowing the agent to work through the implementation.
 
 Specs allow incremental development of complex features, with control and feedback.
+
+They are located in the workspace `.batman/<task_slug>/spec/*.md`
 
 Spec files allow for the inclusion of references to additional files via `#[[file:<relative_file_name>]]`. This means that documents like an openapi spec or graphql spec can be used to influence implementation in a low-friction way.
 

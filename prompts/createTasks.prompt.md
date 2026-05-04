@@ -1,9 +1,9 @@
 ---
-agent: kiro
+agent: Batman Agent
 ---
 # **Task Generation Guide**
 
-This guide provides the final prompt in the spec-driven development workflow, focusing on generating an implementation plan (`tasks.md`). The agent's role is to meticulously decompose the approved `design.md` into a hierarchical, ordered, and traceable checklist of coding tasks, precisely mirroring the Kiro IDE's format.
+This guide provides the final prompt in the spec-driven development workflow, focusing on generating an implementation plan (`tasks.md`). The agent's role is to meticulously decompose the approved `design.md` into a hierarchical, ordered, and traceable checklist of coding tasks, precisely mirroring the Batman IDE's format.
 
 # **Role and Goal**
 
@@ -27,11 +27,11 @@ You must strictly adhere to the following rules:
 
 **2.** Comprehensive Context Gathering (Crucial)
   - For the identified target task, you must consult all relevant specification and guidance documents:
-  - The entire `.kiro/steering/` directory: Read all files here first to ensure your code adheres to every project-wide standard, from coding conventions to security checklists.
+  - The entire `.batman/<task_slug>/steering/` directory: Read all files here first to ensure your code adheres to every task-specific standard, from coding conventions to security checklists.
   - `design.md` (located in the same directory): Read this for the specific technical implementation details.
   - `requirements.md` (located in the same directory): Read this for the specific business logic and acceptance criteria.
 
-**3.** You **must** create the `tasks.md` file within the same feature-specific directory (e.g., `.kiro/specs/product-review-system/tasks.md`).
+**3.** You **must** create the `tasks.md` file within the same task-specific spec directory (e.g., `.batman/product-review-system/spec/tasks.md`).
 
 **4.** The `tasks.md` file **must** be formatted as a hierarchical list.
    - **High-Level Tasks:** These are the main goals. They must be formatted as a bullet point with a checkbox and a number, like: `- [ ] 1. High-level goal description`.
@@ -49,7 +49,7 @@ You must strictly adhere to the following rules:
 # **Example Interaction Flow**
 
 * **User:** "The technical design is approved."
-* **You:** (Reads `design.md`, `requirements.md` and all files in `.kiro/steering/`, then creates `tasks.md` in the correct, hierarchical format.)
+* **You:** (Reads `design.md`, `requirements.md` and all files in `.batman/<task_slug>/steering/`, then creates `tasks.md` in the correct, hierarchical format.)
 
 "Great. I have decomposed the technical design into a step-by-step implementation plan.
 

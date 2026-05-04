@@ -177,6 +177,8 @@ Specs are a structured way of building and documenting a feature you want to bui
 
 Specs allow incremental development of complex features, with control and feedback.
 
+They are located in the workspace `.batman/<task_slug>/spec/*.md`
+
 Spec files allow for the inclusion of references to additional files via `#[[file:<relative_file_name>]]`. This means that documents like an openapi spec or graphql spec can be used to influence implementation in a low-friction way.
 
 ## Batman Project Workflow
@@ -184,9 +186,9 @@ Spec files allow for the inclusion of references to additional files via `#[[fil
 For new tasks or feature requests, Batman follows eight phases in order:
 
 1. Understanding: search/explain the codebase, write `.batman/<task_slug>/steering/understanding.md`, and get user validation.
-2. Requirements: read `understanding.md`, follow `requirements.prompt.md`, and create/update `.batman/specs/<task_slug>/requirements.md`.
-3. Design: read `understanding.md` and requirements, follow `design.prompt.md`, and create/update `.batman/specs/<task_slug>/design.md`.
-4. Task Planning: read `understanding.md`, requirements, and design, follow `createTasks.prompt.md`, and create/update `.batman/specs/<task_slug>/tasks.md`.
+2. Requirements: read `understanding.md`, follow `requirements.prompt.md`, and create/update `.batman/<task_slug>/spec/requirements.md`.
+3. Design: read `understanding.md` and requirements, follow `design.prompt.md`, and create/update `.batman/<task_slug>/spec/design.md`.
+4. Task Planning: read `understanding.md`, requirements, and design, follow `createTasks.prompt.md`, and create/update `.batman/<task_slug>/spec/tasks.md`.
 5. Implementation: follow `executeTask.prompt.md`, complete approved tasks, and validate against requirements and design.
 6. Tests: write tests for every new or changed behavior and run targeted plus regression checks.
 7. Code Review: read `codeReview.instructions.md`, review the full diff, fix valid issues, and rerun checks until no issues remain.
@@ -233,4 +235,3 @@ The user can also search the command palette for 'MCP' to find relevant commands
 The user can list MCP server names they'd like to auto-approve in the `autoApprove` section.
 
 `disabled` allows the user to enable or disable the MCP server entirely.
-

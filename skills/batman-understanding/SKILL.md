@@ -1,6 +1,6 @@
 ---
 name: batman-understanding
-description: "Use when: starting a new Batman task, creating or updating `.batman/<task-slug>/steering/understanding.md`, validating current codebase behavior before requirements, mapping likely files/symbols/tests/docs, or detecting architecture-change risk during Phase 1 Understanding." 
+description: "Use when: starting a new Batman task, creating or updating `.batman/<task_slug>/steering/understanding.md`, validating current codebase behavior before requirements, mapping likely files/symbols/tests/docs, detecting architecture-change risk during Phase 1 Understanding, or generating a visual current-state recap with `visual-explainer`." 
 ---
 
 # Batman Understanding
@@ -12,7 +12,7 @@ Create a validated, evidence-backed Phase 1 understanding before Batman writes r
 The output is always:
 
 ```text
-.batman/<task-slug>/steering/understanding.md
+.batman/<task_slug>/steering/understanding.md
 ```
 
 This skill is for understanding the current state of the codebase and likely change surface. Do not draft requirements, design, or implementation tasks here.
@@ -24,7 +24,7 @@ This skill is for understanding the current state of the codebase and likely cha
 Use this skill when:
 
 - a user starts a new feature, fix, refactor, or architecture task with Batman;
-- Batman needs to create or revise `.batman/<task-slug>/steering/understanding.md`;
+- Batman needs to create or revise `.batman/<task_slug>/steering/understanding.md`;
 - requirements/design/task planning would otherwise depend on assumptions;
 - the task may affect multiple projects, services, workflows, tools, tests, docs, or infrastructure;
 - architecture-change risk needs to be identified before requirements.
@@ -37,7 +37,7 @@ Do not use this skill for tiny one-off answers, direct command output, or alread
 
 ### 1. Establish Context
 
-1. Derive a short `task-slug` from the user request using kebab-case.
+1. Derive a short `task_slug` from the user request using kebab-case.
 2. Check relevant memory only when prior project history may matter.
 3. Identify the likely project area, such as `ai_watchtower`, `backend`, `frontend`, `robin-error-dashboard`, or cross-project.
 4. Prefer repository/project instructions already in context before inventing process.
@@ -58,7 +58,23 @@ Then use targeted follow-up searches or `freighthero-codebase/:explain_code` for
 
 When the search space is broad, use a read-only subagent. Tell the subagent to return files, symbols, current behavior, risks, and likely test/doc impact. Do not ask the subagent to draft requirements.
 
-### 3. Explain Current Behavior
+### 3. Generate Visual Recap
+
+After the initial search, resolve and read `visual-explainer/SKILL.md`.
+
+Prefer `visual-explainer/commands/project-recap.md` when the task needs a broad project or subsystem snapshot. Prefer `visual-explainer/commands/generate-web-diagram.md` when a focused architecture or flow diagram is the clearer artifact.
+
+Generate a self-contained HTML page under `~/.agent/diagrams/<task_slug>-understanding.html` and open it in the browser. Include:
+
+- the current system summary;
+- an architecture snapshot or flow diagram;
+- the likely change surface;
+- relevant tests, docs, config, and infrastructure touchpoints;
+- architecture-risk or cognitive-debt hotspots found during research.
+
+Treat the HTML page as a supporting artifact. The canonical planning output is still `.batman/<task_slug>/steering/understanding.md`. Reference the page path when you present the understanding draft to the user.
+
+### 4. Explain Current Behavior
 
 Summarize what the code appears to do today. Include:
 
@@ -71,7 +87,7 @@ Summarize what the code appears to do today. Include:
 
 Use source identifiers from codebase search/explain results when available. If you read local files, reference file paths and symbols.
 
-### 4. Detect Architecture Risk
+### 5. Detect Architecture Risk
 
 Flag an architecture-change risk if the task may change or add:
 
@@ -84,9 +100,9 @@ Flag an architecture-change risk if the task may change or add:
 
 If flagged, the later design phase must present options with pros/cons and get user validation before implementation.
 
-### 5. Write Understanding
+### 6. Write Understanding
 
-Create or update `.batman/<task-slug>/steering/understanding.md` using this template:
+Create or update `.batman/<task_slug>/steering/understanding.md` using this template:
 
 ```markdown
 # Understanding: <Task Title>
@@ -97,7 +113,7 @@ Create or update `.batman/<task-slug>/steering/understanding.md` using this temp
 
 ## Task Slug
 
-`<task-slug>`
+`<task_slug>`
 
 ## Current Behavior
 
@@ -126,6 +142,11 @@ Create or update `.batman/<task-slug>/steering/understanding.md` using this temp
 
 - <Search/explain source identifier or file reference>: <fact learned>
 
+## Visual Recap
+
+- Path: `<path to ~/.agent/diagrams/<task_slug>-understanding.html or None>`
+- Notes: <what the recap highlighted, or `None` if not generated>
+
 ## Open Questions
 
 - <Question or ambiguity. Use `None` if there are no known questions.>
@@ -145,12 +166,13 @@ Create or update `.batman/<task-slug>/steering/understanding.md` using this temp
 - <Targeted tests, regression tests, manual checks, docs build, or deployment validation ideas.>
 ```
 
-### 6. Validate With User
+### 7. Validate With User
 
 Present the understanding as a draft and ask the user to validate:
 
 - whether the current behavior explanation is correct;
 - whether the likely files/modules are the right ones;
+- whether the visual recap is accurate and useful;
 - whether any important service, workflow, test, doc, or constraint is missing;
 - whether the architecture-change assessment is accurate.
 
@@ -165,6 +187,7 @@ The understanding is ready when:
 - it names the likely files and symbols, not just broad directories;
 - it explains current behavior in plain engineering terms;
 - it records concrete evidence from search/explain or file reads;
+- it either includes a visual recap artifact or explicitly states why none was generated;
 - it identifies tests and documentation likely affected;
 - it explicitly states architecture-change risk;
 - it has no implementation plan disguised as understanding;
@@ -175,6 +198,7 @@ The understanding is ready when:
 ## Common Mistakes
 
 - Skipping codebase search because the requested change sounds obvious.
+- Skipping the visual recap even though `visual-explainer` is available.
 - Writing requirements before the user approves the understanding.
 - Naming only folders instead of concrete files and symbols.
 - Omitting tests, docs, config, or infrastructure from the change surface.

@@ -1,5 +1,5 @@
 ---
-agent: kiro
+agent: Batman Agent
 ---
 # **Task Execution Guide**
 
@@ -18,7 +18,7 @@ Your workflow is an interactive loop driven by user commands with **mandatory co
 3. **MANDATORY CONTEXT GATHERING PHASE** - You MUST complete ALL of the following before any implementation:
    - Read the **ENTIRE** `design.md` file from start to finish
    - Read the **ENTIRE** `requirements.md` file from start to finish
-   - Read **ALL** files in the `.kiro/steering/` directory
+   - Read **ALL** files in the `.batman/<task_slug>/steering/` directory
    - **SUMMARIZE** what you learned from each document to demonstrate comprehension
 4. **IMPLEMENTATION PLANNING PHASE** - Before coding, you MUST:
    - Explain how the target task relates to the overall design architecture
@@ -51,7 +51,7 @@ You must strictly adhere to the following rules:
 **2. Context Gathering (MANDATORY AND VERIFIED):** For the identified target task, you **MUST** complete a thorough context gathering phase:
 
    **STEP 2A - DOCUMENT READING (MANDATORY):**
-   - Read the **COMPLETE** `.kiro/steering/` directory: Every single file must be read to understand project-wide standards, testing policies, coding styles, and security checklists.
+   - Read the **COMPLETE** `.batman/<task_slug>/steering/` directory: Every single file must be read to understand task-specific standards, testing policies, coding styles, and security checklists.
    - Read the **COMPLETE** `design.md` file: You must read every section to understand technical implementation details, function signatures, API contracts, data models, and architectural patterns.
    - Read the **COMPLETE** `requirements.md` file: Read entirely to understand business logic and acceptance criteria, using traceability tags (e.g., `_Requirements: 1.1_`) as guides.
 
@@ -59,7 +59,7 @@ You must strictly adhere to the following rules:
    - **SUMMARIZE** each document you read in your response to prove you have read it completely
    - **EXPLAIN** how the current task connects to the overall design architecture
    - **LIST** the specific requirements from `requirements.md` that apply to this task
-   - **IDENTIFY** any constraints or standards from `.kiro/steering/` that must be followed
+   - **IDENTIFY** any constraints or standards from `.batman/<task_slug>/steering/` that must be followed
 
    **FAILURE TO COMPLETE STEPS 2A AND 2B WILL RESULT IN TASK FAILURE**
 
@@ -78,7 +78,7 @@ You must strictly adhere to the following rules:
    Before writing any code, you MUST complete this checklist and report your answers:
    - [ ] Have I read the entire `design.md` file? (Prove by summarizing key sections)
    - [ ] Have I read the entire `requirements.md` file? (Prove by listing applicable requirements)
-   - [ ] Have I read all files in `.kiro/steering/`? (Prove by mentioning key standards/policies)
+   - [ ] Have I read all files in `.batman/<task_slug>/steering/`? (Prove by mentioning key standards/policies)
    - [ ] Do I understand how this task fits into the overall architecture? (Explain the connection)
    - [ ] Have I identified all files that need to be modified? (List them explicitly)
    - [ ] Do I know what success criteria must be met? (State them clearly)
@@ -97,4 +97,3 @@ You must strictly adhere to the following rules:
    - Making assumptions about requirements without referencing source documents
    - Adding features not explicitly specified in the design
    - Proceeding without understanding the architectural context
-
