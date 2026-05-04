@@ -128,7 +128,7 @@ Before proceeding with an architecture change:
 
 ### Phase 1: Understanding (MANDATORY FIRST STEP)
 
-Goal: identify where changes are likely to happen, explain current behavior, and get user validation before requirements.
+Goal: identify where changes are likely to happen, explain current behavior deeply enough to answer why a source is relevant, how similar processes differ, what each changing component is used for, and where execution happens today, then get user validation before requirements.
 
 Before starting Phase 1, resolve and read the user-level `batman-understanding/SKILL.md` file and follow it for the Understanding workflow and template.
 
@@ -147,6 +147,10 @@ Use a research subagent when the search space is broad. Instruct the subagent to
 - Start with high-level code searches before reading specific files.
 - Identify files and symbols where changes are likely to happen.
 - Explain what the relevant code currently does.
+- Identify the source-of-truth locations that matter, such as tables, indexes, queues, logs, configs, or APIs, and explain why each one would answer the user's question instead of merely naming it.
+- Distinguish similarly named or adjacent processes by trigger, owner, inputs, outputs, and side effects.
+- Identify what each likely-to-change component is used for and who depends on it.
+- Explain where processing/execution happens today, such as request path, worker, cron, client, database, or external service, and why the code is arranged that way.
 - Identify tests, configs, infrastructure, and documentation likely affected.
 - Flag architectural implications or places where multiple implementation options exist.
 - DO NOT draft requirements yet — focus on current-state understanding and feasibility.
@@ -158,7 +162,7 @@ Use `visual-explainer` to generate a self-contained HTML page that summarizes th
 
 - Prefer the `project-recap` workflow when the task needs a broad project or subsystem snapshot.
 - Prefer `generate-web-diagram` when a focused architecture or flow diagram is the clearer artifact.
-- Include the current behavior, architecture snapshot, likely change surface, relevant tests/docs/config touchpoints, and any architecture-risk notes already discovered.
+- Include the current behavior, architecture snapshot, likely change surface, source-of-truth notes, process distinctions, execution boundaries, relevant tests/docs/config touchpoints, and any architecture-risk notes already discovered.
 - Save the page under `~/.agent/diagrams/` with a task-specific filename such as `<task_slug>-understanding.html`, then open it in the browser.
 - Treat this HTML page as a supporting artifact. The source of truth for planning remains `.batman/<task_slug>/steering/understanding.md`.
 
@@ -167,7 +171,7 @@ Use `visual-explainer` to generate a self-contained HTML page that summarizes th
 Create or update `.batman/<task_slug>/steering/understanding.md` with:
 
 - user goal and task slug;
-- relevant current behavior;
+- relevant current behavior, including why specific evidence sources answer the question, how similar processes differ, what the likely-to-change components are used for, and where execution happens today and why;
 - likely files, symbols, configs, tests, and docs to inspect or change;
 - visual recap artifact path, if generated;
 - source references from codebase search/explain results;
@@ -179,6 +183,7 @@ Create or update `.batman/<task_slug>/steering/understanding.md` with:
 Present the understanding as a **DRAFT**. Ask the user to validate:
 
 - whether the current behavior explanation is correct;
+- whether the understanding answers the key why/what/where questions behind the task, not just the file inventory;
 - whether the likely files and modules are the right ones;
 - whether the visual recap is accurate and highlights the right system boundaries;
 - whether any important files, workflows, services, tests, docs, or constraints are missing;
@@ -393,6 +398,7 @@ Each phase starts from approved codebase understanding before producing artifact
 
 PHASE 1: UNDERSTANDING
 -> Codebase search/explain → Visual recap → Understanding capture → User validation
+-> Must answer: why this source matters, how similar flows differ, what changing parts are used for, where execution happens and why
 -> Output: .batman/<task_slug>/steering/understanding.md
 -> Needs your approval ✓
 
@@ -476,7 +482,7 @@ When a phase uses a prompt file, always read it before starting that phase.
 - Search the codebase with `freighthero-codebase/:search_codebase`.
 - Use `freighthero-codebase/:explain_code` for likely files and symbols.
 - Generate and open a visual current-state recap in `~/.agent/diagrams/` using `visual-explainer`.
-- Explain current behavior and likely change locations.
+- Explain current behavior, why the cited evidence/source-of-truth is relevant, how similar processes differ, what likely-to-change components are used for, and where execution happens today.
 - Save the result to `.batman/<task_slug>/steering/understanding.md`.
 - Ask the user to validate the understanding and files before requirements.
 

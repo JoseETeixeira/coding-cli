@@ -185,7 +185,7 @@ Spec files allow for the inclusion of references to additional files via `#[[fil
 
 For new tasks or feature requests, Batman follows eight phases in order:
 
-1. Understanding: search/explain the codebase, write `.batman/<task_slug>/steering/understanding.md`, and get user validation.
+1. Understanding: search/explain the codebase, write `.batman/<task_slug>/steering/understanding.md`, answer why the cited evidence matters, how similar processes differ, what changing components are used for, and where execution happens today, then get user validation.
 2. Requirements: read `understanding.md`, follow `requirements.prompt.md`, and create/update `.batman/<task_slug>/spec/requirements.md`.
 3. Design: read `understanding.md` and requirements, follow `design.prompt.md`, and create/update `.batman/<task_slug>/spec/design.md`.
 4. Task Planning: read `understanding.md`, requirements, and design, follow `createTasks.prompt.md`, and create/update `.batman/<task_slug>/spec/tasks.md`.

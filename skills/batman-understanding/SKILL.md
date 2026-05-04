@@ -56,7 +56,9 @@ Then use targeted follow-up searches or `freighthero-codebase/:explain_code` for
 - infrastructure/configuration;
 - docs and runbooks.
 
-When the search space is broad, use a read-only subagent. Tell the subagent to return files, symbols, current behavior, risks, and likely test/doc impact. Do not ask the subagent to draft requirements.
+For each source of truth you mention, such as a table, queue, index, log, config, or API, determine what question it can answer and why it is the right place to inspect. For each similar-sounding process or workflow, determine how it differs in trigger, owner, inputs, outputs, and side effects. For each component likely to change, determine what it is used for, who calls it, and where it executes today.
+
+When the search space is broad, use a read-only subagent. Tell the subagent to return files, symbols, current behavior, source-of-truth reasoning, process distinctions, execution locations, risks, and likely test/doc impact. Do not ask the subagent to draft requirements.
 
 ### 3. Generate Visual Recap
 
@@ -69,6 +71,7 @@ Generate a self-contained HTML page under `~/.agent/diagrams/<task_slug>-underst
 - the current system summary;
 - an architecture snapshot or flow diagram;
 - the likely change surface;
+- the source-of-truth locations, process distinctions, and execution boundaries that matter to this task;
 - relevant tests, docs, config, and infrastructure touchpoints;
 - architecture-risk or cognitive-debt hotspots found during research.
 
@@ -82,6 +85,10 @@ Summarize what the code appears to do today. Include:
 - current data flow;
 - important branching or routing rules;
 - state transitions or side effects;
+- why a cited table, queue, index, log, config, or API would answer the task's question;
+- the distinction between similar processes or terms when confusion is likely;
+- what each component likely to change is used for and who depends on it;
+- where each important step executes today and why it happens in that layer or service;
 - existing tests and coverage gaps;
 - known docs/runbooks related to the area.
 
@@ -117,8 +124,26 @@ Create or update `.batman/<task_slug>/steering/understanding.md` using this temp
 
 ## Current Behavior
 
+### Workflow Summary
+
 - <What the relevant code does today.>
 - <Important workflow, state, API, or data-flow notes.>
+
+### Why This Evidence Answers The Question
+
+- `<table/queue/index/log/config/API>`: <what truth it contains and why it is the right source for this task>
+
+### Process Distinctions And Terminology
+
+- `<process x>` vs `<process y>`: <trigger/owner/input/output/side-effect differences>
+
+### Components Likely To Change And Why They Exist
+
+- `<component>`: <what it is used for, who depends on it, and why this task touches it>
+
+### Execution Locations
+
+- `<behavior/step>`: <where it executes today and why it happens there>
 
 ## Likely Change Surface
 
@@ -171,6 +196,7 @@ Create or update `.batman/<task_slug>/steering/understanding.md` using this temp
 Present the understanding as a draft and ask the user to validate:
 
 - whether the current behavior explanation is correct;
+- whether the evidence/source-of-truth notes, process distinctions, component-purpose explanations, and execution-location explanations answer the user's key why/what/where questions;
 - whether the likely files/modules are the right ones;
 - whether the visual recap is accurate and useful;
 - whether any important service, workflow, test, doc, or constraint is missing;
@@ -186,6 +212,9 @@ The understanding is ready when:
 
 - it names the likely files and symbols, not just broad directories;
 - it explains current behavior in plain engineering terms;
+- it explains why the cited evidence/source-of-truth is relevant instead of only naming tables, queues, logs, or configs;
+- it distinguishes similar processes when the names or responsibilities are easy to confuse;
+- it explains what the likely-to-change components are used for and where they execute today;
 - it records concrete evidence from search/explain or file reads;
 - it either includes a visual recap artifact or explicitly states why none was generated;
 - it identifies tests and documentation likely affected;
@@ -200,6 +229,9 @@ The understanding is ready when:
 - Skipping codebase search because the requested change sounds obvious.
 - Skipping the visual recap even though `visual-explainer` is available.
 - Writing requirements before the user approves the understanding.
+- Listing a table, queue, API, or config without saying what answer it provides or why it is the right source.
+- Describing similar workflows as if they are interchangeable.
+- Naming a component likely to change without saying what it is used for or where it runs.
 - Naming only folders instead of concrete files and symbols.
 - Omitting tests, docs, config, or infrastructure from the change surface.
 - Treating architecture changes as implementation details.
