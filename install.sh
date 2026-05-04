@@ -9,6 +9,8 @@ INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 PROFILE_FILE="${PROFILE_FILE:-}"
 VERSION="${VERSION:-}"
 INSTALL_BASE_URL="${INSTALL_BASE_URL:-}"
+GITHUB_API_VERSION="${GITHUB_API_VERSION:-2026-03-10}"
+GITHUB_AUTH_TOKEN="${GITHUB_AUTH_TOKEN:-${GITHUB_PAT_TOKEN:-${GH_TOKEN:-${GITHUB_TOKEN:-}}}}"
 TMP_DIR=""
 
 cleanup() {
@@ -24,6 +26,34 @@ require_command() {
 		printf 'Missing required command: %s\n' "$1" >&2
 		exit 1
 	fi
+}
+
+curl_api() {
+	if [[ -n "$GITHUB_AUTH_TOKEN" ]]; then
+		curl -fsSL \
+			-H "Accept: application/vnd.github+json" \
+			-H "Authorization: Bearer $GITHUB_AUTH_TOKEN" \
+			-H "X-GitHub-Api-Version: $GITHUB_API_VERSION" \
+			"$1"
+		return
+	fi
+
+	curl -fsSL \
+		-H "Accept: application/vnd.github+json" \
+		-H "X-GitHub-Api-Version: $GITHUB_API_VERSION" \
+		"$1"
+}
+
+curl_download() {
+	if [[ -n "$GITHUB_AUTH_TOKEN" ]]; then
+		curl -fsSL \
+			-H "Authorization: Bearer $GITHUB_AUTH_TOKEN" \
+			"$1" \
+			-o "$2"
+		return
+	fi
+
+	curl -fsSL "$1" -o "$2"
 }
 
 detect_os() {
@@ -62,10 +92,14 @@ resolve_latest_version() {
 	local tag
 
 	api_url="https://api.github.com/repos/${OWNER}/${REPO}/releases/latest"
-	release_json="$(curl -fsSL "$api_url")"
+	release_json="$(curl_api "$api_url")"
 	tag="$(printf '%s\n' "$release_json" | sed -nE 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/p' | head -n 1)"
 	if [[ -z "$tag" ]]; then
-		printf 'Could not resolve latest release tag from %s\n' "$api_url" >&2
+		if [[ -z "$GITHUB_AUTH_TOKEN" ]]; then
+			printf 'Could not resolve latest release tag from %s. If repository is private, export GITHUB_PAT_TOKEN, GH_TOKEN, or GITHUB_TOKEN and rerun.\n' "$api_url" >&2
+		else
+			printf 'Could not resolve latest release tag from %s\n' "$api_url" >&2
+		fi
 		exit 1
 	fi
 
@@ -159,7 +193,7 @@ install_binary() {
 	archive_path="$TMP_DIR/$asset_name"
 
 	printf 'Downloading %s\n' "$download_url"
-	curl -fsSL "$download_url" -o "$archive_path"
+	curl_download "$download_url" "$archive_path"
 	tar -xzf "$archive_path" -C "$TMP_DIR"
 
 	mkdir -p "$INSTALL_DIR"

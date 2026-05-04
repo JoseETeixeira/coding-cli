@@ -21,11 +21,19 @@ go run . help
 
 ## Install Without Cloning
 
+
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Freight-Hero/coding-cli/main/install.sh | bash
+export GITHUB_PAT_TOKEN=[your_token]
+curl -fsSL \
+	-H "Accept: application/vnd.github.raw+json" \
+	-H "Authorization: Bearer ${GITHUB_PAT_TOKEN}" \
+	-H "X-GitHub-Api-Version: 2026-03-10" \
+	"https://api.github.com/repos/Freight-Hero/coding-cli/contents/install.sh?ref=main" | bash
 ```
 
 The installer downloads the latest GitHub Release archive for your OS and CPU, installs `freighthero` into `$HOME/.local/bin` by default, and adds that directory to `PATH` when needed.
+
+For private repositories, `install.sh` also uses `GITHUB_PAT_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN` to resolve the latest release and download the binary archive.
 
 Optional overrides:
 
