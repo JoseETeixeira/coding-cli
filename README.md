@@ -58,7 +58,9 @@ export PATH="$HOME/.local/bin:$PATH"
 - `--claude-code`
 - `--codex`
 
-`setup agent` and `setup mcp` require exactly one explicit host flag.
+`setup agent` requires exactly one explicit host flag.
+
+`setup mcp` auto-detects the host when exactly one supported host is present. Otherwise pass one of the flags above.
 
 `setup full` can auto-detect a host only when exactly one supported host is present. Otherwise pass one of the flags above.
 
@@ -128,9 +130,19 @@ bash ./build.sh
 
 ## Dependency Behavior
 
-The CLI verifies `git`, `node`, `npm`, `python3`, `pip`, `mempalace`, `cocoindex`, and optional `rtk`.
+The CLI verifies `git`, `node`, `npm`, `python3`, `pip`, `mempalace`, `cocoindex`, and `rtk`.
 
 If a dependency already satisfies the minimum version, the CLI reports it as reused and skips reinstalling it.
+
+`rtk` is installed from the official `rtk-ai/rtk` GitHub release assets for macOS, Linux, and Windows when it is missing.
+
+Generated MCP config always includes:
+
+- `freighthero-codebase` for the local FreightHero codebase MCP server
+- `mempalace` for project memory
+- `github` as the remote GitHub MCP endpoint at `https://api.githubcopilot.com/mcp/`
+
+`freighthero run indexing` and the indexing phase inside `freighthero setup full` run `mempalace wake-up` first, then `cocoindex update`, and log every step including skipped build/config steps.
 
 ## Recovery Notes
 

@@ -15,6 +15,7 @@ import (
 )
 
 type ManagedServer struct {
+	Type               string            `json:"type,omitempty"`
 	Command            string            `json:"command,omitempty"`
 	Args               []string          `json:"args,omitempty"`
 	CWD                string            `json:"cwd,omitempty"`
@@ -29,7 +30,7 @@ type ConfigResult struct {
 }
 
 func WriteConfig(profile host.HostProfile, layout repos.RepoLayout) (ConfigResult, error) {
-	servers := ManagedServers(layout, profile.Kind == host.HostCodex)
+	servers := ManagedServers(layout, profile)
 	switch profile.MCPConfigFormat {
 	case "vscode-json":
 		return writeJSONConfig(profile.Roots.MCPConfigPath, "servers", servers)
@@ -42,7 +43,7 @@ func WriteConfig(profile host.HostProfile, layout repos.RepoLayout) (ConfigResul
 	}
 }
 
-func ManagedServers(layout repos.RepoLayout, includeGitHub bool) map[string]ManagedServer {
+func ManagedServers(layout repos.RepoLayout, profile host.HostProfile) map[string]ManagedServer {
 	servers := map[string]ManagedServer{
 		"freighthero-codebase": {
 			Command: "node",
@@ -58,12 +59,15 @@ func ManagedServers(layout repos.RepoLayout, includeGitHub bool) map[string]Mana
 			Args:    []string{"-m", "mempalace.mcp_server"},
 		},
 	}
-	if includeGitHub {
-		servers["github"] = ManagedServer{
-			URL:               "https://api.githubcopilot.com/mcp/",
-			BearerTokenEnvVar: "GITHUB_PAT_TOKEN",
-		}
+
+	githubServer := ManagedServer{
+		Type: "http",
+		URL:  "https://api.githubcopilot.com/mcp/",
 	}
+	if profile.Kind == host.HostCodex {
+		githubServer.BearerTokenEnvVar = "GITHUB_PAT_TOKEN"
+	}
+	servers["github"] = githubServer
 
 	return servers
 }

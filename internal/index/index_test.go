@@ -48,7 +48,7 @@ func TestBootstrapIndexingValidatesMissingRepos(t *testing.T) {
 		CodebaseIndex:  filepath.Join(root, "coding-cli", "freighthero-mcp", ".cocoindex", "codebase-index"),
 	}
 
-	err := BootstrapIndexing(context.Background(), &fakeRunner{}, layout)
+	_, err := BootstrapIndexing(context.Background(), &fakeRunner{}, layout)
 	if err == nil {
 		t.Fatal("expected validation error for missing sibling repositories")
 	}
@@ -91,7 +91,7 @@ func TestRunCocoIndexCreatesCocoIndexDirectory(t *testing.T) {
 		CodebaseIndex:  filepath.Join(freightHeroMCP, ".cocoindex", "codebase-index"),
 	}
 
-	if err := RunCocoIndex(context.Background(), &fakeRunner{}, layout); err != nil {
+	if _, err := RunCocoIndex(context.Background(), &fakeRunner{}, layout); err != nil {
 		t.Fatalf("RunCocoIndex returned error: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(freightHeroMCP, ".cocoindex")); err != nil {

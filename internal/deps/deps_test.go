@@ -13,6 +13,7 @@ import (
 type fakeRunner struct {
 	runCapturing map[string]runner.Result
 	runErrors    map[string]error
+	runCapturingFunc func(runner.Command) (runner.Result, error)
 	runs         []runner.Command
 }
 
@@ -25,6 +26,10 @@ func (fake *fakeRunner) Run(_ context.Context, command runner.Command) error {
 }
 
 func (fake *fakeRunner) RunCapturing(_ context.Context, command runner.Command) (runner.Result, error) {
+	if fake.runCapturingFunc != nil {
+		return fake.runCapturingFunc(command)
+	}
+
 	result, ok := fake.runCapturing[commandKey(command)]
 	if !ok {
 		return runner.Result{}, errors.New("missing capture")
@@ -121,6 +126,44 @@ func TestVerifyDependenciesIgnoresOptionalInstallFailure(t *testing.T) {
 	}
 	if results[0].Installed {
 		t.Fatal("expected optional dependency to remain uninstalled")
+	}
+}
+
+func TestVerifyDependenciesUsesInstallFunc(t *testing.T) {
+	t.Parallel()
+
+	installed := false
+	fake := &fakeRunner{
+		runCapturingFunc: func(command runner.Command) (runner.Result, error) {
+			if commandKey(command) != "rtk --version" {
+				return runner.Result{}, errors.New("unexpected command")
+			}
+			if !installed {
+				return runner.Result{}, errors.New("missing")
+			}
+			return runner.Result{Stdout: "rtk 0.38.0"}, nil
+		},
+	}
+
+	results, err := VerifyDependencies(context.Background(), fake, []DependencySpec{{
+		Name:       "rtk",
+		MinVersion: "0.0.0",
+		Required:   true,
+		Check:      runner.Command{Name: "rtk", Args: []string{"--version"}},
+		InstallFunc: func(context.Context, runner.ProcessRunner) error {
+			installed = true
+			return nil
+		},
+	}})
+	if err != nil {
+		t.Fatalf("VerifyDependencies returned error: %v", err)
+	}
+	if !results[0].Installed {
+		fatalf := t.Fatalf
+		fatalf("expected dependency to be installed by InstallFunc")
+	}
+	if results[0].Version != "0.38.0" {
+		t.Fatalf("results[0].Version = %q", results[0].Version)
 	}
 }
 

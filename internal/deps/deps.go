@@ -18,6 +18,7 @@ type DependencySpec struct {
 	Required   bool
 	Check      runner.Command
 	Install    []runner.Command
+	InstallFunc func(context.Context, runner.ProcessRunner) error
 	Recovery   string
 }
 
@@ -98,10 +99,10 @@ func DefaultSpecs() []DependencySpec {
 		{
 			Name:       "rtk",
 			MinVersion: "0.0.0",
-			Required:   false,
+			Required:   true,
 			Check:      runner.Command{Name: "rtk", Args: []string{"--version"}},
-			Install:    basicInstall("rtk"),
-			Recovery:   "install rtk from https://github.com/rtk-ai/rtk for token-optimized terminal output",
+			InstallFunc: installRTK,
+			Recovery:   "install rtk from https://github.com/rtk-ai/rtk/releases/latest and ensure it is on PATH",
 		},
 	}
 }
@@ -148,19 +149,28 @@ func verifyDependency(ctx context.Context, processRunner runner.ProcessRunner, s
 		return result, nil
 	}
 
-	if len(spec.Install) == 0 {
+	if len(spec.Install) == 0 && spec.InstallFunc == nil {
 		if spec.Required {
 			return result, clierrors.New(clierrors.KindDependency, fmt.Sprintf("%s is missing or below %s; %s", spec.Name, spec.MinVersion, spec.Recovery))
 		}
 		return result, nil
 	}
 
-	for _, installCommand := range spec.Install {
-		if installErr := processRunner.Run(ctx, installCommand); installErr != nil {
+	if spec.InstallFunc != nil {
+		if installErr := spec.InstallFunc(ctx, processRunner); installErr != nil {
 			if spec.Required {
 				return result, clierrors.Wrap(clierrors.KindDependency, fmt.Sprintf("install %s", spec.Name), installErr)
 			}
 			return result, nil
+		}
+	} else {
+		for _, installCommand := range spec.Install {
+			if installErr := processRunner.Run(ctx, installCommand); installErr != nil {
+				if spec.Required {
+					return result, clierrors.Wrap(clierrors.KindDependency, fmt.Sprintf("install %s", spec.Name), installErr)
+				}
+				return result, nil
+			}
 		}
 	}
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-05-05
+
+- Added explicit step-by-step logging across `repositories clone`, `setup agent`, `setup mcp`, `run indexing`, and `setup full`, including skipped steps.
+- Changed `setup mcp` to auto-detect a single supported host instead of failing silently when no host flag is passed.
+- Switched generated GitHub MCP configuration to the remote GitHub MCP endpoint for all supported hosts, while preserving Codex bearer-token wiring.
+- Added native cross-platform `rtk` installation from official GitHub release assets for macOS, Linux, and Windows.
+- Exposed indexing progress as named steps so `setup full` logs the embedded indexing flow, with `mempalace` running before `cocoindex`.
+
 ## 2026-05-04
 
 - Added the `freighthero` Cobra CLI for FreightHero onboarding, repository cloning, host setup, MCP config generation, and indexing bootstrap.

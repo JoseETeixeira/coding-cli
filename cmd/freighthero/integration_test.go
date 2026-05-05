@@ -1,6 +1,7 @@
 package freighthero
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -113,6 +114,9 @@ func TestSetupMCPBuildsAndWritesConfig(t *testing.T) {
 	if !strings.Contains(string(content), "freighthero-codebase") {
 		t.Fatalf("expected freighthero-codebase in mcp.json, got %q", string(content))
 	}
+	if !strings.Contains(string(content), "https://api.githubcopilot.com/mcp/") {
+		t.Fatalf("expected remote github MCP in mcp.json, got %q", string(content))
+	}
 }
 
 func TestSetupFullIsIdempotent(t *testing.T) {
@@ -148,6 +152,52 @@ func TestSetupFullIsIdempotent(t *testing.T) {
 	}
 	if string(configBefore) != string(configAfter) {
 		t.Fatal("expected setup full rerun to preserve the same MCP config content")
+	}
+}
+
+func TestSetupMCPAutoDetectsSingleHost(t *testing.T) {
+	root, home := createWorkspaceFixture(t)
+	setTestEnv(t, home)
+
+	cmd := NewRootCommand(Dependencies{Logger: output.New(io.Discard, io.Discard, false), Runner: &integrationRunner{}})
+	cmd.SetArgs([]string{"setup", "mcp", "--freighthero-root", root})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute returned error: %v", err)
+	}
+
+	assertExists(t, filepath.Join(home, "mcp.json"))
+}
+
+func TestSetupFullLogsSkippedStepsAndIndexingProgress(t *testing.T) {
+	root, home := createWorkspaceFixture(t)
+	setTestEnv(t, home)
+
+	dependencies := Dependencies{Logger: output.New(io.Discard, io.Discard, false), Runner: &integrationRunner{}}
+	first := NewRootCommand(dependencies)
+	first.SetArgs([]string{"setup", "full", "--vscode", "--freighthero-root", root})
+	if err := first.Execute(); err != nil {
+		t.Fatalf("first Execute returned error: %v", err)
+	}
+
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	second := NewRootCommand(Dependencies{Logger: output.New(stdout, stderr, false), Runner: &integrationRunner{}})
+	second.SetArgs([]string{"setup", "full", "--vscode", "--freighthero-root", root})
+	if err := second.Execute(); err != nil {
+		t.Fatalf("second Execute returned error: %v", err)
+	}
+
+	combined := stdout.String() + "\n" + stderr.String()
+	for _, expected := range []string{
+		"step: run indexing",
+		"skipped freighthero-mcp npm dependencies",
+		"mempalace wake-up",
+		"cocoindex update",
+		"skipped updating MCP config",
+	} {
+		if !strings.Contains(combined, expected) {
+			t.Fatalf("expected log output to contain %q, got %q", expected, combined)
+		}
 	}
 }
 

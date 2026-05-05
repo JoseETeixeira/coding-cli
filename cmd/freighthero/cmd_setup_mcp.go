@@ -2,7 +2,6 @@ package freighthero
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/Freight-Hero/coding-cli/internal/config"
 	"github.com/Freight-Hero/coding-cli/internal/deps"
@@ -20,41 +19,47 @@ func newSetupMCPcmd(options *GlobalOptions, dependencies Dependencies) *cobra.Co
 		Short:   "Configure FreightHero MCP integrations for one host",
 		Example: "freighthero setup mcp --codex\nfreighthero setup mcp --claude-code --verbose",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			logStep(dependencies.Logger, "resolve FreightHero workspace")
 			layout, err := resolveRepoLayout(options.FreightHeroRoot)
 			if err != nil {
 				return err
 			}
+			dependencies.Logger.Success(fmt.Sprintf("using FreightHero workspace %s", layout.Root))
+
+			logStep(dependencies.Logger, "validate coding-cli workspace")
 			if err := repos.ValidateLayout(layout, repos.RepositoryCodingCLI); err != nil {
 				return err
 			}
+			dependencies.Logger.Success("validated coding-cli workspace")
 
-			profile, err := resolveHostProfile(*selection, false)
+			logStep(dependencies.Logger, "resolve host profile")
+			profile, err := resolveHostProfile(*selection, true)
 			if err != nil {
 				return err
 			}
+			dependencies.Logger.Success(fmt.Sprintf("using %s profile", profile.DisplayName))
 
-			dependencies.Logger.Info(fmt.Sprintf("verifying MCP dependencies for %s", profile.DisplayName))
+			logStep(dependencies.Logger, fmt.Sprintf("verify dependencies for %s", profile.DisplayName))
 			dependencyResults, err := deps.VerifyDependencies(cmd.Context(), dependencies.Runner, deps.DefaultSpecs())
 			logDependencyResults(dependencies.Logger, dependencyResults)
 			if err != nil {
 				return err
 			}
 
-			actions, err := index.BuildMCP(cmd.Context(), dependencies.Runner, layout)
+			logStep(dependencies.Logger, "prepare freighthero-mcp")
+			buildResults, err := index.BuildMCP(cmd.Context(), dependencies.Runner, layout)
 			if err != nil {
 				return err
 			}
-			if len(actions) == 0 {
-				dependencies.Logger.Info("reused existing freighthero-mcp build artifacts")
-			} else {
-				dependencies.Logger.Success(fmt.Sprintf("prepared freighthero-mcp (%s)", strings.Join(actions, ", ")))
-			}
+			logBuildResults(dependencies.Logger, buildResults)
 
+			logStep(dependencies.Logger, "write MCP config")
 			configResult, err := config.WriteConfig(profile, layout)
 			if err != nil {
 				return err
 			}
-			dependencies.Logger.Success(fmt.Sprintf("%s MCP config at %s", configResult.Action, configResult.Path))
+			logConfigResult(dependencies.Logger, configResult)
+			dependencies.Logger.Success("MCP setup completed")
 			return nil
 		},
 	}

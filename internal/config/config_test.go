@@ -45,7 +45,7 @@ func TestWriteCodexConfigPreservesOtherSections(t *testing.T) {
 		t.Fatalf("WriteFile returned error: %v", err)
 	}
 
-	_, err := writeTOMLConfig(path, map[string]ManagedServer{"github": {URL: "https://api.githubcopilot.com/mcp/", BearerTokenEnvVar: "GITHUB_PAT_TOKEN"}})
+	_, err := writeTOMLConfig(path, map[string]ManagedServer{"github": {Type: "http", URL: "https://api.githubcopilot.com/mcp/", BearerTokenEnvVar: "GITHUB_PAT_TOKEN"}})
 	if err != nil {
 		t.Fatalf("writeTOMLConfig returned error: %v", err)
 	}
@@ -86,15 +86,36 @@ func TestWriteJSONConfigFailsWhenPathIsUnreadable(t *testing.T) {
 	}
 }
 
-func TestManagedServersIncludeCodexGithub(t *testing.T) {
+func TestManagedServersIncludeGitHubForVSCode(t *testing.T) {
 	t.Parallel()
 
 	layout := repos.RepoLayout{Root: "/tmp/root", FreightHeroMCP: "/tmp/root/coding-cli/freighthero-mcp", CodebaseIndex: "/tmp/root/coding-cli/freighthero-mcp/.cocoindex/codebase-index"}
-	servers := ManagedServers(layout, true)
-	if _, ok := servers["github"]; !ok {
+	servers := ManagedServers(layout, host.HostProfile{Kind: host.HostVSCode})
+	github, ok := servers["github"]
+	if !ok {
+		t.Fatal("expected github server for VS Code")
+	}
+	if github.Type != "http" {
+		t.Fatalf("github.Type = %q", github.Type)
+	}
+	if github.URL != "https://api.githubcopilot.com/mcp/" {
+		t.Fatalf("github.URL = %q", github.URL)
+	}
+	if github.BearerTokenEnvVar != "" {
+		t.Fatalf("github.BearerTokenEnvVar = %q, want empty", github.BearerTokenEnvVar)
+	}
+}
+
+func TestManagedServersIncludeCodexGithubTokenEnv(t *testing.T) {
+	t.Parallel()
+
+	layout := repos.RepoLayout{Root: "/tmp/root", FreightHeroMCP: "/tmp/root/coding-cli/freighthero-mcp", CodebaseIndex: "/tmp/root/coding-cli/freighthero-mcp/.cocoindex/codebase-index"}
+	servers := ManagedServers(layout, host.HostProfile{Kind: host.HostCodex})
+	github, ok := servers["github"]
+	if !ok {
 		t.Fatal("expected github server for codex")
 	}
-
-	profile := host.HostProfile{Kind: host.HostCodex}
-	_ = profile
+	if github.BearerTokenEnvVar != "GITHUB_PAT_TOKEN" {
+		t.Fatalf("github.BearerTokenEnvVar = %q", github.BearerTokenEnvVar)
+	}
 }

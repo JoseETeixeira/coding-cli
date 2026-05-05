@@ -27,20 +27,16 @@ func newRepositoriesCloneCmd(options *GlobalOptions, dependencies Dependencies) 
 		Short:   "Clone the core FreightHero repositories",
 		Example: "freighthero repositories clone\nfreighthero repositories clone --freighthero-root /path/to/freighthero",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			logStep(dependencies.Logger, "resolve clone root")
 			cloneRoot, err := resolveCloneRoot(options.FreightHeroRoot)
 			if err != nil {
 				return err
 			}
-			dependencies.Logger.Info(fmt.Sprintf("cloning FreightHero repositories into %s", cloneRoot))
+			dependencies.Logger.Success(fmt.Sprintf("using clone root %s", cloneRoot))
 
+			logStep(dependencies.Logger, "clone FreightHero repositories")
 			results, err := repos.CloneRepositories(cmd.Context(), dependencies.Runner, cloneRoot, repos.CloneTargets)
-			for _, result := range results {
-				if result.Skipped {
-					dependencies.Logger.Warn(fmt.Sprintf("reused %s at %s", result.Repository, result.Path))
-					continue
-				}
-				dependencies.Logger.Success(fmt.Sprintf("cloned %s into %s", result.Repository, result.Path))
-			}
+			logCloneResults(dependencies.Logger, results)
 			if err != nil {
 				return err
 			}
