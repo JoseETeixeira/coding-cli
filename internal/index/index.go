@@ -19,9 +19,10 @@ type StepResult struct {
 }
 
 type BootstrapResult struct {
-	Build     []StepResult
-	MemPalace StepResult
-	CocoIndex StepResult
+	Build       []StepResult
+	Environment []StepResult
+	MemPalace   StepResult
+	CocoIndex   StepResult
 }
 
 func BootstrapIndexing(ctx context.Context, processRunner runner.ProcessRunner, layout repos.RepoLayout) (BootstrapResult, error) {
@@ -36,6 +37,12 @@ func BootstrapIndexing(ctx context.Context, processRunner runner.ProcessRunner, 
 		return result, err
 	}
 	result.Build = buildResults
+
+	environmentResults, err := EnsureIndexingEnvironment(ctx, processRunner, layout)
+	if err != nil {
+		return result, err
+	}
+	result.Environment = environmentResults
 
 	mempalaceResult, err := RunMemPalace(ctx, processRunner)
 	if err != nil {
@@ -57,7 +64,7 @@ func BuildMCP(ctx context.Context, processRunner runner.ProcessRunner, layout re
 		return nil, clierrors.New(clierrors.KindIndex, fmt.Sprintf("missing freighthero-mcp at %s", layout.FreightHeroMCP))
 	}
 
-	actions := make([]StepResult, 0, 4)
+	actions := make([]StepResult, 0, 2)
 	if !directoryExists(filepath.Join(layout.FreightHeroMCP, "node_modules")) {
 		if err := processRunner.RunStreaming(ctx, runner.Command{Name: "npm", Args: []string{"install"}, Dir: layout.FreightHeroMCP}, os.Stdout, os.Stderr); err != nil {
 			return actions, clierrors.Wrap(clierrors.KindIndex, "npm install freighthero-mcp", err)
@@ -66,6 +73,20 @@ func BuildMCP(ctx context.Context, processRunner runner.ProcessRunner, layout re
 	} else {
 		actions = append(actions, skippedStep("freighthero-mcp npm dependencies", "node_modules already present"))
 	}
+	if !fileExists(filepath.Join(layout.FreightHeroMCP, "dist", "index.js")) {
+		if err := processRunner.RunStreaming(ctx, runner.Command{Name: "npm", Args: []string{"run", "build"}, Dir: layout.FreightHeroMCP}, os.Stdout, os.Stderr); err != nil {
+			return actions, clierrors.Wrap(clierrors.KindIndex, "build freighthero-mcp", err)
+		}
+		actions = append(actions, completedStep("freighthero-mcp build", "generated dist/index.js"))
+	} else {
+		actions = append(actions, skippedStep("freighthero-mcp build", "dist/index.js already present"))
+	}
+
+	return actions, nil
+}
+
+func EnsureIndexingEnvironment(ctx context.Context, processRunner runner.ProcessRunner, layout repos.RepoLayout) ([]StepResult, error) {
+	actions := make([]StepResult, 0, 2)
 	if !directoryExists(filepath.Join(layout.FreightHeroMCP, ".venv")) {
 		if err := processRunner.RunStreaming(ctx, runner.Command{Name: "python3", Args: []string{"-m", "venv", ".venv"}, Dir: layout.FreightHeroMCP}, os.Stdout, os.Stderr); err != nil {
 			return actions, clierrors.Wrap(clierrors.KindIndex, "create freighthero-mcp virtualenv", err)
@@ -82,20 +103,12 @@ func BuildMCP(ctx context.Context, processRunner runner.ProcessRunner, layout re
 	} else {
 		actions = append(actions, skippedStep("freighthero-mcp python requirements", "cocoindex executable already present"))
 	}
-	if !fileExists(filepath.Join(layout.FreightHeroMCP, "dist", "index.js")) {
-		if err := processRunner.RunStreaming(ctx, runner.Command{Name: "npm", Args: []string{"run", "build"}, Dir: layout.FreightHeroMCP}, os.Stdout, os.Stderr); err != nil {
-			return actions, clierrors.Wrap(clierrors.KindIndex, "build freighthero-mcp", err)
-		}
-		actions = append(actions, completedStep("freighthero-mcp build", "generated dist/index.js"))
-	} else {
-		actions = append(actions, skippedStep("freighthero-mcp build", "dist/index.js already present"))
-	}
 
 	return actions, nil
 }
 
 func RunMemPalace(ctx context.Context, processRunner runner.ProcessRunner) (StepResult, error) {
-	if err := processRunner.RunStreaming(ctx, runner.Command{Name: "mempalace", Args: []string{"wake-up"}}, os.Stdout, os.Stderr); err != nil {
+	if err := processRunner.RunStreaming(ctx, runner.Command{Name: "python3", Args: []string{"-m", "mempalace", "wake-up"}}, os.Stdout, os.Stderr); err != nil {
 		return StepResult{}, clierrors.Wrap(clierrors.KindIndex, "wake up mempalace", err)
 	}
 

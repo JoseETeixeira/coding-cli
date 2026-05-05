@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	managedStart = "<!-- freighthero:start -->"
-	managedEnd   = "<!-- freighthero:end -->"
+	managedStart                = "<!-- freighthero:start -->"
+	managedEnd                  = "<!-- freighthero:end -->"
+	mempalaceHarnessPlaceholder = "{{MEMPALACE_HARNESS}}"
 )
 
 type SyncOptions struct {
@@ -132,7 +133,8 @@ func RenderTemplate(content []byte, harness string, sourcePath string) []byte {
 		return content
 	}
 
-	return []byte(strings.ReplaceAll(string(content), "--harness copilot", "--harness "+harness))
+	rendered := strings.ReplaceAll(string(content), mempalaceHarnessPlaceholder, harness)
+	return []byte(strings.ReplaceAll(rendered, "--harness copilot", "--harness "+harness))
 }
 
 func syncDirectory(sourceDir string, destinationDir string, harness string, options SyncOptions) (AssetResult, error) {

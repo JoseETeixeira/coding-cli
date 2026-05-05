@@ -189,8 +189,10 @@ func TestSetupFullLogsSkippedStepsAndIndexingProgress(t *testing.T) {
 
 	combined := stdout.String() + "\n" + stderr.String()
 	for _, expected := range []string{
+		"step: verify indexing dependencies",
 		"step: run indexing",
 		"skipped freighthero-mcp npm dependencies",
+		"skipped freighthero-mcp virtualenv",
 		"mempalace wake-up",
 		"cocoindex update",
 		"skipped updating MCP config",
@@ -198,6 +200,27 @@ func TestSetupFullLogsSkippedStepsAndIndexingProgress(t *testing.T) {
 		if !strings.Contains(combined, expected) {
 			t.Fatalf("expected log output to contain %q, got %q", expected, combined)
 		}
+	}
+}
+
+func TestSetupMCPSucceedsWithoutCocoIndexDependency(t *testing.T) {
+	root, home := createWorkspaceFixture(t)
+	setTestEnv(t, home)
+
+	runner := &integrationRunner{}
+	cmd := NewRootCommand(Dependencies{Logger: output.New(io.Discard, io.Discard, false), Runner: runner})
+	cmd.SetArgs([]string{"setup", "mcp", "--batman", "--freighthero-root", root})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute returned error: %v", err)
+	}
+
+	assertExists(t, filepath.Join(root, "coding-cli", "freighthero-mcp", "dist", "index.js"))
+	content, err := os.ReadFile(filepath.Join(home, "mcp.json"))
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	if !strings.Contains(string(content), "https://api.githubcopilot.com/mcp/") {
+		t.Fatalf("expected remote github MCP in mcp.json, got %q", string(content))
 	}
 }
 
@@ -218,9 +241,9 @@ func createWorkspaceFixture(t *testing.T) (string, string) {
 		}
 	}
 	files := map[string]string{
-		filepath.Join(root, "coding-cli", "prompts", "demo.prompt.md"):            "prompt",
-		filepath.Join(root, "coding-cli", "prompts", "demo.instructions.md"):      "instruction",
-		filepath.Join(root, "coding-cli", "prompts", "batman.agent.md"):          "python3 -m mempalace hook run --harness copilot",
+		filepath.Join(root, "coding-cli", "prompts", "demo.prompt.md"):           "prompt",
+		filepath.Join(root, "coding-cli", "prompts", "demo.instructions.md"):     "instruction",
+		filepath.Join(root, "coding-cli", "prompts", "batman.agent.md"):          "python3 -m mempalace hook run --harness {{MEMPALACE_HARNESS}}",
 		filepath.Join(root, "coding-cli", "skills", "example-skill", "SKILL.md"): "skill",
 	}
 	for path, content := range files {

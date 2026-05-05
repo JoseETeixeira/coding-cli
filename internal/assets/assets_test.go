@@ -14,8 +14,8 @@ import (
 func TestRenderTemplateSubstitutesHarness(t *testing.T) {
 	t.Parallel()
 
-	rendered := string(RenderTemplate([]byte("python3 -m mempalace hook run --harness copilot"), "batman", "batman.agent.md"))
-	if !strings.Contains(rendered, "--harness batman") {
+	rendered := string(RenderTemplate([]byte("python3 -m mempalace hook run --harness {{MEMPALACE_HARNESS}}"), "codex", "batman.agent.md"))
+	if !strings.Contains(rendered, "--harness codex") {
 		t.Fatalf("rendered = %q", rendered)
 	}
 }
@@ -42,7 +42,7 @@ func TestSyncAssetsCreatesBackupAndCopiesSkills(t *testing.T) {
 	profile := host.HostProfile{
 		Kind:            host.HostBatman,
 		DisplayName:     "Batman",
-		Harness:         "batman",
+		Harness:         "codex",
 		UsesVSCodeRoots: true,
 		Roots: host.HostRoots{
 			PromptDir:      filepath.Join(root, "user", "prompts"),
@@ -78,7 +78,7 @@ func TestSyncAssetsCreatesBackupAndCopiesSkills(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadFile returned error: %v", err)
 	}
-	if !strings.Contains(string(content), "--harness batman") {
+	if !strings.Contains(string(content), "--harness codex") {
 		t.Fatalf("expected harness substitution, got %q", string(content))
 	}
 }
@@ -92,7 +92,7 @@ func TestSyncAssetsSkipsConflictingFileWithoutForce(t *testing.T) {
 	profile := host.HostProfile{
 		Kind:            host.HostBatman,
 		DisplayName:     "Batman",
-		Harness:         "batman",
+		Harness:         "codex",
 		UsesVSCodeRoots: true,
 		Roots: host.HostRoots{
 			PromptDir:      filepath.Join(root, "user", "prompts"),
@@ -178,9 +178,9 @@ func createAssetFixture(t *testing.T, root string) {
 		t.Fatalf("MkdirAll returned error: %v", err)
 	}
 	files := map[string]string{
-		filepath.Join(root, "coding-cli", "prompts", "demo.prompt.md"):            "prompt",
-		filepath.Join(root, "coding-cli", "prompts", "demo.instructions.md"):      "instruction",
-		filepath.Join(root, "coding-cli", "prompts", "batman.agent.md"):          "python3 -m mempalace hook run --harness copilot",
+		filepath.Join(root, "coding-cli", "prompts", "demo.prompt.md"):           "prompt",
+		filepath.Join(root, "coding-cli", "prompts", "demo.instructions.md"):     "instruction",
+		filepath.Join(root, "coding-cli", "prompts", "batman.agent.md"):          "python3 -m mempalace hook run --harness {{MEMPALACE_HARNESS}}",
 		filepath.Join(root, "coding-cli", "skills", "example-skill", "SKILL.md"): "skill",
 	}
 	for path, content := range files {

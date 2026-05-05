@@ -130,7 +130,15 @@ bash ./build.sh
 
 ## Dependency Behavior
 
-The CLI verifies `git`, `node`, `npm`, `python3`, `pip`, `mempalace`, `cocoindex`, and `rtk`.
+`freighthero setup mcp` verifies the MCP setup prerequisites: `node`, `npm`, `python3`, `pip`, `mempalace`, and `rtk`.
+
+`freighthero run indexing` adds the indexing-only requirements on top of the local build: a newer `python3`, `pip`, and `cocoindex`.
+
+`freighthero setup full` performs the setup work first, then runs the indexing dependency check and indexing refresh as the final phase.
+
+When `python3` is missing or too old, the CLI first tries to expose an existing versioned interpreter such as `python3.11`. If no suitable interpreter is available, it uses `uv` to create a FreightHero-managed Python environment, exposes its `python3` on your PATH automatically, and installs `mempalace` and `cocoindex` into that managed environment.
+
+If your interactive shell still resolves an older `python3` immediately after setup, start a new shell or run `rehash` before retrying.
 
 If a dependency already satisfies the minimum version, the CLI reports it as reused and skips reinstalling it.
 
@@ -143,6 +151,8 @@ Generated MCP config always includes:
 - `github` as the remote GitHub MCP endpoint at `https://api.githubcopilot.com/mcp/`
 
 `freighthero run indexing` and the indexing phase inside `freighthero setup full` run `mempalace wake-up` first, then `cocoindex update`, and log every step including skipped build/config steps.
+
+If `setup full` reaches the final indexing phase and your machine does not yet satisfy the CocoIndex Python requirement, the MCP config and user-level assets are still installed first.
 
 ## Recovery Notes
 

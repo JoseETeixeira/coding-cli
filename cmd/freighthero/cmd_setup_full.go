@@ -48,7 +48,7 @@ func newSetupFullCmd(options *GlobalOptions, dependencies Dependencies) *cobra.C
 			dependencies.Logger.Success(fmt.Sprintf("using %s profile", profile.DisplayName))
 
 			logStep(dependencies.Logger, "verify dependencies")
-			dependencyResults, err := deps.VerifyDependencies(cmd.Context(), dependencies.Runner, deps.DefaultSpecs())
+			dependencyResults, err := deps.VerifyDependencies(cmd.Context(), dependencies.Runner, deps.SetupFullSpecs())
 			logDependencyResults(dependencies.Logger, dependencyResults)
 			if err != nil {
 				return err
@@ -74,6 +74,13 @@ func newSetupFullCmd(options *GlobalOptions, dependencies Dependencies) *cobra.C
 				return err
 			}
 			logConfigResult(dependencies.Logger, configResult)
+
+			logStep(dependencies.Logger, "verify indexing dependencies")
+			indexDependencyResults, err := deps.VerifyDependencies(cmd.Context(), dependencies.Runner, deps.IndexingSpecs())
+			logDependencyResults(dependencies.Logger, indexDependencyResults)
+			if err != nil {
+				return err
+			}
 
 			if err := runIndexingFlow(cmd.Context(), dependencies, layout); err != nil {
 				return err

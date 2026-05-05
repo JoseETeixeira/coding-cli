@@ -15,6 +15,8 @@ func TestShippedUnderstandingAssetsCoverDeepQuestionPrompts(t *testing.T) {
 
 	promptChecks := map[string][]string{
 		filepath.Join(root, "prompts", "batman.agent.md"): {
+			"python3 -m mempalace hook run --hook stop --harness {{MEMPALACE_HARNESS}}",
+			"python3 -m mempalace hook run --hook precompact --harness {{MEMPALACE_HARNESS}}",
 			"why each one would answer the user's question instead of merely naming it",
 			"Distinguish similarly named or adjacent processes",
 			"what each likely-to-change component is used for",

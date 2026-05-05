@@ -13,13 +13,13 @@ import (
 )
 
 type DependencySpec struct {
-	Name       string
-	MinVersion string
-	Required   bool
-	Check      runner.Command
-	Install    []runner.Command
+	Name        string
+	MinVersion  string
+	Required    bool
+	Check       runner.Command
+	Install     []runner.Command
 	InstallFunc func(context.Context, runner.ProcessRunner) error
-	Recovery   string
+	Recovery    string
 }
 
 type DependencyResult struct {
@@ -30,7 +30,125 @@ type DependencyResult struct {
 	Required  bool
 }
 
+func SetupMCPSpecs() []DependencySpec {
+	return []DependencySpec{
+		nodeSpec(),
+		npmSpec(),
+		pythonSpec("3.9.0"),
+		pipSpec("0.0.0"),
+		mempalaceSpec(),
+		rtkSpec(),
+	}
+}
+
+func SetupFullSpecs() []DependencySpec {
+	return append([]DependencySpec{gitSpec()}, SetupMCPSpecs()...)
+}
+
+func IndexingSpecs() []DependencySpec {
+	return []DependencySpec{
+		nodeSpec(),
+		npmSpec(),
+		pythonSpec("3.11.0"),
+		pipSpec("23.0.0"),
+		mempalaceSpec(),
+		cocoindexSpec(),
+	}
+}
+
 func DefaultSpecs() []DependencySpec {
+	return IndexingSpecs()
+}
+
+func gitSpec() DependencySpec {
+	return DependencySpec{
+		Name:       "git",
+		MinVersion: "2.0.0",
+		Required:   true,
+		Check:      runner.Command{Name: "git", Args: []string{"--version"}},
+		Install:    basicInstall("git"),
+		Recovery:   "install Git and rerun the command",
+	}
+}
+
+func nodeSpec() DependencySpec {
+	return DependencySpec{
+		Name:       "node",
+		MinVersion: "22.0.0",
+		Required:   true,
+		Check:      runner.Command{Name: "node", Args: []string{"--version"}},
+		Install:    basicInstall("node"),
+		Recovery:   "install Node.js 22 or newer and rerun the command",
+	}
+}
+
+func npmSpec() DependencySpec {
+	return DependencySpec{
+		Name:       "npm",
+		MinVersion: "10.0.0",
+		Required:   true,
+		Check:      runner.Command{Name: "npm", Args: []string{"--version"}},
+		Install:    basicInstall("node"),
+		Recovery:   "install npm 10 or newer and rerun the command",
+	}
+}
+
+func pythonSpec(minVersion string) DependencySpec {
+	return DependencySpec{
+		Name:        "python3",
+		MinVersion:  minVersion,
+		Required:    true,
+		Check:       runner.Command{Name: "python3", Args: []string{"--version"}},
+		InstallFunc: installPython(minVersion),
+		Recovery:    fmt.Sprintf("install Python %s or newer and rerun the command", minVersion),
+	}
+}
+
+func pipSpec(minVersion string) DependencySpec {
+	return DependencySpec{
+		Name:       "pip",
+		MinVersion: minVersion,
+		Required:   true,
+		Check:      runner.Command{Name: "python3", Args: []string{"-m", "pip", "--version"}},
+		Install:    []runner.Command{{Name: "python3", Args: []string{"-m", "ensurepip", "--upgrade"}}},
+		Recovery:   "ensure pip is available for python3 and rerun the command",
+	}
+}
+
+func mempalaceSpec() DependencySpec {
+	return DependencySpec{
+		Name:        "mempalace",
+		MinVersion:  "0.0.0",
+		Required:    true,
+		Check:       runner.Command{Name: "python3", Args: []string{"-m", "pip", "show", "mempalace"}},
+		InstallFunc: installPythonPackage("mempalace"),
+		Recovery:    "install mempalace with python3 -m pip install --user mempalace",
+	}
+}
+
+func cocoindexSpec() DependencySpec {
+	return DependencySpec{
+		Name:        "cocoindex",
+		MinVersion:  "1.0.0",
+		Required:    true,
+		Check:       runner.Command{Name: "python3", Args: []string{"-m", "pip", "show", "cocoindex"}},
+		InstallFunc: installPythonPackage("cocoindex"),
+		Recovery:    "install cocoindex with python3 -m pip install --user cocoindex",
+	}
+}
+
+func rtkSpec() DependencySpec {
+	return DependencySpec{
+		Name:        "rtk",
+		MinVersion:  "0.0.0",
+		Required:    true,
+		Check:       runner.Command{Name: "rtk", Args: []string{"--version"}},
+		InstallFunc: installRTK,
+		Recovery:    "install rtk from https://github.com/rtk-ai/rtk/releases/latest and ensure it is on PATH",
+	}
+}
+
+func basicInstall(packageName string) []runner.Command {
 	basicInstall := func(packageName string) []runner.Command {
 		if runtime.GOOS != "darwin" {
 			return nil
@@ -39,72 +157,7 @@ func DefaultSpecs() []DependencySpec {
 		return []runner.Command{{Name: "brew", Args: []string{"install", packageName}}}
 	}
 
-	return []DependencySpec{
-		{
-			Name:       "git",
-			MinVersion: "2.0.0",
-			Required:   true,
-			Check:      runner.Command{Name: "git", Args: []string{"--version"}},
-			Install:    basicInstall("git"),
-			Recovery:   "install Git and rerun the command",
-		},
-		{
-			Name:       "node",
-			MinVersion: "22.0.0",
-			Required:   true,
-			Check:      runner.Command{Name: "node", Args: []string{"--version"}},
-			Install:    basicInstall("node"),
-			Recovery:   "install Node.js 22 or newer and rerun the command",
-		},
-		{
-			Name:       "npm",
-			MinVersion: "10.0.0",
-			Required:   true,
-			Check:      runner.Command{Name: "npm", Args: []string{"--version"}},
-			Install:    basicInstall("node"),
-			Recovery:   "install npm 10 or newer and rerun the command",
-		},
-		{
-			Name:       "python3",
-			MinVersion: "3.11.0",
-			Required:   true,
-			Check:      runner.Command{Name: "python3", Args: []string{"--version"}},
-			Install:    basicInstall("python"),
-			Recovery:   "install Python 3.11 or newer and rerun the command",
-		},
-		{
-			Name:       "pip",
-			MinVersion: "23.0.0",
-			Required:   true,
-			Check:      runner.Command{Name: "python3", Args: []string{"-m", "pip", "--version"}},
-			Install:    []runner.Command{{Name: "python3", Args: []string{"-m", "ensurepip", "--upgrade"}}},
-			Recovery:   "ensure pip is available for python3 and rerun the command",
-		},
-		{
-			Name:       "mempalace",
-			MinVersion: "0.0.0",
-			Required:   true,
-			Check:      runner.Command{Name: "python3", Args: []string{"-m", "pip", "show", "mempalace"}},
-			Install:    []runner.Command{{Name: "python3", Args: []string{"-m", "pip", "install", "--user", "mempalace"}}},
-			Recovery:   "install mempalace with python3 -m pip install --user mempalace",
-		},
-		{
-			Name:       "cocoindex",
-			MinVersion: "1.0.0",
-			Required:   true,
-			Check:      runner.Command{Name: "python3", Args: []string{"-m", "pip", "show", "cocoindex"}},
-			Install:    []runner.Command{{Name: "python3", Args: []string{"-m", "pip", "install", "--user", "cocoindex"}}},
-			Recovery:   "install cocoindex with python3 -m pip install --user cocoindex",
-		},
-		{
-			Name:       "rtk",
-			MinVersion: "0.0.0",
-			Required:   true,
-			Check:      runner.Command{Name: "rtk", Args: []string{"--version"}},
-			InstallFunc: installRTK,
-			Recovery:   "install rtk from https://github.com/rtk-ai/rtk/releases/latest and ensure it is on PATH",
-		},
-	}
+	return basicInstall(packageName)
 }
 
 func VerifyDependencies(ctx context.Context, processRunner runner.ProcessRunner, specs []DependencySpec) ([]DependencyResult, error) {
@@ -159,7 +212,7 @@ func verifyDependency(ctx context.Context, processRunner runner.ProcessRunner, s
 	if spec.InstallFunc != nil {
 		if installErr := spec.InstallFunc(ctx, processRunner); installErr != nil {
 			if spec.Required {
-				return result, clierrors.Wrap(clierrors.KindDependency, fmt.Sprintf("install %s", spec.Name), installErr)
+				return result, dependencyInstallError(spec, version, installErr)
 			}
 			return result, nil
 		}
@@ -167,7 +220,7 @@ func verifyDependency(ctx context.Context, processRunner runner.ProcessRunner, s
 		for _, installCommand := range spec.Install {
 			if installErr := processRunner.Run(ctx, installCommand); installErr != nil {
 				if spec.Required {
-					return result, clierrors.Wrap(clierrors.KindDependency, fmt.Sprintf("install %s", spec.Name), installErr)
+					return result, dependencyInstallError(spec, version, installErr)
 				}
 				return result, nil
 			}
@@ -223,4 +276,12 @@ func versionParts(version string) [3]int {
 	}
 
 	return parsed
+}
+
+func dependencyInstallError(spec DependencySpec, version string, installErr error) error {
+	if version != "" {
+		return clierrors.Wrap(clierrors.KindDependency, fmt.Sprintf("%s %s does not satisfy %s; %s", spec.Name, version, spec.MinVersion, spec.Recovery), installErr)
+	}
+
+	return clierrors.Wrap(clierrors.KindDependency, fmt.Sprintf("install %s; %s", spec.Name, spec.Recovery), installErr)
 }

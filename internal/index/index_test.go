@@ -68,11 +68,33 @@ func TestBuildMCPRunsExpectedCommands(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildMCP returned error: %v", err)
 	}
-	if len(actions) != 4 {
-		t.Fatalf("len(actions) = %d, want 4", len(actions))
+	if len(actions) != 2 {
+		t.Fatalf("len(actions) = %d, want 2", len(actions))
 	}
-	if len(fake.commands) != 4 {
-		t.Fatalf("len(fake.commands) = %d, want 4", len(fake.commands))
+	if len(fake.commands) != 2 {
+		t.Fatalf("len(fake.commands) = %d, want 2", len(fake.commands))
+	}
+}
+
+func TestEnsureIndexingEnvironmentRunsExpectedCommands(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	freightHeroMCP := filepath.Join(root, "coding-cli", "freighthero-mcp")
+	if err := os.MkdirAll(freightHeroMCP, 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+
+	fake := &fakeRunner{}
+	actions, err := EnsureIndexingEnvironment(context.Background(), fake, repos.RepoLayout{FreightHeroMCP: freightHeroMCP})
+	if err != nil {
+		t.Fatalf("EnsureIndexingEnvironment returned error: %v", err)
+	}
+	if len(actions) != 2 {
+		t.Fatalf("len(actions) = %d, want 2", len(actions))
+	}
+	if len(fake.commands) != 2 {
+		t.Fatalf("len(fake.commands) = %d, want 2", len(fake.commands))
 	}
 }
 

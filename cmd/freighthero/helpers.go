@@ -120,6 +120,7 @@ func logBuildResults(logger *output.Logger, results []index.StepResult) {
 
 func logIndexingResults(logger *output.Logger, result index.BootstrapResult) {
 	logBuildResults(logger, result.Build)
+	logBuildResults(logger, result.Environment)
 	logIndexStepResult(logger, result.MemPalace)
 	logIndexStepResult(logger, result.CocoIndex)
 }

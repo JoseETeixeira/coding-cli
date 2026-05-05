@@ -21,11 +21,29 @@ func TestResolveSelectedExplicitHost(t *testing.T) {
 	if profile.Kind != HostBatman {
 		t.Fatalf("profile.Kind = %q, want %q", profile.Kind, HostBatman)
 	}
-	if profile.Harness != "batman" {
-		t.Fatalf("profile.Harness = %q, want %q", profile.Harness, "batman")
+	if profile.Harness != "codex" {
+		t.Fatalf("profile.Harness = %q, want %q", profile.Harness, "codex")
 	}
 	if profile.Roots.MCPConfigPath != filepath.Join("/Users/tester", "Library", "Application Support", "Code", "User", "mcp.json") {
 		t.Fatalf("profile.Roots.MCPConfigPath = %q", profile.Roots.MCPConfigPath)
+	}
+}
+
+func TestResolveSelectedExplicitClaudeHost(t *testing.T) {
+	t.Parallel()
+
+	resolver := paths.NewResolverWith("/Users/tester", "darwin", nil)
+	detector := NewDetectorWith(resolver, nil, nil)
+
+	profile, err := detector.ResolveSelected(SelectionFlags{ClaudeCode: true}, false)
+	if err != nil {
+		t.Fatalf("ResolveSelected() error = %v", err)
+	}
+	if profile.Kind != HostClaudeCode {
+		t.Fatalf("profile.Kind = %q, want %q", profile.Kind, HostClaudeCode)
+	}
+	if profile.Harness != "claude-code" {
+		t.Fatalf("profile.Harness = %q, want %q", profile.Harness, "claude-code")
 	}
 }
 

@@ -40,7 +40,7 @@ func newSetupMCPcmd(options *GlobalOptions, dependencies Dependencies) *cobra.Co
 			dependencies.Logger.Success(fmt.Sprintf("using %s profile", profile.DisplayName))
 
 			logStep(dependencies.Logger, fmt.Sprintf("verify dependencies for %s", profile.DisplayName))
-			dependencyResults, err := deps.VerifyDependencies(cmd.Context(), dependencies.Runner, deps.DefaultSpecs())
+			dependencyResults, err := deps.VerifyDependencies(cmd.Context(), dependencies.Runner, deps.SetupMCPSpecs())
 			logDependencyResults(dependencies.Logger, dependencyResults)
 			if err != nil {
 				return err

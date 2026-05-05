@@ -86,7 +86,7 @@ func ResolveProfile(kind HostKind, resolver paths.Resolver) (HostProfile, error)
 		return HostProfile{
 			Kind:            HostVSCode,
 			DisplayName:     "VS Code / Copilot",
-			Harness:         "copilot",
+			Harness:         "codex",
 			UsesVSCodeRoots: true,
 			MCPConfigFormat: "vscode-json",
 			Roots: HostRoots{
@@ -101,7 +101,7 @@ func ResolveProfile(kind HostKind, resolver paths.Resolver) (HostProfile, error)
 		return HostProfile{
 			Kind:            HostBatman,
 			DisplayName:     "Batman",
-			Harness:         "batman",
+			Harness:         "codex",
 			UsesVSCodeRoots: true,
 			MCPConfigFormat: "vscode-json",
 			Roots: HostRoots{
@@ -116,7 +116,7 @@ func ResolveProfile(kind HostKind, resolver paths.Resolver) (HostProfile, error)
 		return HostProfile{
 			Kind:            HostClaudeCode,
 			DisplayName:     "Claude Code",
-			Harness:         "claude",
+			Harness:         "claude-code",
 			MCPConfigFormat: "claude-json",
 			Roots: HostRoots{
 				PromptDir:       resolver.ClaudeCommandDir(),

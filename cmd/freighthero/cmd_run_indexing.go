@@ -34,8 +34,8 @@ func newRunIndexingCmd(options *GlobalOptions, dependencies Dependencies) *cobra
 			}
 			dependencies.Logger.Success(fmt.Sprintf("using FreightHero workspace %s", layout.Root))
 
-			logStep(dependencies.Logger, "verify dependencies")
-			dependencyResults, err := deps.VerifyDependencies(cmd.Context(), dependencies.Runner, deps.DefaultSpecs())
+			logStep(dependencies.Logger, "verify indexing dependencies")
+			dependencyResults, err := deps.VerifyDependencies(cmd.Context(), dependencies.Runner, deps.IndexingSpecs())
 			logDependencyResults(dependencies.Logger, dependencyResults)
 			if err != nil {
 				return err

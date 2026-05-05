@@ -312,23 +312,30 @@ func pathContains(candidate string) bool {
 }
 
 func prependPath(path string) {
-	current := os.Getenv("PATH")
-	if pathContains(path) {
-		return
+	parts := filepath.SplitList(os.Getenv("PATH"))
+	filtered := []string{path}
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		if filepath.Clean(part) == filepath.Clean(path) {
+			continue
+		}
+		filtered = append(filtered, part)
 	}
-	if current == "" {
+	if len(filtered) == 1 {
 		_ = os.Setenv("PATH", path)
 		return
 	}
-	_ = os.Setenv("PATH", path+string(os.PathListSeparator)+current)
+	_ = os.Setenv("PATH", strings.Join(filtered, string(os.PathListSeparator)))
 }
 
 func ensureInstallDirOnPath(ctx context.Context, installDir string) error {
-	if pathContains(installDir) {
+	alreadyPresent := pathContains(installDir)
+	prependPath(installDir)
+	if alreadyPresent {
 		return nil
 	}
-
-	prependPath(installDir)
 
 	if runtime.GOOS == "windows" {
 		return persistWindowsUserPath(ctx, installDir)
@@ -362,7 +369,7 @@ func persistUnixShellPath(installDir string) error {
 	}
 	defer file.Close()
 
-	block := "\n# Added by freighthero for rtk\n" + exportLine + "\n"
+	block := "\n# Added by freighthero for local tool installs\n" + exportLine + "\n"
 	if _, err := file.WriteString(block); err != nil {
 		return fmt.Errorf("update shell profile %s: %w", profilePath, err)
 	}

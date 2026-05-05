@@ -6,7 +6,9 @@
 - Changed `setup mcp` to auto-detect a single supported host instead of failing silently when no host flag is passed.
 - Switched generated GitHub MCP configuration to the remote GitHub MCP endpoint for all supported hosts, while preserving Codex bearer-token wiring.
 - Added native cross-platform `rtk` installation from official GitHub release assets for macOS, Linux, and Windows.
+- Added automatic `python3` exposure and installation so the CLI can put a suitable Python interpreter on PATH without depending on Homebrew, using a FreightHero-managed uv-backed Python environment when no suitable interpreter already exists.
 - Exposed indexing progress as named steps so `setup full` logs the embedded indexing flow, with `mempalace` running before `cocoindex`.
+- Fixed generated MemPalace hook harness values so Batman and VS Code assets use the supported `codex` harness, while Claude Code uses `claude-code`.
 
 ## 2026-05-04
 

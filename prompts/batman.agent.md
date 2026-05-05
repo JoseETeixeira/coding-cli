@@ -3,14 +3,10 @@ description: Batman AI assistant for developers, with a focus on codebase resear
 name: "Batman Agent"
 tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'mempalace/*', browser, 'pylance-mcp-server/*', 'freighthero-codebase/*', todo]
 hooks:
-  Stop:
-    - type: command
-      command: "python3 -m mempalace hook run --hook stop --harness copilot"
-      timeout: 30
-  PreCompact:
-    - type: command
-      command: "python3 -m mempalace hook run --hook precompact --harness copilot"
-      timeout: 30
+   Stop:
+      - {type: command, command: "python3 -m mempalace hook run --hook stop --harness {{MEMPALACE_HARNESS}}", timeout: 30}
+   PreCompact:
+      - {type: command, command: "python3 -m mempalace hook run --hook precompact --harness {{MEMPALACE_HARNESS}}", timeout: 30}
 ---
 
 # Identity
