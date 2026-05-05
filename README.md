@@ -19,27 +19,37 @@ go run . help
 
 `build.sh` always writes the binary as `dist/freighthero`.
 
-## Install Without Cloning
+## Install From Release
 
+Download the matching archive from the repository's GitHub Releases page.
+
+Published assets:
+
+- `freighthero_darwin_arm64.tar.gz`
+- `freighthero_darwin_amd64.tar.gz`
+- `freighthero_linux_arm64.tar.gz`
+- `freighthero_linux_amd64.tar.gz`
+
+If the repository is private, authenticate in the browser first or use GitHub CLI:
 
 ```bash
-export GITHUB_PAT_TOKEN=[your_token]
-curl -fsSL \
-	-H "Accept: application/vnd.github.raw+json" \
-	-H "Authorization: Bearer ${GITHUB_PAT_TOKEN}" \
-	-H "X-GitHub-Api-Version: 2026-03-10" \
-	"https://api.github.com/repos/Freight-Hero/coding-cli/contents/install.sh?ref=main" | bash
+gh release download v0.1.1 -R Freight-Hero/coding-cli -p 'freighthero_darwin_arm64.tar.gz'
 ```
 
-The installer downloads the latest GitHub Release archive for your OS and CPU, installs `freighthero` into `$HOME/.local/bin` by default, and adds that directory to `PATH` when needed.
+Install the extracted binary into your local bin directory:
 
-For private repositories, `install.sh` also uses `GITHUB_PAT_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN` to resolve the latest release and download the binary archive.
+```bash
+tar -xzf freighthero_darwin_arm64.tar.gz
+mkdir -p "$HOME/.local/bin"
+install -m 0755 freighthero "$HOME/.local/bin/freighthero"
+freighthero help
+```
 
-Optional overrides:
+If `$HOME/.local/bin` is not already on `PATH`, add it in your shell profile:
 
-- `INSTALL_DIR=/custom/bin` to choose a different install directory
-- `VERSION=v0.1.0` to pin a specific release tag
-- `PROFILE_FILE=~/.zshrc` to force a specific shell profile update target
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
 
 ## Supported Hosts
 
@@ -127,5 +137,5 @@ If a dependency already satisfies the minimum version, the CLI reports it as reu
 - If workspace discovery fails, rerun the command with `--freighthero-root`.
 - If MCP config parsing fails, inspect the host config file and rerun after fixing the invalid JSON or TOML.
 - If indexing fails, rerun `freighthero run indexing` after confirming `frontend`, `backend`, and `ai_watchtower` exist beside `coding-cli`.
-- If the installer cannot find a release asset yet, push a tag such as `v0.1.0` so the GitHub release workflow can publish the `freighthero_<os>_<arch>.tar.gz` archives.
+- If the release asset you need does not exist yet, push a tag such as `v0.1.1` so the GitHub release workflow can publish the `freighthero_<os>_<arch>.tar.gz` archives.
 - If you want to inspect the exact command surface, run `freighthero help` or `freighthero <command> --help`.
