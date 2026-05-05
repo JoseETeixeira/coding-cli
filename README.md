@@ -10,18 +10,9 @@ The CLI handles five main jobs:
 - write host-native MCP configuration
 - build and refresh local indexing support
 
-## Build
+## Install From Downloaded Release Binary
 
-```bash
-bash ./build.sh
-go run . help
-```
-
-`build.sh` always writes the binary as `dist/freighthero`.
-
-## Install From Release
-
-Download the matching archive from the repository's GitHub Releases page.
+This repository is private. Release binaries must be downloaded from an authenticated GitHub session, either in the browser or with GitHub CLI.
 
 Published assets:
 
@@ -30,10 +21,13 @@ Published assets:
 - `freighthero_linux_arm64.tar.gz`
 - `freighthero_linux_amd64.tar.gz`
 
-If the repository is private, authenticate in the browser first or use GitHub CLI:
+Option 1: sign in to GitHub in the browser, open the private Releases page for `Freight-Hero/coding-cli`, and download the matching archive.
+
+Option 2: use GitHub CLI after authenticating:
 
 ```bash
-gh release download v0.1.1 -R Freight-Hero/coding-cli -p 'freighthero_darwin_arm64.tar.gz'
+gh auth login
+gh release download v0.1.3 -R Freight-Hero/coding-cli -p 'freighthero_darwin_arm64.tar.gz'
 ```
 
 Install the extracted binary into your local bin directory:
@@ -50,6 +44,42 @@ If `$HOME/.local/bin` is not already on `PATH`, add it in your shell profile:
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 ```
+
+## Install From Built Binary
+
+If you already have a checkout of this private repository, you can build and install the binary locally instead of downloading a release archive.
+
+Build the current platform binary:
+
+```bash
+bash ./build.sh
+./dist/freighthero help
+```
+
+`build.sh` always writes the current-platform binary to `dist/freighthero`.
+
+Install that built binary into your local bin directory:
+
+```bash
+mkdir -p "$HOME/.local/bin"
+install -m 0755 ./dist/freighthero "$HOME/.local/bin/freighthero"
+freighthero help
+```
+
+If `$HOME/.local/bin` is not already on `PATH`, add it in your shell profile:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+## Build
+
+```bash
+bash ./build.sh
+go run . help
+```
+
+`build.sh` always writes the binary as `dist/freighthero`.
 
 ## Supported Hosts
 
@@ -159,5 +189,5 @@ If `setup full` reaches the final indexing phase and your machine does not yet s
 - If workspace discovery fails, rerun the command with `--freighthero-root`.
 - If MCP config parsing fails, inspect the host config file and rerun after fixing the invalid JSON or TOML.
 - If indexing fails, rerun `freighthero run indexing` after confirming `frontend`, `backend`, and `ai_watchtower` exist beside `coding-cli`.
-- If the release asset you need does not exist yet, push a tag such as `v0.1.1` so the GitHub release workflow can publish the `freighthero_<os>_<arch>.tar.gz` archives.
+- If the release asset you need does not exist yet, push a new `v*` tag so the GitHub release workflow can publish the `freighthero_<os>_<arch>.tar.gz` archives.
 - If you want to inspect the exact command surface, run `freighthero help` or `freighthero <command> --help`.
