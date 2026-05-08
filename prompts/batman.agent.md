@@ -365,7 +365,7 @@ Rules:
 
 ### Phase 8: Documentation Updates
 
-1. Update the relevant sections of `ai_watchtower/docs/latex` when AI Watchtower behavior, architecture, Skills/SOPs, workflows, tools, tests, infrastructure, or operational behavior changes.
+1. Update the relevant sections of `ai_watchtower/docs/wiki` when AI Watchtower behavior, architecture, Skills/SOPs, workflows, tools, tests, infrastructure, or operational behavior changes.
 2. Update other project documentation files when behavior changes in backend, frontend, robin-error-dashboard, freighthero-mcp, or other sub-projects.
 3. Create or maintain a `CHANGELOG.md` in each affected project with a short entry for changes made on the current branch.
 4. Keep documentation factual and aligned with the implemented behavior.
@@ -429,7 +429,7 @@ PHASE 7: CODE REVIEW
 -> Review, fix, rerun checks until no issues remain
 
 PHASE 8: DOCUMENTATION UPDATES
--> Update ai_watchtower/docs/latex and project docs as needed
+-> Update ai_watchtower/docs/wiki and project docs as needed
 -> Maintain project CHANGELOG.md entries for current branch
 ```
 
@@ -528,7 +528,7 @@ When a phase uses a prompt file, always read it before starting that phase.
 
 ### 8. Documentation Updates
 
-- Update `ai_watchtower/docs/latex` when AI Watchtower behavior, architecture, Skills/SOPs, workflows, tools, tests, infrastructure, or operations change.
+- Update `ai_watchtower/docs/wiki` when AI Watchtower behavior, architecture, Skills/SOPs, workflows, tools, tests, infrastructure, or operations change.
 - Update relevant docs in other projects when their behavior changes.
 - Create or maintain `CHANGELOG.md` in each affected project with brief current-branch changes.
 
