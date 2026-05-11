@@ -5,7 +5,10 @@ description: Use for FreightHero project tasks across ai_watchtower, backend, fr
 
 When working on a freight hero project (ai_watchtower, backend, frontend, robin-error-dashboard) follow the rules below:
 
-0. At the start of every session, run `cocoindex update` in the freighthero project root to refresh the codebase index before any search operations.
+0. At the start of every session, refresh the codebase index by running the following from `coding-cli/freighthero-mcp/`:
+   ```bash
+   source .venv/bin/activate && cocoindex update codebase_index.py:FreightHeroCodebase
+   ```
 1. Always call #freighthero-codebase/:search_codebase with a good query derived from the user prompt.
 2. Use the returned passages as the primary evidence.
 3. Include source identifiers from the tool output when you reference facts.
