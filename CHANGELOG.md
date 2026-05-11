@@ -3,6 +3,7 @@
 ## 2026-05-11
 
 - Added a canonical PR template and updated shipped FreightHero PR guidance to use it when creating pull requests.
+- Updated shipped FreightHero skill guidance so new AI Watchtower Robot workflow suites update the CI selector inventory and reuse the shared workflow resource.
 
 ## 2026-05-05
 

@@ -41,6 +41,10 @@ func TestShippedAssetsCoverRequiredPromptGuidance(t *testing.T) {
 			"coding-cli/.github/PULL_REQUEST_TEMPLATE.md",
 			"Preserve headings",
 			"fill every section with concrete details",
+			"ai_watchtower/scripts/ci/select_robot_tests.py",
+			"ROBOT_SUITES",
+			"workflow-common.resource",
+			"Accelerate Load Time",
 		},
 		filepath.Join(root, "skills", "batman-understanding", "SKILL.md"): {
 			"## Current Behavior",
