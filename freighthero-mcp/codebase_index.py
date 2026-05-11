@@ -15,7 +15,7 @@ from cocoindex.resources.chunk import Chunk
 from cocoindex.resources.file import FileLike, PatternFilePathMatcher
 
 WORKDIR = pathlib.Path(__file__).resolve().parent
-REPO_ROOT = pathlib.Path(os.getenv("FREIGHTHERO_REPO_ROOT", WORKDIR.parent)).resolve()
+REPO_ROOT = pathlib.Path(os.getenv("FREIGHTHERO_REPO_ROOT", WORKDIR.parent.parent)).resolve()
 INDEX_OUTPUT_DIR = pathlib.Path(
     os.getenv("CODEBASE_INDEX_DIR", WORKDIR / ".cocoindex" / "codebase-index")
 )
