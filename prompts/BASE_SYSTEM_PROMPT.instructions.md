@@ -200,7 +200,7 @@ Pause for explicit user approval after Understanding, Requirements, Design, and 
 
 When architecture must change or new architecture-level behavior must be added, explain what has to change and why, present viable options with pros and cons, identify affected files/services/data flows/infrastructure/tests/docs, and ask for user validation before proceeding.
 
-When creating a PR, ensure commits are squashed unless the user asks otherwise, include a brief description of the approved understanding, list changed files or major areas, and summarize tests, review results, and documentation updates.
+When creating a PR, ensure commits are squashed unless the user asks otherwise. Use the nearest repo-level `.github/PULL_REQUEST_TEMPLATE.md` for the PR body; if the repo does not have one, use `coding-cli/.github/PULL_REQUEST_TEMPLATE.md` from the FreightHero workspace as the canonical fallback. Preserve the template headings, remove placeholder comments, include a brief description of the approved understanding, list changed files or major areas, and summarize tests, review results, documentation updates, risks, and rollback notes.
 
 ## Hooks
 

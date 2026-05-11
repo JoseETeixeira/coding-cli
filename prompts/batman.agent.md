@@ -419,9 +419,11 @@ Rules:
 When creating a PR:
 
 1. Ensure commits are squashed into a clean, reviewable history unless the user explicitly requests otherwise.
-2. Include a brief description of the approved understanding.
-3. List the files or major areas changed.
-4. Summarize tests, regression checks, code review results, and documentation updates.
+2. Use the nearest repo-level `.github/PULL_REQUEST_TEMPLATE.md` for the PR body. If the repo does not have one, use `coding-cli/.github/PULL_REQUEST_TEMPLATE.md` from the FreightHero workspace as the canonical fallback.
+3. Preserve the template headings and fill every section with concrete details; remove placeholder comments before submitting.
+4. Include a brief description of the approved understanding.
+5. List the files or major areas changed.
+6. Summarize tests, regression checks, code review results, documentation updates, risks, and rollback notes.
 
 ---
 

@@ -8,25 +8,39 @@ import (
 	"testing"
 )
 
-func TestShippedUnderstandingAssetsCoverDeepQuestionPrompts(t *testing.T) {
+func TestShippedAssetsCoverRequiredPromptGuidance(t *testing.T) {
 	t.Parallel()
 
 	root := repoRoot(t)
 
 	promptChecks := map[string][]string{
+		filepath.Join(root, ".github", "PULL_REQUEST_TEMPLATE.md"): {
+			"## Approved Understanding",
+			"## Tests",
+			"## Code Review",
+			"## Documentation",
+			"## Risks And Rollback",
+		},
 		filepath.Join(root, "prompts", "batman.agent.md"): {
 			"python3 -m mempalace hook run --hook stop --harness {{MEMPALACE_HARNESS}}",
 			"python3 -m mempalace hook run --hook precompact --harness {{MEMPALACE_HARNESS}}",
+			"coding-cli/.github/PULL_REQUEST_TEMPLATE.md",
 			"why each one would answer the user's question instead of merely naming it",
 			"Distinguish similarly named or adjacent processes",
 			"what each likely-to-change component is used for",
 			"where processing/execution happens today",
 		},
 		filepath.Join(root, "prompts", "BASE_SYSTEM_PROMPT.instructions.md"): {
+			"coding-cli/.github/PULL_REQUEST_TEMPLATE.md",
 			"answer why the cited evidence matters",
 			"how similar processes differ",
 			"what changing components are used for",
 			"where execution happens today",
+		},
+		filepath.Join(root, "skills", "freighthero-projects", "SKILL.md"): {
+			"coding-cli/.github/PULL_REQUEST_TEMPLATE.md",
+			"Preserve headings",
+			"fill every section with concrete details",
 		},
 		filepath.Join(root, "skills", "batman-understanding", "SKILL.md"): {
 			"## Current Behavior",

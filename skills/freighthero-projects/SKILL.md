@@ -13,5 +13,6 @@ When working on a freight hero project (ai_watchtower, backend, frontend, robin-
 5. If you need to understand how something works, use the #freighthero-codebase/:explain_code tool
 6. Do a code review following the instructions in codeReview.instructions.md for any code you generate or modify.
 7. Any command that requires environment variables must be prefixed with `doppler run -c <STAGE> --` where `<STAGE>` is the appropriate config stage (e.g. `dev`, `stg`, `prd`). Never run such commands without Doppler injection — do not assume env vars are already set in the shell.
+8. When creating a PR, use the nearest repo-level `.github/PULL_REQUEST_TEMPLATE.md` for the body. If absent, use `coding-cli/.github/PULL_REQUEST_TEMPLATE.md` from the FreightHero workspace as the canonical fallback. Preserve headings, remove placeholder comments, and fill every section with concrete details.
 
 IMPORTANT: Always ensure that any code you generate or modify is tested and reviewed through the `codeReview.instructions.md` for best practices.

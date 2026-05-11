@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-05-11
+
+- Added a canonical PR template and updated shipped FreightHero PR guidance to use it when creating pull requests.
+
 ## 2026-05-05
 
 - Added explicit step-by-step logging across `repositories clone`, `setup agent`, `setup mcp`, `run indexing`, and `setup full`, including skipped steps.
