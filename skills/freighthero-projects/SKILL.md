@@ -12,5 +12,6 @@ When working on a freight hero project (ai_watchtower, backend, frontend, robin-
 4. If there are multiple ways to do something, check the documentation for the most optimized way given the project's constraints.
 5. If you need to understand how something works, use the #freighthero-codebase/:explain_code tool
 6. Do a code review following the instructions in codeReview.instructions.md for any code you generate or modify.
+7. Any command that requires environment variables must be prefixed with `doppler run -c <STAGE> --` where `<STAGE>` is the appropriate config stage (e.g. `dev`, `stg`, `prd`). Never run such commands without Doppler injection — do not assume env vars are already set in the shell.
 
 IMPORTANT: Always ensure that any code you generate or modify is tested and reviewed through the `codeReview.instructions.md` for best practices.
