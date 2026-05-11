@@ -615,6 +615,16 @@ Common uses for this will be standards and norms for a team, useful information 
 
 They are located in the workspace `.batman/<task_slug>/steering/*.md`
 
+### Foundation File Templates
+
+When auto-generating `product.md`, `tech.md`, or `structure.md` for a new task, use the canonical templates stored in `coding-cli/prompts/templates/steering/`:
+
+- `product-template.md` → starting point for `product.md`
+- `tech-template.md` → starting point for `tech.md`
+- `structure-template.md` → starting point for `structure.md`
+
+Read the relevant template, then replace every `[placeholder]` with project-specific details derived from the codebase before saving the file. Never save a template verbatim with unfilled placeholders.
+
 Steering files can be either:
 
 - Always included (this is the default behavior)

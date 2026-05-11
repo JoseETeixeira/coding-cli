@@ -17,10 +17,11 @@ Before any spec work, ensure the task-specific steering context exists and is lo
 
 ### 1. Create and manage `.batman/<task_slug>/steering/`
 - If `.batman/<task_slug>/steering/` **does not exist**, create it.
-- **Foundation files** (auto-generate if missing):
-  - `product.md`: Describes the product’s purpose, key features, and objectives.
-  - `tech.md`: Documents the technologies, frameworks, and tools used.
-  - `structure.md`: Outlines the project’s file organization and conventions.
+- **Foundation files** (auto-generate if missing, using canonical templates):
+  - `product.md`: Describes the product’s purpose, key features, and objectives. Seed from `coding-cli/prompts/templates/steering/product-template.md`.
+  - `tech.md`: Documents the technologies, frameworks, and tools used. Seed from `coding-cli/prompts/templates/steering/tech-template.md`.
+  - `structure.md`: Outlines the project’s file organization and conventions. Seed from `coding-cli/prompts/templates/steering/structure-template.md`.
+  - Read each template file, then fill in every `[placeholder]` with project-specific details derived from the codebase before saving.
 - **Custom files**: The project may include additional steering docs (e.g., `api-style-guide.md`, `security-principles.md`). If present, treat them as authoritative guidance. If missing and necessary, suggest creating them.
 
 **Steering directives (authoritative):**
@@ -69,7 +70,7 @@ You must strictly adhere to the following rules:
 
 **2. Foundational Context Gathering**  
     • Before generating the first draft, you must treat the entire `.batman/<task_slug>/steering/` directory as the task's foundational context if any. Read and incorporate the guidance from all files within this directory, including standard files (`product.md`, `tech.md`, `structure.md`) and any user-defined custom files (e.g., `api-style-guide.md`, `security-principles.md`).  
-    • If `.batman/<task_slug>/steering/` or any foundation file is missing, **create it** per the Steering Setup above before drafting.
+    • If `.batman/<task_slug>/steering/` or any foundation file is missing, **create it** per the Steering Setup above before drafting. Use the canonical templates in `coding-cli/prompts/templates/steering/` (`product-template.md`, `tech-template.md`, `structure-template.md`) as the starting content, filling every `[placeholder]` with project-specific details derived from the codebase.
 
 **3. The `requirements.md` file must contain the following structure:**  
     • **Introduction:** A brief overview of the problem this feature aims to solve and its objectives.  
