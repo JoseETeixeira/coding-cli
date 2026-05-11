@@ -28,35 +28,40 @@ Ensure the agent always consults the authoritative AI Watchtower documentation w
 
 ### Step 1: Identify the relevant wiki page
 
-Map the user's question to the closest wiki topic:
+Clone the wiki (see Step 2) if not already present, then list available pages to find the best match for the user's question:
 
-| Topic | Wiki Page |
-|---|---|
-| Getting started, setup, permissions, deployment | [Setup and Onboarding](https://github.com/Freight-Hero/ai_watchtower/wiki/Setup-and-Onboarding) |
-| Runtime topology, request flow, system boundaries | [System Architecture](https://github.com/Freight-Hero/ai_watchtower/wiki/System-Architecture) |
-| Repository layout, packages, bootstrap, routes | [Application Structure](https://github.com/Freight-Hero/ai_watchtower/wiki/Application-Structure) |
-| DynamoDB tables, status enums, persistence | [Data Model](https://github.com/Freight-Hero/ai_watchtower/wiki/Data-Model) |
-| FastAPI routes, request/response contracts | [API Endpoints](https://github.com/Freight-Hero/ai_watchtower/wiki/API-Endpoints) |
-| LangGraph workflows, routines, skills, Robin GPT | [Workflow Capabilities](https://github.com/Freight-Hero/ai_watchtower/wiki/Workflow-Capabilities) |
-| Skills system, intents, broker profiles, composition | [Skills Architecture](https://github.com/Freight-Hero/ai_watchtower/wiki/Skills-Architecture) |
-| Multipick/multidrop stops, lifecycle, task changes | [Multipick / Multidrop](https://github.com/Freight-Hero/ai_watchtower/wiki/Multipick-Multidrop) |
-| Redis, SQS, Celery, worker architecture | [Queue and Worker Architecture](https://github.com/Freight-Hero/ai_watchtower/wiki/Queue-and-Worker-Architecture) |
-| Terraform, AWS resources, deployment topology | [Infrastructure](https://github.com/Freight-Hero/ai_watchtower/wiki/Infrastructure) |
-| Logging, metrics, health checks, monitoring | [Logging and Observability](https://github.com/Freight-Hero/ai_watchtower/wiki/Logging-and-Observability) |
-| Robin GPT chat, retrieval, MCP tools | [Robin GPT](https://github.com/Freight-Hero/ai_watchtower/wiki/Robin-GPT) |
-| Terminology and definitions | [Glossary](https://github.com/Freight-Hero/ai_watchtower/wiki/Glossary) |
+```bash
+ls /tmp/ai_watchtower_wiki/*.md
+```
 
-### Step 2: Read the wiki page
+Each `.md` filename is a wiki page slug (e.g. `Skills-Architecture.md`). Pick the page whose name best matches the user's topic. Read the entire page rather than just snippets — architectural understanding often depends on the full context.
 
-Use `fetch_webpage` to retrieve the current wiki content. The wiki is published from `ai_watchtower/docs/wiki/` via GitHub Actions.
+### Step 2: Fetch wiki content
 
-Example:
+Prefer cloning the wiki repo for reliable access to full page content. On first use in a session (or when content may be stale), clone it:
+
+```bash
+git clone https://github.com/Freight-Hero/ai_watchtower.wiki.git /tmp/ai_watchtower_wiki --depth=1 2>/dev/null \
+  || git -C /tmp/ai_watchtower_wiki pull
+```
+
+Then read the relevant page directly:
+
+```bash
+# Page filenames mirror the wiki slug, e.g. Skills-Architecture.md
+read_file: /tmp/ai_watchtower_wiki/<Page-Slug>.md
+```
+
+If cloning is not possible, fall back to fetching via URL:
+
 ```
 fetch_webpage: {
-  urls: ["https://github.com/Freight-Hero/ai_watchtower/wiki/Skills-Architecture"],
-  query: "How does broker profile composition work?"
+  urls: ["https://github.com/Freight-Hero/ai_watchtower/wiki/<Page-Slug>"],
+  query: "..."
 }
 ```
+
+You may also browse `https://github.com/Freight-Hero/ai_watchtower/wiki` to discover pages not listed in the table above.
 
 ### Step 3: Cross-reference with code
 
