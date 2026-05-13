@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -19,7 +20,17 @@ const (
 	managedStart                = "<!-- freighthero:start -->"
 	managedEnd                  = "<!-- freighthero:end -->"
 	mempalaceHarnessPlaceholder = "{{MEMPALACE_HARNESS}}"
+
+	// vscodeBatmanFrontmatterTools is the tools list in batman.agent.md as authored for the VS Code Batman extension.
+	vscodeBatmanFrontmatterTools = "tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'mempalace/*', browser, 'pylance-mcp-server/*', 'freighthero-codebase/*', todo]"
+
+	// claudeCodeFrontmatterTools is the Claude Code-compatible replacement installed to ~/.claude/agents/.
+	claudeCodeFrontmatterTools = "tools: [Bash, Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion, WebFetch, WebSearch, TodoWrite, mcp__mempalace__mempalace_status, mcp__mempalace__mempalace_search, mcp__mempalace__mempalace_kg_add, mcp__mempalace__mempalace_kg_query, mcp__mempalace__mempalace_kg_invalidate, mcp__mempalace__mempalace_diary_write, mcp__freighthero-codebase__search_codebase, mcp__freighthero-codebase__explain_code, mcp__freighthero-codebase__analyze_error, mcp__freighthero-codebase__indexing_status]"
 )
+
+// frontmatterHooksRe matches the YAML hooks block in batman.agent.md frontmatter.
+// Claude Code agent files do not support in-file hooks; hooks belong in settings.json.
+var frontmatterHooksRe = regexp.MustCompile(`(?m)^hooks:\n(?:[ \t]+.*\n)+`)
 
 type SyncOptions struct {
 	Force bool
@@ -133,8 +144,30 @@ func RenderTemplate(content []byte, harness string, sourcePath string) []byte {
 		return content
 	}
 
-	rendered := strings.ReplaceAll(string(content), mempalaceHarnessPlaceholder, harness)
+	rendered := string(content)
+	if harness == string(host.HostClaudeCode) {
+		rendered = applyClaudeCodeTransforms(rendered)
+	}
+
+	rendered = strings.ReplaceAll(rendered, mempalaceHarnessPlaceholder, harness)
 	return []byte(strings.ReplaceAll(rendered, "--harness copilot", "--harness "+harness))
+}
+
+// applyClaudeCodeTransforms rewrites the batman.agent.md template for the Claude Code host.
+// It replaces VS Code Batman tool references with Claude Code native equivalents, swaps the
+// frontmatter tools list, and strips the hooks block (not supported in Claude Code agent files).
+func applyClaudeCodeTransforms(content string) string {
+	// Remove the frontmatter hooks block — Claude Code agent files don't support in-file hooks.
+	content = frontmatterHooksRe.ReplaceAllString(content, "")
+
+	// Replace VS Code Batman tool invocation syntax with Claude Code native tools.
+	content = strings.ReplaceAll(content, "#tool:vscode/askQuestions", "AskUserQuestion")
+	content = strings.ReplaceAll(content, "#tool:agent/runSubagent", "Agent")
+
+	// Replace the frontmatter tools list with Claude Code-compatible tool names.
+	content = strings.ReplaceAll(content, vscodeBatmanFrontmatterTools, claudeCodeFrontmatterTools)
+
+	return content
 }
 
 func syncDirectory(sourceDir string, destinationDir string, harness string, options SyncOptions) (AssetResult, error) {
