@@ -123,6 +123,7 @@ func ResolveProfile(kind HostKind, resolver paths.Resolver) (HostProfile, error)
 				PromptDir:       resolver.ClaudeCommandDir(),
 				AgentDir:        resolver.ClaudeAgentDir(),
 				SkillDir:        resolver.ClaudeSkillDir(),
+				InstructionDir:  resolver.ClaudeRoot(),
 				InstructionFile: resolver.ClaudeInstructionFile(),
 				MCPConfigPath:   resolver.ClaudeConfigPath(),
 				SettingsPath:    resolver.ClaudeSettingsPath(),

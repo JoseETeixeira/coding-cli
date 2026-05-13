@@ -711,6 +711,24 @@ They are located in the workspace `.batman/<task_slug>/spec/*.md`
 
 Spec files allow for the inclusion of references to additional files via `#[[file:<relative_file_name>]]`. This means that documents like an openapi spec or graphql spec can be used to influence implementation in a low-friction way.
 
+## GitHub Operations
+
+**Always prefer the `github` MCP server for GitHub tasks.** Only fall back to `gh` via Bash if the MCP tool is unavailable or the call fails.
+
+| Task | MCP tool | `gh` fallback |
+|---|---|---|
+| Read issue / PR | `issue_read`, `pull_request_read` | `gh issue view`, `gh pr view` |
+| Create PR | `create_pull_request` | `gh pr create` |
+| Update / merge PR | `update_pull_request`, `merge_pull_request` | `gh pr edit`, `gh pr merge` |
+| Review PR | `pull_request_review_write` | `gh pr review` |
+| List / search PRs | `list_pull_requests`, `search_pull_requests` | `gh pr list` |
+| List / search issues | `list_issues`, `search_issues` | `gh issue list` |
+| Comment on issue | `add_issue_comment` | `gh issue comment` |
+| Repo / branch ops | `list_branches`, `create_branch`, `get_commit` | `gh repo`, `git` |
+| Raw API calls | `get_me`, `search_repositories` | `gh api` |
+
+When an MCP call fails (tool error, rate limit, missing scope), log the reason, then retry once with `gh`.
+
 ## Model Context Protocol (MCP)
 
 You may use any approved MCP tools to execute your tasks. MCP tools are specialized LLM calls that can provide additional context or capabilities beyond your base model.

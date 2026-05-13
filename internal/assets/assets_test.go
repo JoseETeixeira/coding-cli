@@ -23,7 +23,8 @@ func TestRenderTemplateSubstitutesHarness(t *testing.T) {
 func TestRenderTemplateAppliesClaudeCodeTransforms(t *testing.T) {
 	t.Parallel()
 
-	input := vscodeBatmanFrontmatterTools + "\n" +
+	input := "name: \"Batman Agent\"\n" +
+		vscodeBatmanFrontmatterTools + "\n" +
 		"hooks:\n" +
 		"   Stop:\n" +
 		"      - {type: command, command: \"python3 -m mempalace hook run --hook stop --harness {{MEMPALACE_HARNESS}}\", timeout: 30}\n" +
@@ -36,6 +37,12 @@ func TestRenderTemplateAppliesClaudeCodeTransforms(t *testing.T) {
 
 	if !strings.Contains(rendered, "tools: [Bash,") {
 		t.Fatalf("expected Claude Code tools list, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "mcp__github__get_me") {
+		t.Fatalf("expected GitHub tools in Claude Code tools list, got %q", rendered)
+	}
+	if !strings.Contains(rendered, `model: "opus"`) {
+		t.Fatalf("model field should be preserved, got %q", rendered)
 	}
 	if strings.Contains(rendered, "vscode, execute") {
 		t.Fatalf("VS Code tools should not be present, got %q", rendered)
@@ -63,7 +70,8 @@ func TestRenderTemplateAppliesClaudeCodeTransforms(t *testing.T) {
 func TestRenderTemplatePreservesVSCodeToolsForCopilot(t *testing.T) {
 	t.Parallel()
 
-	input := vscodeBatmanFrontmatterTools + "\n" +
+	input := "name: \"Batman Agent\"\n" +
+		vscodeBatmanFrontmatterTools + "\n" +
 		"Use #tool:vscode/askQuestions to clarify.\n"
 
 	rendered := string(RenderTemplate([]byte(input), "codex", "batman.agent.md"))
@@ -73,6 +81,9 @@ func TestRenderTemplatePreservesVSCodeToolsForCopilot(t *testing.T) {
 	}
 	if !strings.Contains(rendered, "vscode, execute") {
 		t.Fatalf("copilot render should preserve VS Code tools list, got %q", rendered)
+	}
+	if strings.Contains(rendered, `model: "opus"`) {
+		t.Fatalf("copilot render must not inject model field, got %q", rendered)
 	}
 }
 
@@ -192,6 +203,60 @@ func TestSyncAssetsSkipsConflictingFileWithoutForce(t *testing.T) {
 	}
 }
 
+func TestSyncAssetsInstallsInstructionsForClaudeCode(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	promptsDir := filepath.Join(root, "coding-cli", "prompts")
+	if err := os.MkdirAll(promptsDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "coding-cli", "skills"), 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(promptsDir, "batman.agent.md"), []byte("agent"), 0o644); err != nil {
+		t.Fatalf("WriteFile returned error: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(promptsDir, "codeReview.instructions.md"), []byte("# Code Review"), 0o644); err != nil {
+		t.Fatalf("WriteFile returned error: %v", err)
+	}
+
+	claudeRoot := filepath.Join(root, "claude")
+	instructionFile := filepath.Join(claudeRoot, "CLAUDE.md")
+	layout := repos.RepoLayout{CodingCLI: filepath.Join(root, "coding-cli")}
+	profile := host.HostProfile{
+		Kind:    host.HostClaudeCode,
+		Harness: string(host.HostClaudeCode),
+		Roots: host.HostRoots{
+			AgentDir:        filepath.Join(claudeRoot, "agents"),
+			InstructionDir:  claudeRoot,
+			InstructionFile: instructionFile,
+		},
+	}
+
+	if _, err := SyncAssets(layout, profile, SyncOptions{}); err != nil {
+		t.Fatalf("SyncAssets returned error: %v", err)
+	}
+
+	// Individual instruction file must be installed to InstructionDir so Batman can read it explicitly.
+	individualPath := filepath.Join(claudeRoot, "codeReview.instructions.md")
+	if _, err := os.Stat(individualPath); err != nil {
+		t.Fatalf("expected codeReview.instructions.md at %s, got error: %v", individualPath, err)
+	}
+
+	// Content must also be merged into CLAUDE.md.
+	merged, err := os.ReadFile(instructionFile)
+	if err != nil {
+		t.Fatalf("ReadFile CLAUDE.md returned error: %v", err)
+	}
+	if !strings.Contains(string(merged), managedStart) {
+		t.Fatalf("expected managed block in CLAUDE.md, got %q", string(merged))
+	}
+	if !strings.Contains(string(merged), "# Code Review") {
+		t.Fatalf("expected instruction content in CLAUDE.md, got %q", string(merged))
+	}
+}
+
 func TestSyncAssetsInstallsAgentToClaudeAgentDirNotCommandDir(t *testing.T) {
 	t.Parallel()
 
@@ -258,6 +323,9 @@ func TestSyncAssetsInstallsAgentToClaudeAgentDirNotCommandDir(t *testing.T) {
 	}
 	if !strings.Contains(rendered, "tools: [Bash,") {
 		t.Fatal("Claude Code tools list should be present in claude-code install")
+	}
+	if !strings.Contains(rendered, "mcp__github__get_me") {
+		t.Fatal("GitHub MCP tools should be present in claude-code install")
 	}
 }
 

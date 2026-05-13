@@ -26,7 +26,7 @@ const (
 	vscodeBatmanFrontmatterTools = "tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'mempalace/*', browser, 'pylance-mcp-server/*', 'freighthero-codebase/*', todo]"
 
 	// claudeCodeFrontmatterTools is the Claude Code-compatible replacement installed to ~/.claude/agents/.
-	claudeCodeFrontmatterTools = "tools: [Bash, Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion, WebFetch, WebSearch, TodoWrite, mcp__mempalace__mempalace_status, mcp__mempalace__mempalace_search, mcp__mempalace__mempalace_kg_add, mcp__mempalace__mempalace_kg_query, mcp__mempalace__mempalace_kg_invalidate, mcp__mempalace__mempalace_diary_write, mcp__freighthero-codebase__search_codebase, mcp__freighthero-codebase__explain_code, mcp__freighthero-codebase__analyze_error, mcp__freighthero-codebase__indexing_status]"
+	claudeCodeFrontmatterTools = "tools: [Bash, Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion, WebFetch, WebSearch, TodoWrite, mcp__mempalace__mempalace_status, mcp__mempalace__mempalace_search, mcp__mempalace__mempalace_kg_add, mcp__mempalace__mempalace_kg_query, mcp__mempalace__mempalace_kg_invalidate, mcp__mempalace__mempalace_diary_write, mcp__freighthero-codebase__search_codebase, mcp__freighthero-codebase__explain_code, mcp__freighthero-codebase__analyze_error, mcp__freighthero-codebase__indexing_status, mcp__github__get_me, mcp__github__issue_read, mcp__github__issue_write, mcp__github__list_issues, mcp__github__search_issues, mcp__github__add_issue_comment, mcp__github__create_pull_request, mcp__github__pull_request_read, mcp__github__update_pull_request, mcp__github__merge_pull_request, mcp__github__pull_request_review_write, mcp__github__list_pull_requests, mcp__github__search_pull_requests, mcp__github__add_comment_to_pending_review, mcp__github__list_branches, mcp__github__create_branch, mcp__github__list_commits, mcp__github__get_commit, mcp__github__get_file_contents, mcp__github__search_repositories, mcp__github__search_code, mcp__github__create_or_update_file, mcp__github__push_files, mcp__github__list_notifications, mcp__github__get_notification_details]"
 )
 
 // frontmatterHooksRe matches the YAML hooks block in batman.agent.md frontmatter.
@@ -243,7 +243,8 @@ func RenderTemplate(content []byte, harness string, sourcePath string) []byte {
 
 // applyClaudeCodeTransforms rewrites the batman.agent.md template for the Claude Code host.
 // It replaces VS Code Batman tool references with Claude Code native equivalents, swaps the
-// frontmatter tools list, and strips the hooks block (not supported in Claude Code agent files).
+// frontmatter tools list, strips the hooks block (not supported in Claude Code agent files),
+// and injects the model field so Claude Code sessions use the appropriate model tier.
 func applyClaudeCodeTransforms(content string) string {
 	// Remove the frontmatter hooks block — Claude Code agent files don't support in-file hooks.
 	content = frontmatterHooksRe.ReplaceAllString(content, "")
@@ -254,6 +255,9 @@ func applyClaudeCodeTransforms(content string) string {
 
 	// Replace the frontmatter tools list with Claude Code-compatible tool names.
 	content = strings.ReplaceAll(content, vscodeBatmanFrontmatterTools, claudeCodeFrontmatterTools)
+
+	// Inject the model field after the name line — Claude Code only, not VS Code / Copilot.
+	content = strings.ReplaceAll(content, "name: \"Batman Agent\"\n", "name: \"Batman Agent\"\nmodel: \"opus\"\n")
 
 	return content
 }
