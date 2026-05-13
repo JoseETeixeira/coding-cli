@@ -25,8 +25,67 @@ const (
 	// vscodeBatmanFrontmatterTools is the tools list in batman.agent.md as authored for the VS Code Batman extension.
 	vscodeBatmanFrontmatterTools = "tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'mempalace/*', browser, 'pylance-mcp-server/*', 'freighthero-codebase/*', todo]"
 
-	// claudeCodeFrontmatterTools is the Claude Code-compatible replacement installed to ~/.claude/agents/.
-	claudeCodeFrontmatterTools = "tools: [Bash, Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion, WebFetch, WebSearch, TodoWrite, mcp__mempalace__mempalace_status, mcp__mempalace__mempalace_search, mcp__mempalace__mempalace_kg_add, mcp__mempalace__mempalace_kg_query, mcp__mempalace__mempalace_kg_invalidate, mcp__mempalace__mempalace_diary_write, mcp__freighthero-codebase__search_codebase, mcp__freighthero-codebase__explain_code, mcp__freighthero-codebase__analyze_error, mcp__freighthero-codebase__indexing_status, mcp__github__get_me, mcp__github__issue_read, mcp__github__issue_write, mcp__github__list_issues, mcp__github__search_issues, mcp__github__add_issue_comment, mcp__github__create_pull_request, mcp__github__pull_request_read, mcp__github__update_pull_request, mcp__github__merge_pull_request, mcp__github__pull_request_review_write, mcp__github__list_pull_requests, mcp__github__search_pull_requests, mcp__github__add_comment_to_pending_review, mcp__github__list_branches, mcp__github__create_branch, mcp__github__list_commits, mcp__github__get_commit, mcp__github__get_file_contents, mcp__github__search_repositories, mcp__github__search_code, mcp__github__create_or_update_file, mcp__github__push_files, mcp__github__list_notifications, mcp__github__get_notification_details]"
+	// Note: Claude Code installs intentionally OMIT the frontmatter tools list. Per Claude Code agent
+	// semantics, omitting `tools:` means the agent inherits every tool available to the session — including
+	// any claude.ai cloud connectors (Notion, Gmail, Calendar, Drive) and any future MCP server the user
+	// adds. Maintaining an explicit whitelist would silently shadow new servers and is the root cause of
+	// the "MCP connected but tools not in inventory" symptom. See applyClaudeCodeTransforms below.
+
+	// claudeCodeSpecSyncBlock is the Claude-Code-only section appended to batman.agent.md at install time.
+	// It instructs the agent to keep the workspace-root CLAUDE.md synchronized with the active Batman spec
+	// so future Claude Code sessions pick up the in-flight spec context automatically. It MUST NOT be
+	// installed for other harnesses (VS Code, Codex, Batman) — those hosts use different session-bootstrap files.
+	claudeCodeSpecSyncBlock = `
+## CRITICAL: Spec-Driven CLAUDE.md Synchronization (Claude Code only)
+
+When the user is working on a Batman spec under ` + "`" + `.batman/<task_slug>/` + "`" + `, you MUST keep the workspace-root ` + "`" + `CLAUDE.md` + "`" + ` in sync so future Claude Code sessions pick up the active spec context.
+
+### Trigger points
+
+Create or update the workspace ` + "`" + `CLAUDE.md` + "`" + ` at these moments:
+
+1. Spec creation — immediately after writing the first draft of ` + "`" + `.batman/<task_slug>/steering/understanding.md` + "`" + ` in Phase 1.
+2. After every planning-phase approval — Understanding, Requirements, Design, Task Planning.
+3. On entering Phase 5 (Implementation).
+4. On spec completion — clear the managed block after the spec PR is merged or the spec is abandoned.
+
+### Target file
+
+Detect the workspace root portably — do not hardcode an absolute path:
+
+- Walk up from the active file until you reach a directory containing two or more of ` + "`" + `ai_watchtower/` + "`" + `, ` + "`" + `backend/` + "`" + `, ` + "`" + `frontend/` + "`" + `, ` + "`" + `robin-error-dashboard/` + "`" + `, ` + "`" + `coding-cli/` + "`" + `, ` + "`" + `freighthero-mcp/` + "`" + ` as direct children. Treat that directory as the workspace root.
+- If the workspace root already contains a ` + "`" + `CLAUDE.md` + "`" + `, update it.
+- Otherwise, create ` + "`" + `<workspace-root>/CLAUDE.md` + "`" + `.
+- Never modify content outside the managed block.
+
+### Managed block format
+
+Wrap the spec snapshot in markers so updates are idempotent:
+
+` + "```" + `markdown
+<!-- batman:spec:start -->
+## Active Batman Spec(s)
+
+- **Task slug**: <task_slug>
+- **Current phase**: <Understanding | Requirements | Design | Task Planning | Implementation | Tests | Code Review | Documentation>
+- **Steering**: ` + "`" + `.batman/<task_slug>/steering/understanding.md` + "`" + ` (status: <draft | approved>)
+- **Requirements**: ` + "`" + `.batman/<task_slug>/spec/requirements.md` + "`" + ` (status: <not started | draft | approved>)
+- **Design**: ` + "`" + `.batman/<task_slug>/spec/design.md` + "`" + ` (status: <not started | draft | approved>)
+- **Tasks**: ` + "`" + `.batman/<task_slug>/spec/tasks.md` + "`" + ` (status: <not started | draft | approved>)
+- **Last updated**: <YYYY-MM-DD>
+
+Read the steering ` + "`" + `understanding.md` + "`" + ` first on session start. Treat each artifact as the source of truth for its phase.
+<!-- batman:spec:end -->
+` + "```" + `
+
+### Rules
+
+- Idempotent: re-running the sync replaces the prior block in place; never append duplicate blocks.
+- Never alter content outside the ` + "`" + `<!-- batman:spec:start -->` + "`" + ` / ` + "`" + `<!-- batman:spec:end -->` + "`" + ` markers.
+- Multiple in-flight specs: list each as its own subsection inside the managed block, with its own phase and approval rows.
+- Completion or abandonment: remove the entire managed block including markers.
+- This sync is Claude-Code-specific. Do not run it for VS Code, Codex, or other hosts.
+`
 )
 
 // frontmatterHooksRe matches the YAML hooks block in batman.agent.md frontmatter.
@@ -242,9 +301,12 @@ func RenderTemplate(content []byte, harness string, sourcePath string) []byte {
 }
 
 // applyClaudeCodeTransforms rewrites the batman.agent.md template for the Claude Code host.
-// It replaces VS Code Batman tool references with Claude Code native equivalents, swaps the
-// frontmatter tools list, strips the hooks block (not supported in Claude Code agent files),
-// and injects the model field so Claude Code sessions use the appropriate model tier.
+// It replaces VS Code Batman tool references with Claude Code native equivalents, removes the
+// frontmatter tools list entirely (so the agent inherits every session-available tool, including
+// claude.ai cloud connectors), strips the hooks block (not supported in Claude Code agent files),
+// injects the model field so Claude Code sessions use the appropriate model tier, and appends
+// the Claude-Code-only spec-sync instructions (workspace CLAUDE.md kept in sync with active
+// Batman spec).
 func applyClaudeCodeTransforms(content string) string {
 	// Remove the frontmatter hooks block — Claude Code agent files don't support in-file hooks.
 	content = frontmatterHooksRe.ReplaceAllString(content, "")
@@ -253,11 +315,19 @@ func applyClaudeCodeTransforms(content string) string {
 	content = strings.ReplaceAll(content, "#tool:vscode/askQuestions", "AskUserQuestion")
 	content = strings.ReplaceAll(content, "#tool:agent/runSubagent", "Agent")
 
-	// Replace the frontmatter tools list with Claude Code-compatible tool names.
-	content = strings.ReplaceAll(content, vscodeBatmanFrontmatterTools, claudeCodeFrontmatterTools)
+	// Drop the frontmatter tools list entirely. Omitting `tools:` makes the Claude Code agent inherit
+	// every tool available to the session — including any claude.ai cloud connectors (Notion, Gmail,
+	// Calendar, Drive) and future MCP servers added by the user. Keeping an explicit whitelist would
+	// silently shadow those tools.
+	content = strings.Replace(content, vscodeBatmanFrontmatterTools+"\n", "", 1)
 
 	// Inject the model field after the name line — Claude Code only, not VS Code / Copilot.
 	content = strings.ReplaceAll(content, "name: \"Batman Agent\"\n", "name: \"Batman Agent\"\nmodel: \"opus\"\n")
+
+	// Append the Claude-Code-only spec-sync section. Skip if it is already present so re-runs stay idempotent.
+	if !strings.Contains(content, "## CRITICAL: Spec-Driven CLAUDE.md Synchronization") {
+		content = strings.TrimRight(content, "\n") + "\n" + claudeCodeSpecSyncBlock
+	}
 
 	return content
 }

@@ -183,7 +183,30 @@ Spec files allow for the inclusion of references to additional files via `#[[fil
 
 ## Batman Project Workflow
 
-For new tasks or feature requests, Batman follows eight phases in order:
+### Workflow Trigger
+
+Before responding to any user request, classify it against the trigger set below. The full eight-phase Batman workflow is REQUIRED when ANY of these conditions hold:
+
+- Net-new feature work: new endpoint, new flow, new service, new agent/workflow/skill, new package, or new external integration.
+- Multi-file refactor that crosses module, package, or service boundaries.
+- Architecture change (see `Architecture Changes` below) — new infrastructure, changed orchestration, new cross-service contracts, changed SOPs/Skills behavior.
+- Processing a GitHub issue, Linear ticket, or any externally tracked work item.
+- Bug fix that needs cross-file investigation, has multiple suspect components, or has unclear root cause.
+- User explicitly says "spec", "plan", "design", "follow workflow", "new task", or names a tracked work item.
+- Change touches production-traffic surface with rollout or migration risk: DynamoDB schema, Lambda contracts, queue payloads, prompt/skill authoring under `ai_watchtower/app/skills/**`, rollout/gate code.
+
+The workflow is NOT used (handle inline, no spec) when ANY of these hold:
+
+- Single-file, obvious fix: typo, lint nit, formatting, comment correction.
+- Question-only request with no code change.
+- Exploratory commands: `git status`, `git log`, log inspection, doc reads, indexing checks.
+- Prompt, skill, configuration, or documentation edit where the user has already specified the exact change.
+- User explicitly says "skip workflow", "just do it", "no spec needed", "inline", "hotfix", or names the request as an emergency.
+- Cleanup the user names as drive-by, when scope is one or two files.
+
+Tie-break: when the request is ambiguous between workflow and inline, ask one targeted question ("workflow or inline?") with a recommended answer, then proceed. Do not silently default to either path.
+
+Once triggered, Batman follows eight phases in order:
 
 1. Understanding: search/explain the codebase, write `.batman/<task_slug>/steering/understanding.md`, answer why the cited evidence matters, how similar processes differ, what changing components are used for, and where execution happens today, then get user validation.
 2. Requirements: read `understanding.md`, follow `requirements.prompt.md`, and create/update `.batman/<task_slug>/spec/requirements.md`.
@@ -203,6 +226,33 @@ Before requesting user approval at the end of each planning phase (Understanding
 - Skip grilling only when the user explicitly says "skip grilling" or "no questions" for the current phase. Note the skip in the response.
 
 Pause for explicit user approval after Understanding, Requirements, Design, and Task Planning before moving to the next phase.
+
+### MANDATORY: FreightHero Codebase Search
+
+When the active workspace is a FreightHero monorepo or any sub-project under one, invocation of `freighthero-codebase/:search_codebase` is REQUIRED at every Discovery step.
+
+Workspace detection (any one signal qualifies — do not hardcode an absolute path):
+
+- The `freighthero-codebase/:search_codebase` tool is available in the current tool inventory. Strongest signal — if it is wired in, the workspace IS a FreightHero workspace by construction.
+- Walking up from the active file, a parent directory contains two or more of `ai_watchtower/`, `backend/`, `frontend/`, `robin-error-dashboard/`, `coding-cli/`, `freighthero-mcp/` as direct children. Treat that directory as the FreightHero workspace root.
+- The active file lies inside one of the above sub-project names whose sibling directories include another of them.
+
+Required at:
+
+- Phase 1 (Understanding) — at least one targeted query before drafting `understanding.md`.
+- Phase 2 (Requirements) Discovery — re-search informed by the approved understanding.
+- Phase 3 (Design) Discovery — re-search for architecture and pattern precedents.
+- Phase 4 (Task Planning) Discovery — re-search to map design components to concrete files and symbols.
+
+Skipping `freighthero-codebase/:search_codebase` in any of these steps for a FreightHero-workspace task is a workflow violation. If skipped, surface the violation, run the missing search, and re-draft the affected artifact before requesting approval.
+
+If `freighthero-codebase/:search_codebase` returns no results or errors:
+
+1. Check the index via `freighthero-codebase/:indexing_status`.
+2. If the index is stale or empty, instruct the user to refresh: `cd <workspace-root>/coding-cli/freighthero-mcp && source .venv/bin/activate && cocoindex update codebase_index.py:FreightHeroCodebase` (substitute the detected workspace root).
+3. Record the search outcome (empty / errored / successful + query used) in the affected phase artifact.
+
+The mandate does not apply when no detection signal fires.
 
 ## Architecture Changes
 

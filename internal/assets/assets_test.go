@@ -35,11 +35,8 @@ func TestRenderTemplateAppliesClaudeCodeTransforms(t *testing.T) {
 
 	rendered := string(RenderTemplate([]byte(input), "claude-code", "batman.agent.md"))
 
-	if !strings.Contains(rendered, "tools: [Bash,") {
-		t.Fatalf("expected Claude Code tools list, got %q", rendered)
-	}
-	if !strings.Contains(rendered, "mcp__github__get_me") {
-		t.Fatalf("expected GitHub tools in Claude Code tools list, got %q", rendered)
+	if strings.Contains(rendered, "tools: [") {
+		t.Fatalf("Claude Code render must omit the tools frontmatter so the agent inherits all session tools, got %q", rendered)
 	}
 	if !strings.Contains(rendered, `model: "opus"`) {
 		t.Fatalf("model field should be preserved, got %q", rendered)
@@ -84,6 +81,57 @@ func TestRenderTemplatePreservesVSCodeToolsForCopilot(t *testing.T) {
 	}
 	if strings.Contains(rendered, `model: "opus"`) {
 		t.Fatalf("copilot render must not inject model field, got %q", rendered)
+	}
+}
+
+func TestRenderTemplateInjectsSpecSyncForClaudeCode(t *testing.T) {
+	t.Parallel()
+
+	input := "name: \"Batman Agent\"\n" + vscodeBatmanFrontmatterTools + "\n"
+	rendered := string(RenderTemplate([]byte(input), "claude-code", "batman.agent.md"))
+
+	if !strings.Contains(rendered, "## CRITICAL: Spec-Driven CLAUDE.md Synchronization") {
+		t.Fatalf("expected Claude-Code spec-sync section heading, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "<!-- batman:spec:start -->") {
+		t.Fatalf("expected spec-sync managed-block start marker, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "<!-- batman:spec:end -->") {
+		t.Fatalf("expected spec-sync managed-block end marker, got %q", rendered)
+	}
+}
+
+func TestRenderTemplateSpecSyncInjectionIsIdempotent(t *testing.T) {
+	t.Parallel()
+
+	input := "name: \"Batman Agent\"\n" + vscodeBatmanFrontmatterTools + "\n"
+	first := string(RenderTemplate([]byte(input), "claude-code", "batman.agent.md"))
+	second := string(RenderTemplate([]byte(first), "claude-code", "batman.agent.md"))
+
+	count := strings.Count(second, "## CRITICAL: Spec-Driven CLAUDE.md Synchronization")
+	if count != 1 {
+		t.Fatalf("expected spec-sync heading exactly once after double render, got %d in %q", count, second)
+	}
+}
+
+func TestRenderTemplateOmitsSpecSyncForNonClaudeHosts(t *testing.T) {
+	t.Parallel()
+
+	for _, harness := range []string{"codex", "vscode", "batman"} {
+		harness := harness
+		t.Run(harness, func(t *testing.T) {
+			t.Parallel()
+
+			input := "name: \"Batman Agent\"\n" + vscodeBatmanFrontmatterTools + "\n"
+			rendered := string(RenderTemplate([]byte(input), harness, "batman.agent.md"))
+
+			if strings.Contains(rendered, "Spec-Driven CLAUDE.md Synchronization") {
+				t.Fatalf("harness %q must not receive Claude-Code spec-sync section, got %q", harness, rendered)
+			}
+			if strings.Contains(rendered, "batman:spec:start") {
+				t.Fatalf("harness %q must not receive spec-sync markers, got %q", harness, rendered)
+			}
+		})
 	}
 }
 
@@ -321,11 +369,8 @@ func TestSyncAssetsInstallsAgentToClaudeAgentDirNotCommandDir(t *testing.T) {
 	if strings.Contains(rendered, "hooks:") {
 		t.Fatal("hooks block should be stripped in claude-code install")
 	}
-	if !strings.Contains(rendered, "tools: [Bash,") {
-		t.Fatal("Claude Code tools list should be present in claude-code install")
-	}
-	if !strings.Contains(rendered, "mcp__github__get_me") {
-		t.Fatal("GitHub MCP tools should be present in claude-code install")
+	if strings.Contains(rendered, "tools: [") {
+		t.Fatal("Claude Code install must omit the tools frontmatter so the agent inherits all session tools")
 	}
 }
 

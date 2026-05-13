@@ -13,10 +13,11 @@ Before authoring, modifying, or reviewing **any** AI Watchtower skill content, y
 ai_watchtower/docs/architecture/skills/authoring-guide.md
 ```
 
-Resolve it relative to the FreightHero workspace root. Common absolute paths:
+Resolve it relative to the FreightHero workspace root:
 
-- macOS dev workspace: `/Users/edu/Desktop/freighthero/ai_watchtower/docs/architecture/skills/authoring-guide.md`
-- Any other checkout: `<repo_root>/ai_watchtower/docs/architecture/skills/authoring-guide.md`
+- `<freighthero-workspace-root>/ai_watchtower/docs/architecture/skills/authoring-guide.md`
+
+Detect `<freighthero-workspace-root>` by walking up from the active file until you reach a directory that contains two or more of `ai_watchtower/`, `backend/`, `frontend/`, `robin-error-dashboard/`, `coding-cli/`, `freighthero-mcp/` as direct children. Do not hardcode a developer-specific absolute path.
 
 Read it in full at least once per authoring or review session. This SKILL.md is a routing index; the authoring-guide.md is the source of truth. Where this skill and the canonical guide disagree, **the canonical guide wins**.
 

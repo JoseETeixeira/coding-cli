@@ -134,7 +134,30 @@ Apply these guardrails during implementation, review, and any non-trivial editin
 
 ## CRITICAL: New Task Workflow
 
-When a user submits a NEW TASK or FEATURE REQUEST, or asks to process a GitHub issue, you MUST follow this exact sequential workflow. Do NOT skip phases or proceed without explicit user approval.
+### Workflow Trigger
+
+Before responding to any user request, classify it against the trigger set below. The full eight-phase workflow is REQUIRED when ANY of these conditions hold:
+
+- Net-new feature work: new endpoint, new flow, new service, new agent/workflow/skill, new package, or new external integration.
+- Multi-file refactor that crosses module, package, or service boundaries.
+- Architecture change (see `CRITICAL: Architecture Changes`) — new infrastructure, changed orchestration, new cross-service contracts, changed SOPs/Skills behavior.
+- Processing a GitHub issue, Linear ticket, or any externally tracked work item.
+- Bug fix that needs cross-file investigation, has multiple suspect components, or has unclear root cause.
+- User explicitly says "spec", "plan", "design", "follow workflow", "new task", or names a tracked work item.
+- Change touches production-traffic surface with rollout or migration risk: DynamoDB schema, Lambda contracts, queue payloads, prompt/skill authoring under `ai_watchtower/app/skills/**`, rollout/gate code.
+
+The workflow is NOT used (handle inline, no spec) when ANY of these hold:
+
+- Single-file, obvious fix: typo, lint nit, formatting, comment correction.
+- Question-only request with no code change.
+- Exploratory commands: `git status`, `git log`, log inspection, doc reads, indexing checks.
+- Prompt, skill, configuration, or documentation edit where the user has already specified the exact change.
+- User explicitly says "skip workflow", "just do it", "no spec needed", "inline", "hotfix", or names the request as an emergency.
+- Cleanup the user names as drive-by, when scope is one or two files.
+
+Tie-break: when the request is ambiguous between workflow and inline, use `#tool:vscode/askQuestions` to ask one targeted question ("workflow or inline?") with a recommended answer, then proceed. Do not silently default to either path.
+
+Once triggered, you MUST follow this exact sequential workflow. Do NOT skip phases or proceed without explicit user approval.
 
 This workflow merges structured spec-driven development with research-first planning, explicit codebase understanding, validation gates, implementation verification, code review, and documentation updates. Every phase begins from the approved understanding of the current codebase so the resulting artifacts are grounded in actual code, not assumptions.
 
@@ -153,6 +176,33 @@ This workflow merges structured spec-driven development with research-first plan
 - After generating any fix, design, or plan, reflect on whether it addresses all constraints and edge cases mentioned in the context before presenting it to the user.
 - Before requesting user approval at the end of each planning phase (Understanding, Requirements, Design, Task Planning), run the **Grill-Me Pass** defined below. This is mandatory and not user-triggered.
 </planning_rules>
+
+### MANDATORY: FreightHero Codebase Search
+
+When the active workspace is a FreightHero monorepo or any sub-project under one, invocation of `freighthero-codebase/:search_codebase` is REQUIRED at every Discovery step.
+
+**Workspace detection** (any one signal qualifies — do not hardcode an absolute path):
+
+- The `freighthero-codebase/:search_codebase` tool is available in the current tool inventory. This is the strongest signal — if the tool is wired in for the session, the workspace IS a FreightHero workspace by construction.
+- Walking up from the active file, a parent directory contains two or more of `ai_watchtower/`, `backend/`, `frontend/`, `robin-error-dashboard/`, `coding-cli/`, `freighthero-mcp/` as direct children. Treat that directory as the FreightHero workspace root.
+- The active file lies inside one of the above sub-project names whose sibling directories include another of them.
+
+Required at:
+
+- Phase 1, step 1a (Codebase Search) — at least one targeted query before drafting `understanding.md`.
+- Phase 2, step 2a (Discovery) — re-search informed by the approved understanding.
+- Phase 3, step 3a (Discovery) — re-search for architecture and pattern precedents.
+- Phase 4, step 4a (Discovery) — re-search to map design components to concrete files and symbols.
+
+Skipping `freighthero-codebase/:search_codebase` in any of these steps for a FreightHero-workspace task is a workflow violation. If skipped, the agent MUST surface the violation, run the missing search, and re-draft the affected artifact before requesting approval.
+
+If `freighthero-codebase/:search_codebase` returns no results or errors:
+
+1. Check the index via `freighthero-codebase/:indexing_status`.
+2. If the index is stale or empty, tell the user to refresh: `cd <workspace-root>/coding-cli/freighthero-mcp && source .venv/bin/activate && cocoindex update codebase_index.py:FreightHeroCodebase` (substitute the detected workspace root).
+3. Record the search outcome (empty / errored / successful + query used) in the affected phase artifact.
+
+The mandate does not apply when no detection signal fires.
 
 ## CRITICAL: Grill-Me Pass (Mandatory Before Every Planning Approval)
 
