@@ -2,6 +2,7 @@ package assets
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -122,7 +123,94 @@ func SyncAssets(layout repos.RepoLayout, profile host.HostProfile, options SyncO
 		results = append(results, result)
 	}
 
+	if profile.Roots.SettingsPath != "" {
+		result, hookErr := mergeClaudeHooks(profile.Roots.SettingsPath)
+		if hookErr != nil {
+			return results, hookErr
+		}
+		results = append(results, result)
+	}
+
 	return results, nil
+}
+
+// mergeClaudeHooks reads the Claude Code settings.json at path, injects the mempalace
+// Stop and PreCompact hooks (preserving all other settings), and writes the result back.
+// The file is created with an empty object if it does not yet exist.
+func mergeClaudeHooks(path string) (AssetResult, error) {
+	raw := []byte("{}")
+	if existing, err := os.ReadFile(path); err == nil {
+		raw = existing
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return AssetResult{}, clierrors.Wrap(clierrors.KindConfig, fmt.Sprintf("read %s", path), err)
+	}
+
+	var settings map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &settings); err != nil {
+		return AssetResult{}, clierrors.Wrap(clierrors.KindConfig, fmt.Sprintf("parse %s", path), err)
+	}
+
+	// Decode the existing hooks object (or start empty).
+	hooks := map[string]json.RawMessage{}
+	if existing, ok := settings["hooks"]; ok {
+		if err := json.Unmarshal(existing, &hooks); err != nil {
+			return AssetResult{}, clierrors.Wrap(clierrors.KindConfig, fmt.Sprintf("parse hooks in %s", path), err)
+		}
+	}
+
+	type hookEntry struct {
+		Hooks []struct {
+			Type    string `json:"type"`
+			Command string `json:"command"`
+			Timeout int    `json:"timeout"`
+		} `json:"hooks"`
+	}
+
+	makeEntry := func(hook string) (json.RawMessage, error) {
+		entry := []hookEntry{{
+			Hooks: []struct {
+				Type    string `json:"type"`
+				Command string `json:"command"`
+				Timeout int    `json:"timeout"`
+			}{{
+				Type:    "command",
+				Command: "python3 -m mempalace hook run --hook " + hook + " --harness claude-code",
+				Timeout: 30,
+			}},
+		}}
+		return json.Marshal(entry)
+	}
+
+	stopRaw, err := makeEntry("stop")
+	if err != nil {
+		return AssetResult{}, clierrors.Wrap(clierrors.KindConfig, "marshal Stop hook", err)
+	}
+	precompactRaw, err := makeEntry("precompact")
+	if err != nil {
+		return AssetResult{}, clierrors.Wrap(clierrors.KindConfig, "marshal PreCompact hook", err)
+	}
+
+	hooks["Stop"] = stopRaw
+	hooks["PreCompact"] = precompactRaw
+
+	hooksRaw, err := json.Marshal(hooks)
+	if err != nil {
+		return AssetResult{}, clierrors.Wrap(clierrors.KindConfig, "marshal hooks", err)
+	}
+	settings["hooks"] = hooksRaw
+
+	out, err := json.MarshalIndent(settings, "", "    ")
+	if err != nil {
+		return AssetResult{}, clierrors.Wrap(clierrors.KindConfig, "marshal settings", err)
+	}
+	out = append(out, '\n')
+
+	action, err := writeFile(path, out, SyncOptions{Force: true})
+	if err != nil {
+		return AssetResult{}, err
+	}
+
+	return AssetResult{AssetType: "settings", Destination: path, Action: action}, nil
 }
 
 func InsertManagedBlock(existing string, managed string) string {

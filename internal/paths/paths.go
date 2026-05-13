@@ -145,6 +145,10 @@ func (resolver Resolver) ClaudeConfigPath() string {
 	return filepath.Join(resolver.HomeDir, ".claude.json")
 }
 
+func (resolver Resolver) ClaudeSettingsPath() string {
+	return filepath.Join(resolver.ClaudeRoot(), "settings.json")
+}
+
 func (resolver Resolver) CodexRoot() string {
 	if path, ok := resolver.lookupExpanded("CODEX_HOME"); ok {
 		return path

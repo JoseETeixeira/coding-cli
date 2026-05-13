@@ -25,6 +25,7 @@ type HostRoots struct {
 	SkillDir        string
 	InstructionFile string
 	MCPConfigPath   string
+	SettingsPath    string
 }
 
 type HostProfile struct {
@@ -124,6 +125,7 @@ func ResolveProfile(kind HostKind, resolver paths.Resolver) (HostProfile, error)
 				SkillDir:        resolver.ClaudeSkillDir(),
 				InstructionFile: resolver.ClaudeInstructionFile(),
 				MCPConfigPath:   resolver.ClaudeConfigPath(),
+				SettingsPath:    resolver.ClaudeSettingsPath(),
 			},
 		}, nil
 	case HostCodex:

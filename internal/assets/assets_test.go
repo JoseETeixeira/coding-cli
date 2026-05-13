@@ -294,6 +294,136 @@ func TestSyncAssetsMergesInstructionFileForCodex(t *testing.T) {
 	}
 }
 
+func TestMergeClaudeHooksCreatesFileWhenMissing(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "settings.json")
+	result, err := mergeClaudeHooks(path)
+	if err != nil {
+		t.Fatalf("mergeClaudeHooks() error = %v", err)
+	}
+	if result.Action != "created" {
+		t.Fatalf("expected action=created, got %q", result.Action)
+	}
+	assertSettingsHasMempalaceHooks(t, path)
+}
+
+func TestMergeClaudeHooksPreservesExistingSettings(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "settings.json")
+	existing := `{
+    "theme": "dark",
+    "hooks": {
+        "PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": "rtk hook claude"}]}]
+    }
+}`
+	if err := os.WriteFile(path, []byte(existing), 0o644); err != nil {
+		t.Fatalf("WriteFile returned error: %v", err)
+	}
+
+	if _, err := mergeClaudeHooks(path); err != nil {
+		t.Fatalf("mergeClaudeHooks() error = %v", err)
+	}
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	content := string(raw)
+
+	if !strings.Contains(content, `"theme"`) {
+		t.Fatal("expected theme key to be preserved")
+	}
+	if !strings.Contains(content, "rtk hook claude") {
+		t.Fatal("expected existing PreToolUse hook to be preserved")
+	}
+	assertSettingsHasMempalaceHooks(t, path)
+}
+
+func TestMergeClaudeHooksOverwritesExistingMempalaceHooks(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "settings.json")
+	existing := `{
+    "hooks": {
+        "Stop": [{"hooks": [{"type": "command", "command": "old-stop-command"}]}],
+        "PreCompact": [{"hooks": [{"type": "command", "command": "old-precompact-command"}]}]
+    }
+}`
+	if err := os.WriteFile(path, []byte(existing), 0o644); err != nil {
+		t.Fatalf("WriteFile returned error: %v", err)
+	}
+
+	if _, err := mergeClaudeHooks(path); err != nil {
+		t.Fatalf("mergeClaudeHooks() error = %v", err)
+	}
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	content := string(raw)
+
+	if strings.Contains(content, "old-stop-command") {
+		t.Fatal("expected old Stop command to be replaced")
+	}
+	if strings.Contains(content, "old-precompact-command") {
+		t.Fatal("expected old PreCompact command to be replaced")
+	}
+	assertSettingsHasMempalaceHooks(t, path)
+}
+
+func TestSyncAssetsWritesHooksForClaudeCode(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	promptsDir := filepath.Join(root, "coding-cli", "prompts")
+	if err := os.MkdirAll(promptsDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "coding-cli", "skills"), 0o755); err != nil {
+		t.Fatalf("MkdirAll returned error: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(promptsDir, "batman.agent.md"), []byte("agent"), 0o644); err != nil {
+		t.Fatalf("WriteFile returned error: %v", err)
+	}
+
+	settingsPath := filepath.Join(root, "claude", "settings.json")
+	layout := repos.RepoLayout{CodingCLI: filepath.Join(root, "coding-cli")}
+	profile := host.HostProfile{
+		Kind:    host.HostClaudeCode,
+		Harness: string(host.HostClaudeCode),
+		Roots: host.HostRoots{
+			AgentDir:     filepath.Join(root, "claude", "agents"),
+			SettingsPath: settingsPath,
+		},
+	}
+
+	if _, err := SyncAssets(layout, profile, SyncOptions{}); err != nil {
+		t.Fatalf("SyncAssets returned error: %v", err)
+	}
+
+	assertSettingsHasMempalaceHooks(t, settingsPath)
+}
+
+func assertSettingsHasMempalaceHooks(t *testing.T, path string) {
+	t.Helper()
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile %s returned error: %v", path, err)
+	}
+	content := string(raw)
+
+	if !strings.Contains(content, "--hook stop --harness claude-code") {
+		t.Fatalf("expected stop hook in settings, got %q", content)
+	}
+	if !strings.Contains(content, "--hook precompact --harness claude-code") {
+		t.Fatalf("expected precompact hook in settings, got %q", content)
+	}
+}
+
 func createAssetFixture(t *testing.T, root string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Join(root, "coding-cli", "prompts"), 0o755); err != nil {

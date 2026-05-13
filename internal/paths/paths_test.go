@@ -45,6 +45,26 @@ func TestResolverUsesDefaultMacPaths(t *testing.T) {
 	}
 }
 
+func TestClaudeSettingsPathFollowsClaudeRoot(t *testing.T) {
+	t.Parallel()
+
+	resolver := NewResolverWith("/Users/tester", "darwin", nil)
+	if got := resolver.ClaudeSettingsPath(); got != filepath.Join("/Users/tester", ".claude", "settings.json") {
+		t.Fatalf("ClaudeSettingsPath() = %q", got)
+	}
+}
+
+func TestClaudeSettingsPathUsesConfigDirOverride(t *testing.T) {
+	t.Parallel()
+
+	resolver := NewResolverWith("/tmp/home", "linux", lookupMap(map[string]string{
+		"CLAUDE_CONFIG_DIR": "/custom/claude",
+	}))
+	if got := resolver.ClaudeSettingsPath(); got != filepath.Join("/custom/claude", "settings.json") {
+		t.Fatalf("ClaudeSettingsPath() = %q", got)
+	}
+}
+
 func TestResolverUsesClaudeAndCodexOverrides(t *testing.T) {
 	t.Parallel()
 

@@ -192,7 +192,7 @@ For new tasks or feature requests, Batman follows eight phases in order:
 5. Implementation: follow `executeTask.prompt.md`, complete approved tasks, and validate against requirements and design.
 6. Tests: write tests for every new or changed behavior and run targeted plus regression checks.
 7. Code Review: read `codeReview.instructions.md`, review the full diff, fix valid issues, and rerun checks until no issues remain.
-8. Documentation Updates: update relevant docs, including `ai_watchtower/docs/wiki` when AI Watchtower behavior changes, and maintain project `CHANGELOG.md` entries for current-branch changes.
+8. Documentation Updates: update relevant docs, including the AI Watchtower wiki (clone `https://github.com/Freight-Hero/ai_watchtower.wiki.git` to `/tmp/ai_watchtower_wiki`, edit, push) when AI Watchtower behavior changes, and maintain project `CHANGELOG.md` entries for current-branch changes.
 
 Pause for explicit user approval after Understanding, Requirements, Design, and Task Planning before moving to the next phase.
 

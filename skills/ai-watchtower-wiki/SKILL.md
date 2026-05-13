@@ -9,6 +9,8 @@ description: Use when researching, understanding, or planning changes to the AI 
 
 Ensure the agent always consults the authoritative AI Watchtower documentation wiki before proposing architectural changes, designing new features, or explaining how existing systems work. The wiki is the source of truth for system architecture, data models, API contracts, workflow capabilities, skills, infrastructure, and operational procedures.
 
+The wiki lives at `https://github.com/Freight-Hero/ai_watchtower.wiki.git`. There is no local copy inside the `ai_watchtower` repository — always clone from the remote.
+
 ## When to use this skill
 
 - The user asks how a subsystem works (e.g., "how does the queue architecture work?")
@@ -24,7 +26,7 @@ Ensure the agent always consults the authoritative AI Watchtower documentation w
 - The answer is already clearly available in the open files or current context
 - The user is asking about a different project (backend, frontend, robin-error-dashboard)
 
-## Workflow
+## Workflow — Reading
 
 ### Step 1: Identify the relevant wiki page
 
@@ -38,7 +40,7 @@ Each `.md` filename is a wiki page slug (e.g. `Skills-Architecture.md`). Pick th
 
 ### Step 2: Fetch wiki content
 
-Prefer cloning the wiki repo for reliable access to full page content. On first use in a session (or when content may be stale), clone it:
+Clone the wiki repo for reliable access to full page content. On first use in a session (or when content may be stale), clone or pull:
 
 ```bash
 git clone https://github.com/Freight-Hero/ai_watchtower.wiki.git /tmp/ai_watchtower_wiki --depth=1 2>/dev/null \
@@ -81,13 +83,37 @@ Base your response on:
 
 If the wiki is missing information the user needs, note it and suggest updating the wiki.
 
+## Workflow — Writing / Updating
+
+When AI Watchtower behavior, architecture, Skills/SOPs, workflows, tools, tests, infrastructure, or operational procedures change, update the wiki:
+
+### Step 1: Clone or pull
+
+```bash
+git clone https://github.com/Freight-Hero/ai_watchtower.wiki.git /tmp/ai_watchtower_wiki --depth=1 2>/dev/null \
+  || git -C /tmp/ai_watchtower_wiki pull
+```
+
+### Step 2: Edit the relevant page(s)
+
+Edit existing pages or create new ones under `/tmp/ai_watchtower_wiki/`. Page filenames must match the GitHub wiki slug format (e.g. `Skills-Architecture.md`). When adding a new page, also add it to `_Sidebar.md` under the appropriate section.
+
+### Step 3: Commit and push
+
+```bash
+git -C /tmp/ai_watchtower_wiki add <Page-Slug>.md _Sidebar.md
+git -C /tmp/ai_watchtower_wiki commit -m "<concise description of what changed and why>"
+git -C /tmp/ai_watchtower_wiki push
+```
+
 ## Rules
 
 1. **Always check the wiki first** before explaining architecture or proposing designs.
 2. **Cite the wiki page** when referencing architectural facts.
 3. **Validate with code** — the wiki is the intent, the code is the reality.
-4. **Propose wiki updates** when you find outdated or missing documentation.
-5. **Do not guess** — if the wiki and code disagree, say so and ask for clarification.
+4. **Update the wiki via the remote repo** — never maintain a local copy inside `ai_watchtower/`.
+5. **Propose wiki updates** when you find outdated or missing documentation.
+6. **Do not guess** — if the wiki and code disagree, say so and ask for clarification.
 
 ## Example prompts that trigger this skill
 
