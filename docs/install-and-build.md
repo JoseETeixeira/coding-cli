@@ -27,7 +27,7 @@ Environment variables override behavior:
 | `VERSION` | Install a specific tag (e.g. `v0.2.0`) instead of the latest release. |
 | `INSTALL_DIR` | Override the bin directory. |
 | `INSTALL_BASE_URL` | Skip GitHub and download `<BASE>/<asset>` directly (useful for testing local builds: `INSTALL_BASE_URL=file://$PWD/dist`). |
-| `OWNER`, `REPO`, `BINARY_NAME` | Override the GitHub coordinates. Defaults: `coding-cli` / `coding-cli` / `coding-cli`. |
+| `OWNER`, `REPO`, `BINARY_NAME` | Override the GitHub coordinates. Defaults: `JoseETeixeira` / `coding-cli` / `coding-cli`. |
 | `GITHUB_PAT_TOKEN` / `GH_TOKEN` / `GITHUB_TOKEN` | Used as bearer auth for the GitHub API (required for private repos). |
 
 PATH persistence:

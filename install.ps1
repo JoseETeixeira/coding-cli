@@ -38,7 +38,7 @@ param(
     [string]$Version,
     [string]$InstallDir,
     [string]$InstallBaseUrl,
-    [string]$Owner = 'coding-cli',
+    [string]$Owner = 'JoseETeixeira',
     [string]$Repo = 'coding-cli',
     [string]$BinaryName = 'coding-cli',
     [string]$GitHubApiVersion = '2026-03-10'

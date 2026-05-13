@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-OWNER="${OWNER:-coding-cli}"
+OWNER="${OWNER:-JoseETeixeira}"
 REPO="${REPO:-coding-cli}"
 BINARY_NAME="${BINARY_NAME:-coding-cli}"
 INSTALL_DIR_OVERRIDE="${INSTALL_DIR:-}"
