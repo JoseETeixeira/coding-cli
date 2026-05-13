@@ -8,6 +8,7 @@ import (
 	"github.com/coding-cli/coding-cli/internal/host"
 	"github.com/coding-cli/coding-cli/internal/index"
 	"github.com/coding-cli/coding-cli/internal/repos"
+	"github.com/coding-cli/coding-cli/internal/state"
 	"github.com/spf13/cobra"
 )
 
@@ -59,6 +60,11 @@ func newSetupMCPcmd(options *GlobalOptions, dependencies Dependencies) *cobra.Co
 				return err
 			}
 			logConfigResult(dependencies.Logger, configResult)
+
+			if err := state.SetDefaultWorkspaceRoot(layout.Root); err != nil {
+				dependencies.Logger.Warn(fmt.Sprintf("could not persist default workspace state: %v", err))
+			}
+
 			dependencies.Logger.Success("MCP setup completed")
 			return nil
 		},

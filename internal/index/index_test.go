@@ -44,7 +44,7 @@ func TestBootstrapIndexingValidatesMissingCodingCLI(t *testing.T) {
 		CodebaseIndex: filepath.Join(root, "coding-cli", "query-code-mcp", ".cocoindex", "codebase-index"),
 	}
 
-	_, err := BootstrapIndexing(context.Background(), &fakeRunner{}, layout)
+	_, err := BootstrapIndexing(context.Background(), &fakeRunner{}, layout, IndexingTarget{})
 	if err == nil {
 		t.Fatal("expected validation error for missing coding-cli directory")
 	}
@@ -109,7 +109,7 @@ func TestRunCocoIndexCreatesCocoIndexDirectory(t *testing.T) {
 		CodebaseIndex: filepath.Join(queryCodeMCP, ".cocoindex", "codebase-index"),
 	}
 
-	if _, err := RunCocoIndex(context.Background(), &fakeRunner{}, layout); err != nil {
+	if _, err := RunCocoIndex(context.Background(), &fakeRunner{}, layout, IndexingTarget{}); err != nil {
 		t.Fatalf("RunCocoIndex returned error: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(queryCodeMCP, ".cocoindex")); err != nil {

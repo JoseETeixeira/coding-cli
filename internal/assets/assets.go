@@ -14,6 +14,7 @@ import (
 
 	clierrors "github.com/coding-cli/coding-cli/internal/errors"
 	"github.com/coding-cli/coding-cli/internal/host"
+	"github.com/coding-cli/coding-cli/internal/pyexec"
 	"github.com/coding-cli/coding-cli/internal/repos"
 )
 
@@ -233,7 +234,7 @@ func mergeClaudeHooks(path string) (AssetResult, error) {
 				Timeout int    `json:"timeout"`
 			}{{
 				Type:    "command",
-				Command: "python3 -m mempalace hook run --hook " + hook + " --harness claude-code",
+				Command: pyexec.Shell() + " -m mempalace hook run --hook " + hook + " --harness claude-code",
 				Timeout: 30,
 			}},
 		}}

@@ -70,6 +70,13 @@ func newSetupAgentCmd(options *GlobalOptions, dependencies Dependencies) *cobra.
 					return err
 				}
 				logHookResult(dependencies.Logger, hookResult)
+
+				logStep(dependencies.Logger, "set Claude Code default agent")
+				agentResult, err := config.SetClaudeCodeDefaultAgent(profile)
+				if err != nil {
+					return err
+				}
+				logDefaultAgentResult(dependencies.Logger, agentResult)
 			}
 
 			dependencies.Logger.Success("agent asset setup completed")

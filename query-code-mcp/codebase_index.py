@@ -25,16 +25,45 @@ CHUNK_OVERLAP = int(os.getenv("CODEBASE_CHUNK_OVERLAP", "250"))
 MAX_FILE_BYTES = int(os.getenv("CODEBASE_MAX_FILE_BYTES", "350000"))
 MAX_INFLIGHT_COMPONENTS = int(os.getenv("COCOINDEX_MAX_INFLIGHT_COMPONENTS", "8"))
 
-# Optional comma-separated allowlist of project directories to index. When unset,
-# the indexer scans every top-level directory under WORKSPACE_ROOT except
-# coding-cli itself (which hosts this MCP server and its own state).
+# Project discovery has three modes, in priority order:
+#   1. CODEBASE_PROJECT_PATHS — explicit "name=/abs/path,name2=/abs/path2" entries.
+#      Used by `coding-cli run indexing` when the cwd is outside the workspace, so
+#      the project lives anywhere on disk.
+#   2. CODEBASE_PROJECTS — comma-separated names resolved under WORKSPACE_ROOT.
+#      Used when the cwd is inside the workspace and we want to scope to a single
+#      sibling project.
+#   3. Auto-discover — every top-level directory under WORKSPACE_ROOT except
+#      `coding-cli` itself.
 PROJECTS_ENV = os.getenv("CODEBASE_PROJECTS", "").strip()
+PROJECT_PATHS_ENV = os.getenv("CODEBASE_PROJECT_PATHS", "").strip()
 SKIP_PROJECT_NAMES = {"coding-cli"}
 
 INDEX_ROOT = coco.ContextKey[pathlib.Path]("codebase_index_root")
 
 
+def _parse_project_paths(raw: str) -> list[tuple[str, pathlib.Path]]:
+    entries: list[tuple[str, pathlib.Path]] = []
+    for item in raw.split(","):
+        item = item.strip()
+        if not item:
+            continue
+        if "=" not in item:
+            continue
+        name, _, path_str = item.partition("=")
+        name = name.strip()
+        path_str = path_str.strip()
+        if not name or not path_str:
+            continue
+        candidate = pathlib.Path(path_str).expanduser().resolve()
+        if candidate.is_dir():
+            entries.append((name, candidate))
+    return entries
+
+
 def _discover_projects() -> list[tuple[str, pathlib.Path]]:
+    if PROJECT_PATHS_ENV:
+        return _parse_project_paths(PROJECT_PATHS_ENV)
+
     if PROJECTS_ENV:
         names = [item.strip() for item in PROJECTS_ENV.split(",") if item.strip()]
     else:

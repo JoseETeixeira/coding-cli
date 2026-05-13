@@ -41,13 +41,16 @@ Defaults: 1600-character chunks with 250-character overlap, files larger than 35
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `WORKSPACE_ROOT` | `..` (parent of `query-code-mcp/`) | Where to look for project subdirectories. Set by `coding-cli` based on the resolved workspace root. |
-| `CODEBASE_PROJECTS` | empty (auto-discover) | Comma-separated allowlist of project directory names. |
+| `CODEBASE_PROJECTS` | empty | Comma-separated allowlist of project directory names *relative to `WORKSPACE_ROOT`*. Used when `run indexing` scopes to a single sibling project. |
+| `CODEBASE_PROJECT_PATHS` | empty | Comma-separated `name=/abs/path` entries pointing at projects *outside `WORKSPACE_ROOT`*. Used when `run indexing` is invoked from a cwd that isn't inside any workspace. Takes precedence over `CODEBASE_PROJECTS`. |
 | `CODEBASE_INDEX_DIR` | `./.cocoindex/codebase-index` | Where chunk JSON files land. |
 | `COCOINDEX_DB` | `./.cocoindex/cocoindex.db` | CocoIndex incremental-state DB. |
 | `COCOINDEX_MAX_INFLIGHT_COMPONENTS` | `8` | Concurrency cap for the pipeline. |
 | `CODEBASE_CHUNK_SIZE` | `1600` | Target chunk size in characters. |
 | `CODEBASE_CHUNK_OVERLAP` | `250` | Overlap between consecutive chunks. |
 | `CODEBASE_MAX_FILE_BYTES` | `350000` | Files larger than this are skipped entirely. |
+
+When neither `CODEBASE_PROJECTS` nor `CODEBASE_PROJECT_PATHS` is set, the pipeline auto-discovers every non-hidden top-level directory under `WORKSPACE_ROOT` except `coding-cli`.
 
 ### Running the indexer
 

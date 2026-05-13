@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	clierrors "github.com/coding-cli/coding-cli/internal/errors"
 	"github.com/coding-cli/coding-cli/internal/repos"
@@ -25,7 +26,27 @@ type BootstrapResult struct {
 	CocoIndex   StepResult
 }
 
-func BootstrapIndexing(ctx context.Context, processRunner runner.ProcessRunner, layout repos.RepoLayout) (BootstrapResult, error) {
+// ProjectPath pairs an absolute project root with the display name the index
+// stores it under. Multiple ProjectPaths with the same display name will be
+// merged in the index — pass distinct names if you want them kept apart.
+type ProjectPath struct {
+	Name string
+	Path string
+}
+
+// IndexingTarget tells the cocoindex pipeline which projects to index. Both
+// fields are optional; when both are empty the pipeline auto-discovers every
+// top-level subdirectory under the workspace root (legacy behavior).
+type IndexingTarget struct {
+	// Projects are project directory names relative to the workspace root.
+	// They become CODEBASE_PROJECTS in the env passed to cocoindex.
+	Projects []string
+	// ProjectPaths are absolute paths to index under explicit display names.
+	// They become CODEBASE_PROJECT_PATHS in the env passed to cocoindex.
+	ProjectPaths []ProjectPath
+}
+
+func BootstrapIndexing(ctx context.Context, processRunner runner.ProcessRunner, layout repos.RepoLayout, target IndexingTarget) (BootstrapResult, error) {
 	if err := repos.ValidateLayout(layout, repos.RepositoryCodingCLI); err != nil {
 		return BootstrapResult{}, err
 	}
@@ -50,7 +71,7 @@ func BootstrapIndexing(ctx context.Context, processRunner runner.ProcessRunner, 
 	}
 	result.MemPalace = mempalaceResult
 
-	cocoindexResult, err := RunCocoIndex(ctx, processRunner, layout)
+	cocoindexResult, err := RunCocoIndex(ctx, processRunner, layout, target)
 	if err != nil {
 		return result, err
 	}
@@ -115,25 +136,54 @@ func RunMemPalace(ctx context.Context, processRunner runner.ProcessRunner) (Step
 	return completedStep("mempalace wake-up", "refreshed mempalace context"), nil
 }
 
-func RunCocoIndex(ctx context.Context, processRunner runner.ProcessRunner, layout repos.RepoLayout) (StepResult, error) {
+func RunCocoIndex(ctx context.Context, processRunner runner.ProcessRunner, layout repos.RepoLayout, target IndexingTarget) (StepResult, error) {
 	if err := os.MkdirAll(filepath.Join(layout.QueryCodeMCP, ".cocoindex"), 0o755); err != nil {
 		return StepResult{}, clierrors.Wrap(clierrors.KindIndex, "create .cocoindex directory", err)
+	}
+
+	env := []string{
+		"WORKSPACE_ROOT=" + layout.Root,
+		"CODEBASE_INDEX_DIR=" + layout.CodebaseIndex,
+	}
+	if len(target.Projects) > 0 {
+		env = append(env, "CODEBASE_PROJECTS="+strings.Join(target.Projects, ","))
+	}
+	if len(target.ProjectPaths) > 0 {
+		pairs := make([]string, 0, len(target.ProjectPaths))
+		for _, pp := range target.ProjectPaths {
+			pairs = append(pairs, pp.Name+"="+pp.Path)
+		}
+		env = append(env, "CODEBASE_PROJECT_PATHS="+strings.Join(pairs, ","))
 	}
 
 	command := runner.Command{
 		Name: venvExecutable(layout.QueryCodeMCP, "cocoindex"),
 		Args: []string{"update", "codebase_index.py"},
 		Dir:  layout.QueryCodeMCP,
-		Env: []string{
-			"WORKSPACE_ROOT=" + layout.Root,
-			"CODEBASE_INDEX_DIR=" + layout.CodebaseIndex,
-		},
+		Env:  env,
 	}
 	if err := processRunner.RunStreaming(ctx, command, os.Stdout, os.Stderr); err != nil {
 		return StepResult{}, clierrors.Wrap(clierrors.KindIndex, "run cocoindex update", err)
 	}
 
-	return completedStep("cocoindex update", fmt.Sprintf("refreshed %s", layout.CodebaseIndex)), nil
+	detail := target.summarize(layout.CodebaseIndex)
+	return completedStep("cocoindex update", detail), nil
+}
+
+// summarize describes what the indexer was asked to do, for logging.
+func (t IndexingTarget) summarize(indexDir string) string {
+	switch {
+	case len(t.ProjectPaths) > 0:
+		names := make([]string, 0, len(t.ProjectPaths))
+		for _, pp := range t.ProjectPaths {
+			names = append(names, pp.Name)
+		}
+		return fmt.Sprintf("refreshed %s for [%s]", indexDir, strings.Join(names, ", "))
+	case len(t.Projects) > 0:
+		return fmt.Sprintf("refreshed %s for [%s]", indexDir, strings.Join(t.Projects, ", "))
+	default:
+		return fmt.Sprintf("refreshed %s", indexDir)
+	}
 }
 
 func completedStep(name string, detail string) StepResult {

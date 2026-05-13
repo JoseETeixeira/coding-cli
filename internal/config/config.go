@@ -10,6 +10,7 @@ import (
 
 	clierrors "github.com/coding-cli/coding-cli/internal/errors"
 	"github.com/coding-cli/coding-cli/internal/host"
+	"github.com/coding-cli/coding-cli/internal/pyexec"
 	"github.com/coding-cli/coding-cli/internal/repos"
 	toml "github.com/pelletier/go-toml/v2"
 )
@@ -43,6 +44,14 @@ func WriteConfig(profile host.HostProfile, layout repos.RepoLayout) (ConfigResul
 	}
 }
 
+func mempalaceServer() ManagedServer {
+	command, prefix := pyexec.Command()
+	return ManagedServer{
+		Command: command,
+		Args:    append(prefix, "-m", "mempalace.mcp_server"),
+	}
+}
+
 func ManagedServers(layout repos.RepoLayout, profile host.HostProfile) map[string]ManagedServer {
 	servers := map[string]ManagedServer{
 		"query-code": {
@@ -54,10 +63,7 @@ func ManagedServers(layout repos.RepoLayout, profile host.HostProfile) map[strin
 				"WORKSPACE_ROOT":     layout.Root,
 			},
 		},
-		"mempalace": {
-			Command: "python3",
-			Args:    []string{"-m", "mempalace.mcp_server"},
-		},
+		"mempalace": mempalaceServer(),
 	}
 
 	githubServer := ManagedServer{

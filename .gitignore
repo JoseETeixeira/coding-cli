@@ -1,6 +1,30 @@
+# Build output
 dist/
+
+# query-code-mcp local state (per-developer; never committed)
 query-code-mcp/.cocoindex/
 query-code-mcp/.venv/
 query-code-mcp/__pycache__/
 query-code-mcp/dist/
 query-code-mcp/node_modules/
+
+# Config-write backups created when WriteConfig rewrites an existing file
+*.bak
+
+# Stray cocoindex output if anyone runs the indexer from an unexpected cwd
+.cocoindex/
+
+# Batman spec workspaces created by the agent during a task
+.batman/
+
+# IDE / editor scratch
+.idea/
+.vscode/
+*.swp
+
+# Python venvs accidentally created at the repo root
+/Lib/
+/Scripts/
+/pyvenv.cfg
+/Include/
+/.venv/

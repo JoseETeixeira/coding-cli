@@ -140,9 +140,22 @@ func logHookResult(logger *output.Logger, result config.ConfigResult) {
 	}
 }
 
-func runIndexingFlow(ctx context.Context, dependencies Dependencies, layout repos.RepoLayout) error {
+func logDefaultAgentResult(logger *output.Logger, result config.ConfigResult) {
+	switch result.Action {
+	case "created", "updated":
+		logger.Success(fmt.Sprintf("%s default agent %q in %s", result.Action, config.ClaudeCodeDefaultAgentName, result.Path))
+	case "skipped":
+		if result.Path == "" {
+			logger.Info("skipped setting default agent; not applicable for this host")
+			return
+		}
+		logger.Info(fmt.Sprintf("skipped setting default agent in %s; already set to %q", result.Path, config.ClaudeCodeDefaultAgentName))
+	}
+}
+
+func runIndexingFlow(ctx context.Context, dependencies Dependencies, layout repos.RepoLayout, target index.IndexingTarget) error {
 	logStep(dependencies.Logger, "run indexing")
-	result, err := index.BootstrapIndexing(ctx, dependencies.Runner, layout)
+	result, err := index.BootstrapIndexing(ctx, dependencies.Runner, layout, target)
 	if err != nil {
 		return err
 	}

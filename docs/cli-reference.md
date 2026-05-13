@@ -55,7 +55,23 @@ Phases, in order:
 
 ### `coding-cli run indexing`
 
-Runs only the indexing phase: dependency check (`IndexingSpecs`), `mempalace wake-up`, then `cocoindex update`. Use this when you just want to refresh the index without touching MCP config or prompts.
+Refreshes the codebase index for whichever project you're currently in. Workspace resolution is independent from indexing target:
+
+**Workspace resolution** (where the venv + cocoindex executable + index dir live):
+
+1. `--workspace-root <path>` flag
+2. Nearest ancestor of the cwd that contains a `coding-cli/` child
+3. The default workspace persisted by the last `coding-cli setup ...` run (stored at `~/.config/coding-cli/state.json` on Unix or `%APPDATA%\coding-cli\state.json` on Windows)
+
+If none of the three resolve, the command exits with an error suggesting `setup full --<host>` or `--workspace-root`.
+
+**Indexing target** (what gets re-indexed):
+
+- `cwd == workspace root` → every top-level project under it (the original behavior, useful from the workspace itself).
+- `cwd` is under the workspace root → just the top-level project containing the cwd. So running this from `<workspace>/project-a/src/handlers/` only re-indexes `project-a/`, not `project-b/`.
+- `cwd` is outside the workspace → the cwd itself is indexed as a standalone project under a stable name `<basename>-<6-char-hash-of-abspath>`. This lets you keep one workspace's MCP server pointed at multiple projects scattered across your filesystem.
+
+In all cases the chunks are written into the host workspace's `query-code-mcp/.cocoindex/codebase-index/`, so your MCP host (Claude Code, Copilot, Codex) sees them through the existing `query-code` MCP server without reconfiguration.
 
 ## Host profiles
 

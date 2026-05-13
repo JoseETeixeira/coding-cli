@@ -9,6 +9,7 @@ import (
 	"github.com/coding-cli/coding-cli/internal/host"
 	"github.com/coding-cli/coding-cli/internal/index"
 	"github.com/coding-cli/coding-cli/internal/repos"
+	"github.com/coding-cli/coding-cli/internal/state"
 	"github.com/spf13/cobra"
 )
 
@@ -75,6 +76,13 @@ func newSetupFullCmd(options *GlobalOptions, dependencies Dependencies) *cobra.C
 					return err
 				}
 				logHookResult(dependencies.Logger, hookResult)
+
+				logStep(dependencies.Logger, "set Claude Code default agent")
+				agentResult, err := config.SetClaudeCodeDefaultAgent(profile)
+				if err != nil {
+					return err
+				}
+				logDefaultAgentResult(dependencies.Logger, agentResult)
 			}
 
 			logStep(dependencies.Logger, "verify indexing dependencies")
@@ -84,8 +92,14 @@ func newSetupFullCmd(options *GlobalOptions, dependencies Dependencies) *cobra.C
 				return err
 			}
 
-			if err := runIndexingFlow(cmd.Context(), dependencies, layout); err != nil {
+			if err := runIndexingFlow(cmd.Context(), dependencies, layout, index.IndexingTarget{}); err != nil {
 				return err
+			}
+
+			if err := state.SetDefaultWorkspaceRoot(layout.Root); err != nil {
+				dependencies.Logger.Warn(fmt.Sprintf("could not persist default workspace state: %v", err))
+			} else {
+				dependencies.Logger.Info(fmt.Sprintf("recorded default workspace %s for later `coding-cli run indexing`", layout.Root))
 			}
 
 			dependencies.Logger.Success("full coding-cli setup completed")
