@@ -1,13 +1,64 @@
 ---
 name: ai-watchtower-skills-authoring
-description: Use when creating, reviewing, or modifying AI Watchtower skills (SKILL.md files) in the FreightHero codebase. Covers the SOP-to-Skills migration architecture, progressive disclosure tiers, broker isolation, composition layers, authoring rules, and validation. Use when the user asks how to write a skill, where to put content, how composition works, or how to validate skills.
+description: Use when creating, reviewing, or modifying AI Watchtower skills (SKILL.md files) in the FreightHero codebase. Covers the SOP-to-Skills migration architecture, progressive disclosure tiers, broker isolation, composition layers, authoring rules, and validation. Use when the user asks how to write a skill, where to put content, how composition works, or how to validate skills. Also use during code review of any change under `ai_watchtower/app/skills/`.
 ---
 
 # AI Watchtower Skills Authoring
 
+## CRITICAL: Canonical authoring guide is mandatory
+
+Before authoring, modifying, or reviewing **any** AI Watchtower skill content, you MUST read and follow the canonical guide:
+
+```
+ai_watchtower/docs/architecture/skills/authoring-guide.md
+```
+
+Resolve it relative to the FreightHero workspace root. Common absolute paths:
+
+- macOS dev workspace: `/Users/edu/Desktop/freighthero/ai_watchtower/docs/architecture/skills/authoring-guide.md`
+- Any other checkout: `<repo_root>/ai_watchtower/docs/architecture/skills/authoring-guide.md`
+
+Read it in full at least once per authoring or review session. This SKILL.md is a routing index; the authoring-guide.md is the source of truth. Where this skill and the canonical guide disagree, **the canonical guide wins**.
+
+Use this skill as a quick map; jump into the canonical guide for:
+
+- §1 mental model, three loading tiers, FreightHero runtime facts
+- §2 layer discipline (`standards/`, `intents/`, `broker-profiles/`, `workflows/`, overrides, references)
+- §3 content economy (no engineering references, one term per concept, no time-sensitive content, default + escape hatch)
+- §4 degrees of freedom and §4.3 no-voodoo-constants
+- §5 progressive disclosure — when to extract a reference, naming, single level depth, no stubs, routing-table pattern
+- §6 catalog hygiene, name contract, description contract, selection test
+- §7 broker dimension — tool-table language, default-in-intent, named-procedures catalog, caller/callee contracts (§7.6.7a, §7.6.7b)
+- §8 distributed self-containment, single-invocation completeness, boundary statements
+- §9 evaluation-driven authoring and Claude A / Claude B loop
+- §10 anti-patterns catalogue
+- §11 reviewer checklist — run this as a pass/fail gate
+- §12 token budgets reference
+- §13 audit playbook
+
+## Operating modes for this skill
+
+### Authoring mode (writing or rewriting skills)
+
+1. Open the canonical guide and skim §1, §2, §5, §8.
+2. Identify the layer (§2 table). If unsure, re-read §2.1 through §2.4.
+3. Draft the common path inline (§8.1) and extract conditional branches to `references/` (§5.2 triggers).
+4. Apply the §11 reviewer checklist to your draft before requesting review.
+5. Measure: `wc -l SKILL.md workflow-overrides/*.md` — must stay under 500 lines / ~5,000 tokens (§5.1, §12).
+
+### Review mode (PR or diff review on `ai_watchtower/app/skills/`)
+
+1. Re-open the canonical guide. Have §10 (anti-patterns) and §11 (reviewer checklist) in scope.
+2. Walk the §11 checklist top to bottom. Mark every pass/fail.
+3. Cross-check the diff against §10 anti-patterns. Flag any match with the section number (e.g., "§10.1 monolith" or "§10.4 meta-mechanism leakage").
+4. Verify token budget per §5.1 / §12 using the `wc` commands.
+5. For broker profile changes, verify §7.1 (no invisible tool references), §7.2 (unambiguous tool-table language), §7.3 (default-in-intent), §7.5 (no workflow logic in profile body), §7.6 (named-procedures catalog opt-in).
+6. For multi-stage scenarios, verify §8.3 single-invocation completeness — no reliance on prior-invocation skill state.
+7. Output findings using the `caveman-review` severity prefixes (🔴 bug, 🟡 risk, 🔵 nit, ❓ q). Cite the violated section number for every 🔴/🟡 finding.
+
 ## Purpose
 
-Guide the agent through the AI Watchtower skills authoring system. The skills runtime replaces static SOP markdown with a progressive-disclosure, broker-isolated, workflow-scoped catalog of agent instructions. This skill ensures skills are authored correctly, placed in the right layer, and validated against the runtime's rules.
+Guide the agent through the AI Watchtower skills authoring system. The skills runtime replaces static SOP markdown with a progressive-disclosure, broker-isolated, workflow-scoped catalog of agent instructions. This skill ensures skills are authored correctly, placed in the right layer, and validated against the runtime's rules and the canonical authoring-guide.md.
 
 ## When to use this skill
 
@@ -208,8 +259,8 @@ Read these documents in `ai_watchtower/docs/architecture/skills/` for deep under
 
 | Document | Purpose |
 |---|---|
+| `authoring-guide.md` | **MANDATORY** — canonical reference for writing, reviewing, and auditing skills. Always read before authoring or reviewing. |
 | `README.md` | Onboarding entry point, mental model, content tree snapshot |
-| `authoring-guide.md` | Canonical reference for writing, reviewing, and auditing skills |
 | `authoring-and-operations.md` | Operations guide: validation, testing, safe additions |
 | `composition-cheatsheet.md` | Quick reference for the 9-block composition model |
 | `runtime-and-composition.md` | Runtime execution details, service boundaries, invariants |

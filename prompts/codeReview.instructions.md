@@ -273,6 +273,38 @@ path = assert_within(SKILLS_ROOT / workflow / broker / f"{skill_slug}.md", SKILL
 
 ---
 
+## 17. AI Watchtower Skills Authoring (`ai_watchtower/app/skills/**`)
+
+When the diff touches **any** file under `ai_watchtower/app/skills/` (including `SKILL.md`, `references/*.md`, `workflow-overrides/*.md`, `shipper-overrides/*.md`, or `_shared/escalation-models/**`), the canonical authoring guide is the source of truth for the review:
+
+```
+ai_watchtower/docs/architecture/skills/authoring-guide.md
+```
+
+Read it before reviewing. Apply the `ai-watchtower-skills-authoring` skill's review mode (§11 reviewer checklist plus §10 anti-pattern scan). For every blocking finding, cite the violated section number from the canonical guide (e.g., "§5.1 token budget", "§7.2 tool-table language", "§10.4 meta-mechanism leakage").
+
+Non-negotiable rules to verify on every skills diff:
+
+- **§1.1 / §5.1 token budget.** Combined `SKILL.md + workflow-overrides/*.md` ≤ 500 lines / ~5,000 tokens. Run `wc -l` on the affected files. Exceeding the budget blocks the merge until decomposed (§5.2 triggers, §5.4 routing-table pattern).
+- **§5.5 no stub references.** Every file under `references/` must have real content. A `<!-- TODO -->` stub is a dead link the agent may follow.
+- **§5.3 references one level deep.** No reference links to another reference. References must be self-contained — every required tool call listed in-file.
+- **§6.2 / §6.3 frontmatter contract.** `name` is kebab-case and matches the directory. `description` is third person, states what + when, ≤1024 chars, no mechanism leakage. Intent skills declare `workflows:`.
+- **§7.1 no invisible tool references.** Every tool mentioned in a broker profile (or in a skill that loads with it) must exist in that broker's routing config — even negations are forbidden.
+- **§7.2 unambiguous tool-table language.** Escalation phrases must map unambiguously to broker profile tool-table rows: "urgent human handoff", "non-urgent human handoff", "broker visibility". Vague phrases ("escalation mechanism") are a blocker.
+- **§7.3 default-in-intent, override-in-profile.** Broker-varying behavior must not be hardcoded in shared intents.
+- **§7.5 no workflow logic inline in broker profile body.** Workflow-scoped content goes under `<broker>/workflow-overrides/` with frontmatter `workflows: [...]`.
+- **§7.6.7a / §7.6.7b caller/callee contracts.** Named procedures own the `get_past_*` duplicate-check. Intents own `send_tms_notes`. Profiles must NOT include `send_tms_notes` in named procedures.
+- **§8.3 single-invocation completeness.** A skill must not assume the agent remembers content from a prior invocation — `PostRunContextEditingMiddleware` clears skill tool output between turns. Durable state lives in `send_tms_notes`, load state fields, or timer payloads.
+- **§8.4 boundary statements.** Intent skills declare what they do NOT handle and where to route instead.
+- **§3.2 / §3.6 / §10.4 no meta-mechanism leakage and no engineering references.** Descriptions and bodies must not mention `load_skill`, auto-composition, file paths, PR numbers, load UUIDs, or "we observed in production" framing.
+- **§3.5 / §10.11 default with escape hatch, not a menu.** State the default tool/path, then list at most one conditional alternative.
+- **§4.3 no voodoo constants.** Every timer duration, threshold, or numeric value carries a stated reason.
+- **§3.4 no time-sensitive content.** No absolute dates or "after <date>" branches in skill bodies.
+
+For changes touching `app/services/skills_service.py`, `app/utils/skill_tools.py`, `SkillToolOutputMiddleware`, or `PostRunContextEditingMiddleware`, verify the runtime invariants in §1.4 are preserved (composition order, context clearing between invocations, raw-markdown tool output, auto-generated reference catalog).
+
+---
+
 ## Review Checklist
 
 Before approving a PR, verify:
@@ -302,3 +334,16 @@ Before approving a PR, verify:
 - [ ] Persistence changes have real integration coverage when mocks cannot catch the failure class
 - [ ] Prompt-touching changes have deterministic fixtures plus gated scenario coverage where available
 - [ ] Production fixes add redacted replay or regression fixtures for the failure shape
+- [ ] **Skills diffs (`ai_watchtower/app/skills/**`) reviewed against `ai_watchtower/docs/architecture/skills/authoring-guide.md`** — every blocking finding cites the violated section number
+- [ ] Combined `SKILL.md + workflow-overrides/*.md` ≤ 500 lines / ~5,000 tokens (§5.1)
+- [ ] No stub `<!-- TODO -->` files under `references/` (§5.5)
+- [ ] References are one level deep and self-contained (§5.3)
+- [ ] Frontmatter `name`/`description`/`workflows:` contract holds (§6.2, §6.3, §2.2)
+- [ ] No invisible tool references; escalation uses tool-table language (§7.1, §7.2)
+- [ ] Broker-varying behavior uses default-in-intent + profile override (§7.3)
+- [ ] No workflow logic inlined in broker profile body (§7.5)
+- [ ] Named-procedure caller/callee contracts respected — procedure owns `get_past_*`, intent owns `send_tms_notes` (§7.6.7a, §7.6.7b)
+- [ ] Skill content is single-invocation complete; no reliance on cleared prior-turn state (§8.3)
+- [ ] Boundary statements present in intent bodies (§8.4)
+- [ ] No meta-mechanism leakage, no engineering references, no time-sensitive content, no menus (§3.2, §3.4, §3.5, §3.6, §10.4)
+- [ ] Numeric constants justified (§4.3)
