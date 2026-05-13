@@ -1,0 +1,6 @@
+dist/
+query-code-mcp/.cocoindex/
+query-code-mcp/.venv/
+query-code-mcp/__pycache__/
+query-code-mcp/dist/
+query-code-mcp/node_modules/
