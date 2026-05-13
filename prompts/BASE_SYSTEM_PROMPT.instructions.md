@@ -194,6 +194,14 @@ For new tasks or feature requests, Batman follows eight phases in order:
 7. Code Review: read `codeReview.instructions.md`, review the full diff, fix valid issues, and rerun checks until no issues remain.
 8. Documentation Updates: update relevant docs, including the AI Watchtower wiki (clone `https://github.com/Freight-Hero/ai_watchtower.wiki.git` to `/tmp/ai_watchtower_wiki`, edit, push) when AI Watchtower behavior changes, and maintain project `CHANGELOG.md` entries for current-branch changes.
 
+Before requesting user approval at the end of each planning phase (Understanding, Requirements, Design, Task Planning), resolve and read the user-level `grill-me/SKILL.md` and run the grill-me protocol against the current draft. This is mandatory and not user-triggered:
+
+- Walk down each branch of the decision tree implied by the draft, resolving dependencies between decisions one at a time.
+- Ask exactly one question at a time. Always provide your recommended answer with the question.
+- If a question can be answered by exploring the codebase (`freighthero-codebase/:search_codebase`, `:explain_code`, `Read`, `Grep`), do that instead of asking.
+- Continue until you and the user reach shared understanding for that phase. Only then update the phase artifact and request explicit approval.
+- Skip grilling only when the user explicitly says "skip grilling" or "no questions" for the current phase. Note the skip in the response.
+
 Pause for explicit user approval after Understanding, Requirements, Design, and Task Planning before moving to the next phase.
 
 ## Architecture Changes

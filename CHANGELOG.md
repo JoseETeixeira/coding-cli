@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-05-13
+
+- Added the shipped `grill-me` skill and wired the Batman workflow (`batman.agent.md`, `BASE_SYSTEM_PROMPT.instructions.md`) to run a Grill-Me Pass before requesting user approval at the end of each planning phase (Understanding, Requirements, Design, Task Planning).
+
 ## 2026-05-11
 
 - Added a canonical PR template and updated shipped FreightHero PR guidance to use it when creating pull requests.

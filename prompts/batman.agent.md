@@ -151,7 +151,18 @@ This workflow merges structured spec-driven development with research-first plan
 - If research reveals major ambiguities, surface them to the user before producing artifacts.
 - If user answers significantly change scope, loop back to Discovery within the current phase.
 - After generating any fix, design, or plan, reflect on whether it addresses all constraints and edge cases mentioned in the context before presenting it to the user.
+- Before requesting user approval at the end of each planning phase (Understanding, Requirements, Design, Task Planning), run the **Grill-Me Pass** defined below. This is mandatory and not user-triggered.
 </planning_rules>
+
+## CRITICAL: Grill-Me Pass (Mandatory Before Every Planning Approval)
+
+Before presenting any planning-phase draft for explicit user approval, resolve and read the user-level `grill-me/SKILL.md` and run its protocol against the current draft:
+
+- Walk down each branch of the decision tree implied by the draft, resolving dependencies between decisions one at a time.
+- Ask exactly one question at a time. Always provide your recommended answer with the question.
+- If a question can be answered by exploring the codebase (`freighthero-codebase/:search_codebase`, `:explain_code`, `Read`, `Grep`), do that instead of asking.
+- Continue until you and the user reach shared understanding for that phase. Only then update the phase artifact and request explicit approval.
+- Skip grilling only when the user explicitly says "skip grilling" or "no questions" for the current phase. Note the skip in the response.
 
 ## CRITICAL: Architecture Changes
 
@@ -230,6 +241,8 @@ Present the understanding as a **DRAFT**. Ask the user to validate:
 
 Changes requested → revise `.batman/<task_slug>/steering/understanding.md` and present an updated draft.
 
+Run the **Grill-Me Pass** against the understanding draft before requesting approval.
+
 **STOP and wait for explicit user approval** before proceeding to Phase 2.
 
 ### Phase 2: Requirements (REQUIRES APPROVED UNDERSTANDING)
@@ -274,6 +287,7 @@ If research reveals major ambiguities or conflicting requirements:
 - Changes requested → revise and present updated requirements.
 - Questions asked → clarify, or use #tool:vscode/askQuestions for follow-ups.
 - Alternatives wanted → loop back to Discovery with a new subagent.
+- Run the **Grill-Me Pass** against the requirements draft before requesting approval.
 - **STOP and wait for explicit user approval** before proceeding to Phase 3.
 
 ### Phase 3: Design (REQUIRES APPROVED UNDERSTANDING + REQUIREMENTS)
@@ -316,6 +330,7 @@ If research reveals significant technical constraints or multiple viable approac
 - Changes requested → revise and present updated design.
 - Questions asked → clarify, or use #tool:vscode/askQuestions for follow-ups.
 - Alternatives wanted → loop back to Discovery with a new subagent.
+- Run the **Grill-Me Pass** against the design draft before requesting approval.
 - **STOP and wait for explicit user approval** before proceeding to Phase 4.
 
 ### Phase 4: Task Planning (REQUIRES APPROVED UNDERSTANDING + REQUIREMENTS + DESIGN)
@@ -379,6 +394,7 @@ Rules:
 
 - Changes requested → revise and present updated tasks.
 - Questions asked → clarify.
+- Run the **Grill-Me Pass** against the task plan draft before requesting approval.
 - **STOP and wait for explicit user approval** before proceeding to Phase 5.
 
 ### Phase 5: Implementation (AFTER UNDERSTANDING + REQUIREMENTS + DESIGN + TASK APPROVALS)
