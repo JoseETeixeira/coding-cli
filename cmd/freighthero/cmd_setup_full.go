@@ -75,6 +75,15 @@ func newSetupFullCmd(options *GlobalOptions, dependencies Dependencies) *cobra.C
 			}
 			logConfigResult(dependencies.Logger, configResult)
 
+			if profile.Kind == host.HostClaudeCode {
+				logStep(dependencies.Logger, "install Claude Code SessionStart hook")
+				hookResult, err := config.InstallClaudeCodeHooks(profile, layout)
+				if err != nil {
+					return err
+				}
+				logHookResult(dependencies.Logger, hookResult)
+			}
+
 			logStep(dependencies.Logger, "verify indexing dependencies")
 			indexDependencyResults, err := deps.VerifyDependencies(cmd.Context(), dependencies.Runner, deps.IndexingSpecs())
 			logDependencyResults(dependencies.Logger, indexDependencyResults)

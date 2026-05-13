@@ -151,6 +151,19 @@ func logConfigResult(logger *output.Logger, result config.ConfigResult) {
 	}
 }
 
+func logHookResult(logger *output.Logger, result config.ConfigResult) {
+	switch result.Action {
+	case "created", "updated":
+		logger.Success(fmt.Sprintf("%s SessionStart hook in %s", result.Action, result.Path))
+	case "skipped":
+		if result.Path == "" {
+			logger.Info("skipped installing SessionStart hook; not applicable for this host")
+			return
+		}
+		logger.Info(fmt.Sprintf("skipped installing SessionStart hook in %s; already configured", result.Path))
+	}
+}
+
 func runIndexingFlow(ctx context.Context, dependencies Dependencies, layout repos.RepoLayout) error {
 	logStep(dependencies.Logger, "run indexing")
 	result, err := index.BootstrapIndexing(ctx, dependencies.Runner, layout)

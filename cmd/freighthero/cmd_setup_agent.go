@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Freight-Hero/coding-cli/internal/assets"
+	"github.com/Freight-Hero/coding-cli/internal/config"
 	"github.com/Freight-Hero/coding-cli/internal/host"
 	"github.com/Freight-Hero/coding-cli/internal/repos"
 	"github.com/spf13/cobra"
@@ -61,6 +62,15 @@ func newSetupAgentCmd(options *GlobalOptions, dependencies Dependencies) *cobra.
 				return err
 			}
 			logAssetResults(dependencies.Logger, results)
+
+			if profile.Kind == host.HostClaudeCode {
+				logStep(dependencies.Logger, "install Claude Code SessionStart hook")
+				hookResult, err := config.InstallClaudeCodeHooks(profile, layout)
+				if err != nil {
+					return err
+				}
+				logHookResult(dependencies.Logger, hookResult)
+			}
 
 			dependencies.Logger.Success("agent asset setup completed")
 			return nil
