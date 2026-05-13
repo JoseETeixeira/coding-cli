@@ -66,7 +66,7 @@ After the initial search, resolve and read `visual-explainer/SKILL.md`.
 
 Prefer `visual-explainer/commands/project-recap.md` when the task needs a broad project or subsystem snapshot. Prefer `visual-explainer/commands/generate-web-diagram.md` when a focused architecture or flow diagram is the clearer artifact.
 
-Generate a self-contained HTML page under `~/.agent/diagrams/<task_slug>-understanding.html` and open it in the browser. Include:
+Generate a self-contained HTML page under `.batman/<task_slug>/steering/understanding.html` and open it in the browser. Include:
 
 - the current system summary;
 - an architecture snapshot or flow diagram;
@@ -169,7 +169,7 @@ Create or update `.batman/<task_slug>/steering/understanding.md` using this temp
 
 ## Visual Recap
 
-- Path: `<path to ~/.agent/diagrams/<task_slug>-understanding.html or None>`
+- Path: `<path to .batman/<task_slug>/steering/understanding.html or None>`
 - Notes: <what the recap highlighted, or `None` if not generated>
 
 ## Open Questions

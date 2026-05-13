@@ -202,7 +202,7 @@ Use `visual-explainer` to generate a self-contained HTML page that summarizes th
 - Prefer the `project-recap` workflow when the task needs a broad project or subsystem snapshot.
 - Prefer `generate-web-diagram` when a focused architecture or flow diagram is the clearer artifact.
 - Include the current behavior, architecture snapshot, likely change surface, source-of-truth notes, process distinctions, execution boundaries, relevant tests/docs/config touchpoints, and any architecture-risk notes already discovered.
-- Save the page under `~/.agent/diagrams/` with a task-specific filename such as `<task_slug>-understanding.html`, then open it in the browser.
+- Save the page under `.batman/<task_slug>/steering/understanding.html`, then open it in the browser.
 - Treat this HTML page as a supporting artifact. The source of truth for planning remains `.batman/<task_slug>/steering/understanding.md`.
 
 #### 1c. Understanding Capture
@@ -529,7 +529,7 @@ When a phase uses a prompt file, always read it before starting that phase.
 - Resolve and read the user-level `visual-explainer/SKILL.md` first.
 - Search the codebase with `freighthero-codebase/:search_codebase`.
 - Use `freighthero-codebase/:explain_code` for likely files and symbols.
-- Generate and open a visual current-state recap in `~/.agent/diagrams/` using `visual-explainer`.
+- Generate and open a visual current-state recap at `.batman/<task_slug>/steering/understanding.html` using `visual-explainer`.
 - Explain current behavior, why the cited evidence/source-of-truth is relevant, how similar processes differ, what likely-to-change components are used for, and where execution happens today.
 - Save the result to `.batman/<task_slug>/steering/understanding.md`.
 - Ask the user to validate the understanding and files before requirements.
