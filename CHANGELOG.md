@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-05-14
+
+- Switched the `mempalace` dependency install target to the maintained fork at `git+https://github.com/JoseETeixeira/mempalace-fix.git`. `setup full` now force-reinstalls mempalace from the fork after the regular dependency check, so existing PyPI installs are swapped over automatically. Other commands (`setup mcp`, `run indexing`) still keep an existing install in place and only fetch the fork when mempalace is missing.
+- Dedup'd `code-patterns.md.instructions.md` and `codeReview.instructions.md` so the synced `CLAUDE.md` no longer carries two copies of sections 1-12.
+
 ## 2026-05-13
 
 - Renamed the CLI from `freighthero` to `coding-cli` and dropped FreightHero-specific repository, skill, and prompt content so the tool can bootstrap any workspace.

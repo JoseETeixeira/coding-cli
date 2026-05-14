@@ -44,6 +44,9 @@ func (fake *integrationRunner) RunCapturing(_ context.Context, command runner.Co
 	case "rtk --version":
 		return runner.Result{Stdout: "0.38.0"}, nil
 	default:
+		if command.Name == "python3" && len(command.Args) >= 2 && command.Args[0] == "-c" && strings.Contains(command.Args[1], "sys.prefix") {
+			return runner.Result{Stdout: "system"}, nil
+		}
 		return runner.Result{}, fmt.Errorf("unexpected capture command %q", commandKey(command))
 	}
 }

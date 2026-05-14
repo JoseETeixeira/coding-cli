@@ -51,6 +51,18 @@ func installPython(minVersion string) func(context.Context, runner.ProcessRunner
 }
 
 func installPythonPackage(packageName string) func(context.Context, runner.ProcessRunner) error {
+	return installPythonPackageWithFlags(packageName, nil)
+}
+
+// forceInstallPythonPackage runs `pip install --force-reinstall <packageName>`,
+// bypassing the "already installed" short-circuit used by installPythonPackage's
+// callers. Use this when the spec needs to overwrite an existing install
+// regardless of version (e.g. swapping a PyPI build for a git fork).
+func forceInstallPythonPackage(packageName string) func(context.Context, runner.ProcessRunner) error {
+	return installPythonPackageWithFlags(packageName, []string{"--force-reinstall"})
+}
+
+func installPythonPackageWithFlags(packageName string, extraFlags []string) func(context.Context, runner.ProcessRunner) error {
 	return func(ctx context.Context, processRunner runner.ProcessRunner) error {
 		environmentKind, err := pythonEnvironmentKind(ctx, processRunner)
 		if err != nil {
@@ -76,6 +88,7 @@ func installPythonPackage(packageName string) func(context.Context, runner.Proce
 		if environmentKind != pythonEnvironmentVirtual {
 			args = append(args, "--user")
 		}
+		args = append(args, extraFlags...)
 		args = append(args, packageName)
 
 		return processRunner.Run(ctx, runner.Command{Name: "python3", Args: args})

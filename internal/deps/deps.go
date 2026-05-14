@@ -12,6 +12,11 @@ import (
 	"github.com/coding-cli/coding-cli/internal/runner"
 )
 
+// mempalaceInstallTarget is the pip requirement specifier used when installing
+// mempalace. The project tracks a maintained fork at JoseETeixeira/mempalace-fix
+// rather than the PyPI package.
+const mempalaceInstallTarget = "git+https://github.com/JoseETeixeira/mempalace-fix.git"
+
 type DependencySpec struct {
 	Name        string
 	MinVersion  string
@@ -121,9 +126,17 @@ func mempalaceSpec() DependencySpec {
 		MinVersion:  "0.0.0",
 		Required:    true,
 		Check:       runner.Command{Name: "python3", Args: []string{"-m", "pip", "show", "mempalace"}},
-		InstallFunc: installPythonPackage("mempalace"),
-		Recovery:    "install mempalace with python3 -m pip install --user mempalace",
+		InstallFunc: installPythonPackage(mempalaceInstallTarget),
+		Recovery:    "install mempalace with python3 -m pip install --user " + mempalaceInstallTarget,
 	}
+}
+
+// EnsureMempalaceForkInstall force-reinstalls mempalace from the JoseETeixeira
+// fork, regardless of what `pip show mempalace` reports. Use this from setup
+// flows that must guarantee the fork is the active install (e.g. `setup full`)
+// — `VerifyDependencies` alone will keep an existing PyPI build in place.
+func EnsureMempalaceForkInstall(ctx context.Context, processRunner runner.ProcessRunner) error {
+	return forceInstallPythonPackage(mempalaceInstallTarget)(ctx, processRunner)
 }
 
 func cocoindexSpec() DependencySpec {

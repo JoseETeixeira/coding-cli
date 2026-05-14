@@ -44,14 +44,15 @@ Phases, in order:
 1. Resolve workspace and validate the `coding-cli/` directory.
 2. Resolve the host profile.
 3. Verify dependencies (`SetupFullSpecs`: adds `git` on top of `SetupMCPSpecs`).
-4. Sync assets (`setup agent`).
-5. Build `query-code-mcp` (`npm install` + `npm run build`).
-6. Write MCP config.
-7. Install Claude Code SessionStart hook (Claude Code only).
-8. Verify indexing dependencies (`IndexingSpecs`).
-9. Run the indexing flow (build MCP if missing, create venv, run `mempalace wake-up`, run `cocoindex update`).
+4. Force-reinstall `mempalace` from the `JoseETeixeira/mempalace-fix` fork so any prior PyPI build is replaced.
+5. Sync assets (`setup agent`).
+6. Build `query-code-mcp` (`npm install` + `npm run build`).
+7. Write MCP config.
+8. Install Claude Code SessionStart hook (Claude Code only).
+9. Verify indexing dependencies (`IndexingSpecs`).
+10. Run the indexing flow (build MCP if missing, create venv, run `mempalace wake-up`, run `cocoindex update`).
 
-`setup full` is idempotent — rerunning skips work that's already complete and logs `skipped` rather than redoing it.
+`setup full` is idempotent for everything except the mempalace force-reinstall — rerunning swaps mempalace again each time, even when it's already from the fork. All other steps skip work that's already complete and log `skipped` rather than redoing it.
 
 ### `coding-cli run indexing`
 
@@ -138,7 +139,7 @@ The CLI verifies (and installs when possible) a tiered set of tools.
 | `npm` | 10.0.0 | Same. |
 | `python3` | 3.9.0 | Tries `python3.13`/`3.12`/`3.11`/`3.10`/`python` (or `py -3.X` on Windows). Falls back to `uv venv` in `~/.local/share/coding-cli/python/<ver>` and exposes a `python3` shim on PATH. |
 | `pip` | any | `python3 -m ensurepip --upgrade`. |
-| `mempalace` | any | `python3 -m pip install --user mempalace` (or into the managed venv). |
+| `mempalace` | any | `python3 -m pip install --user git+https://github.com/JoseETeixeira/mempalace-fix.git` (or into the managed venv). Tracks the maintained fork, not PyPI. |
 | `rtk` | any | Downloads from `rtk-ai/rtk` GitHub releases, installs into `~/.local/bin` (Unix) or `%LOCALAPPDATA%\Programs\coding-cli\bin` (Windows), persists PATH. |
 
 `SetupFullSpecs` — adds `git` (≥2.0.0) on top of `SetupMCPSpecs`.

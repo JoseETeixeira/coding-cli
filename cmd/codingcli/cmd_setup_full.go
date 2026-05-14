@@ -48,6 +48,12 @@ func newSetupFullCmd(options *GlobalOptions, dependencies Dependencies) *cobra.C
 				return err
 			}
 
+			logStep(dependencies.Logger, "swap mempalace to maintained fork")
+			if err := deps.EnsureMempalaceForkInstall(cmd.Context(), dependencies.Runner); err != nil {
+				return err
+			}
+			dependencies.Logger.Success("mempalace fork install ensured")
+
 			logStep(dependencies.Logger, fmt.Sprintf("sync coding-cli assets for %s", profile.DisplayName))
 			assetResults, err := assets.SyncAssets(layout, profile, assets.SyncOptions{Force: options.Force})
 			if err != nil {
