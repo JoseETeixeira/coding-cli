@@ -6,6 +6,10 @@ applyTo: '**'
 
 These patterns are derived from team code reviews and represent our preferred coding style. Freight-Hero backend patterns are primarily TypeScript/EZ4; AI Watchtower patterns are Python/agent-workflow focused and include recurring guidance from closed `ai_watchtower` PRs reviewed or authored by `arthurmf`.
 
+## AI Watchtower Path & Config Boundaries (input + payload validation)
+
+Missing or empty critical payload fields fail closed (`ValueError` + ERROR log), same as unknown variants. Don't fall through to free-form classification when timer / classifier / route payloads are malformed.
+
 ## AI Watchtower Path & Config Boundaries
 
 - Validate every caller-controlled path segment with a strict slug allowlist, then verify the resolved path stays inside the intended root.
@@ -29,6 +33,9 @@ path = assert_within(skills_root / workflow / broker / f"{skill_slug}.md", skill
 - Use closed vocabularies for LLM outputs such as flags, tiers, signal types, and classifications. Keep hard-flag sets synchronized with type assertions.
 - Shadow-mode telemetry must mirror live-equivalent decisions, including overrides and `would_have_transitioned` style fields.
 - Trusted-system events need stable provenance metadata before they can drive live transitions.
+- Tool config and prompt content stay aligned. Removing a tool from workflow yaml → scrub every prompt that instructs calling it (system prompts, skill bodies, factory wrappers).
+- Skill body = complete system prompt. Factory wrappers that duplicate or contradict the skill body are anti-pattern; delete during SOP → Skills migration.
+- Universally-required tools live in `_base.yaml::sub_workflows.<sub>.tools`. Broker overlays (`patterns/<broker>_<sub>.yaml`) carry deltas only.
 
 ## AI Watchtower Testing Layers
 
@@ -37,6 +44,9 @@ path = assert_within(skills_root / workflow / broker / f"{skill_slug}.md", skill
 - Prompt-touching changes should keep the scenario suite green; repeated scenario failures are regressions unless proven otherwise.
 - Production fixes should add redacted replay fixtures that preserve the semantic failure shape.
 - Rollout/gate changes need non-regression matrices for existing transition sources and unchanged paths.
+- Tool-only scenario suites are the primary behavioral merge gate. Live-LLM judge runners are deprecated (skip-shim pattern from `confirm_pickup` / `confirm_delivery` / `initiate_tracking`).
+- Robot framework is not a validated merge gate; use as supplementary evidence only — regex on UI-rendered state-field artifacts is brittle.
+- Shared-intent body restructures must prove 0pp delta on every neighboring workflow's tool-only suite (pre/post).
 
 ## AI Watchtower Observability
 

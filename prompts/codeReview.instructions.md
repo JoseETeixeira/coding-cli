@@ -227,6 +227,7 @@ const integration = await IntegrationRepository.findOne({ where: { id } });
 - Fail fast on unknown workflow variants, model route modes, provider types, skill mappings, or sub-agent mappings. Raise a clear `ValueError` instead of silently falling back or allowing a later `FileNotFoundError`.
 - Prefer explicit default profiles only where the product contract supports a default, such as a default broker profile. Do not use broad fallback behavior to hide invalid configuration.
 - For cross-load or cross-context data, scope reads and writes by the current load/task/message identifiers only. Never let cached or historical context from another load influence the current workflow.
+- Treat missing or empty critical payload fields (e.g. timer `motivation`, classifier `selected_*`) as equivalent to unknown variants. Fail fast with `ValueError`, never silent-fallback to free-form classification — the model can pick arbitrary intents and fire outbound actions.
 
 ```py
 # Bad: validated by convention only
@@ -249,6 +250,7 @@ path = assert_within(SKILLS_ROOT / workflow / broker / f"{skill_slug}.md", SKILL
 - Shadow-mode logs must reflect live-equivalent behavior. Fields such as `would_have_transitioned`, overrides, routing, and escalation decisions should match what live mode would have done.
 - Rollout-mode changes need explicit guardrails: shadow/live parity, rollback path, log visibility, and a documented go/no-go decision.
 - Trusted-system or tool-originated events are not automatically trusted. Require stable provenance metadata before allowing them to drive live transitions.
+- Tool config and prompt content must stay aligned. Removing a tool from a workflow's tool list requires scrubbing every prompt that instructs the agent to call it (system prompts, skill bodies, factory wrappers). Mismatch produces invalid tool-call attempts instead of the intended behavior.
 
 ---
 
@@ -261,6 +263,9 @@ path = assert_within(SKILLS_ROOT / workflow / broker / f"{skill_slug}.md", SKILL
 - Add production-case replay fixtures when a change fixes a production failure. Redact sensitive details, but preserve the semantic shape that caused the bug.
 - For rollout or gate changes, add non-regression matrices covering every existing transition source and assert unchanged paths remain unchanged.
 - When an integration path failed in dev/prd, add at least one runtime integration test that exercises the real path, not only isolated helper logic.
+- Tool-only scenario suites are the primary behavioral merge gate. Live-LLM judge runners are deprecated (skip-shim pattern from `confirm_pickup` / `confirm_delivery` / `initiate_tracking`); new workflow migrations port behavioral tests to `tool_only/` registries with deterministic expectations.
+- Robot framework is NOT a validated merge gate. Robot regex on UI-rendered state-field artifacts is brittle and breaks on state-field renames even when agent behavior is unchanged (see PR #1357 — `selected_skill` state-field rename broke the `unresponsive` regex). Use Robot as supplementary evidence only.
+- When restructuring a shared intent body across multiple workflows, prove "content moved, not added" with pre/post tool-only pass-rate delta = 0pp on every neighboring workflow that composes the intent.
 
 ---
 
@@ -300,6 +305,9 @@ Non-negotiable rules to verify on every skills diff:
 - **§3.5 / §10.11 default with escape hatch, not a menu.** State the default tool/path, then list at most one conditional alternative.
 - **§4.3 no voodoo constants.** Every timer duration, threshold, or numeric value carries a stated reason.
 - **§3.4 no time-sensitive content.** No absolute dates or "after <date>" branches in skill bodies.
+- **Skill body is the complete system prompt.** When migrating a factory from a wrapper template (e.g. `*_SYSTEM_PROMPT.format(...)`) to `SkillsService.load_skill(...)`, delete the wrapper. Duplicated guardrails or hardcoded tool instructions in a factory wrapper contradict the skill body and break the workflow → tool → prompt contract (see PR #1360 / `RESUMPTION_SYSTEM_PROMPT`).
+- **Universal-required tools belong in `_base.yaml`, not broker overlays.** If a shared intent's procedure under `<workflow>` requires a tool on every broker, expose it in `app/configs/workflows/<workflow>/_base.yaml::sub_workflows.<sub>.tools`. Broker overlays (`patterns/<broker>_<sub>.yaml`) carry deltas only (§7.3 clarification; see PR #1357 / `get_past_tasks`).
+- **Delete dead SOP runtime in the same migration PR** when static evidence (`rg "skill_router|skills_loader|skill_agent_factory|skills_manifest"` returns zero hits in `app/` + `tests/`) proves zero callers. Do not defer to a later cleanup workstream.
 
 For changes touching `app/services/skills_service.py`, `app/utils/skill_tools.py`, `SkillToolOutputMiddleware`, or `PostRunContextEditingMiddleware`, verify the runtime invariants in §1.4 are preserved (composition order, context clearing between invocations, raw-markdown tool output, auto-generated reference catalog).
 
@@ -347,3 +355,10 @@ Before approving a PR, verify:
 - [ ] Boundary statements present in intent bodies (§8.4)
 - [ ] No meta-mechanism leakage, no engineering references, no time-sensitive content, no menus (§3.2, §3.4, §3.5, §3.6, §10.4)
 - [ ] Numeric constants justified (§4.3)
+- [ ] Missing/empty critical payload fields fail closed, same as unknown variants
+- [ ] Tool config + prompt content aligned — no prompt instruction to call a tool not in workflow yaml
+- [ ] Behavioral tests use `tool_only/` pattern; Robot framework not relied on as merge gate
+- [ ] Shared-intent body restructures show 0pp delta on neighboring workflows' tool-only suites
+- [ ] Factory wrapper templates deleted when migrating to `SkillsService.load_skill` (no duplicate guardrails)
+- [ ] Universal-required tools live in `_base.yaml`, not broker overlay (§7.3)
+- [ ] Legacy SOP runtime deleted in same PR when `rg` proves zero callers
