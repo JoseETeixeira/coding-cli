@@ -33,6 +33,58 @@ applyTo: '**'
 - If a specialist fits the task, run `mempalace_list_agents` and use the appropriate agent.
 - When new facts are relevant to project history, save them with MemPalace so they can be retrieved later.
 
+## CRITICAL: Auto-Improvement of the Customization Layer
+
+The `auto-improvement` skill is **always armed** — it does not require a
+trigger keyword. Consult `auto-improvement/SKILL.md` every turn and fire
+when ANY of the following hold:
+
+- you asked a clarifying question and the user just answered with durable
+  information (a preference, a convention, an "always" or "never" rule);
+- the user asks you to address PR review feedback that targets agent or
+  skill behavior;
+- the user issues a directive that changes how the agent should behave
+  AND **either** (a) the directive is not already covered by a PRD,
+  Notion ticket, GitHub issue, repository spec, or an existing skill /
+  instruction file, **or** (b) the directive **contradicts** an
+  existing tracked source. PRDs and Notion tickets are NOT absolute
+  truth — they are often AI-generated, copied from a template, or
+  written before the implementation settled. When the user contradicts
+  one, surface both sides and let the user choose: update the tracked
+  source, codify in the agent layer, or both. Verify the contradiction
+  is real by searching Notion / GitHub / `.batman/` / `USER_*_DIR`
+  first.
+- the active host memory file (`$CLAUDE_CONFIG_DIR/CLAUDE.md` /
+  `$HOME/.claude/CLAUDE.md` / `$HOME/.agents/AGENTS.md` / repo
+  `.github/copilot-instructions.md` / workspace `CLAUDE.md`) exceeds
+  **40,000 characters**. The threshold check runs once per session and
+  after every edit to one of these files; when over, offer compaction
+  via Workflow 4. Measurement is by `wc -c` (deterministic across
+  hosts, no tokenizer dependency).
+
+The skill is **agent-agnostic**: it resolves user-level customization
+folders via `USER_AGENTS_DIR`, `USER_PROMPTS_DIR`,
+`USER_INSTRUCTIONS_DIR`, `USER_SKILLS_DIR`, then falls back to host
+conventions (`$CLAUDE_CONFIG_DIR`/`~/.claude/`, `~/.agents/`,
+`.github/{agents,prompts,instructions,skills}/`) so the same skill works
+under Claude Code, Codex, generic agent runtimes, and GitHub Copilot.
+
+Hard guardrails:
+
+- Refuses edits against the protected list: `ai-watchtower-skills-authoring`,
+  `ai-watchtower-wiki`, `mempalace`, `cocoindex`, `karpathy-guidelines`.
+  `codeReview.instructions.md`, `code-patterns.md.instructions.md`, and
+  agent definitions are mutable and intentionally NOT protected.
+- Pre-shows every diff and waits for explicit user approval before
+  writing — including the 40k auto-compaction case, which surfaces the
+  candidate but never auto-writes.
+- Mirrors every edit across every installed host root the resolver
+  finds — `~/.claude/`, `~/.agents/`, the workspace
+  `coding-cli/{prompts,skills,…}/` copy, and `.github/...` when
+  applicable. Never edits one root in isolation.
+- Stays silent on turns with no codification candidate. Ambient does
+  not mean noisy.
+
 ## CRITICAL: Session Start/Compacting Sessions
 - When starting a new session always read the `caveman` skill and use `/caveman ultra` to enable caveman mode to save tokens.
 - After compacting a session always run `/caveman ultra` again to ensure its usage.
