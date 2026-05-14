@@ -8,6 +8,7 @@ import (
 	"github.com/Freight-Hero/coding-cli/internal/host"
 	"github.com/Freight-Hero/coding-cli/internal/index"
 	"github.com/Freight-Hero/coding-cli/internal/repos"
+	"github.com/Freight-Hero/coding-cli/internal/state"
 	"github.com/spf13/cobra"
 )
 
@@ -59,6 +60,13 @@ func newSetupMCPcmd(options *GlobalOptions, dependencies Dependencies) *cobra.Co
 				return err
 			}
 			logConfigResult(dependencies.Logger, configResult)
+
+			// Persist the workspace root for cwd-outside-workspace fallback
+			// in `freighthero run indexing`. See cmd_setup_full.go for context.
+			if err := state.SetDefaultWorkspaceRoot(layout.Root); err != nil {
+				dependencies.Logger.Info(fmt.Sprintf("warning: could not persist default workspace: %v", err))
+			}
+
 			dependencies.Logger.Success("MCP setup completed")
 			return nil
 		},

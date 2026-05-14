@@ -25,16 +25,81 @@ CHUNK_OVERLAP = int(os.getenv("CODEBASE_CHUNK_OVERLAP", "250"))
 MAX_FILE_BYTES = int(os.getenv("CODEBASE_MAX_FILE_BYTES", "350000"))
 MAX_INFLIGHT_COMPONENTS = int(os.getenv("COCOINDEX_MAX_INFLIGHT_COMPONENTS", "8"))
 
-AI_WATCHTOWER_ROOT = coco.ContextKey[pathlib.Path]("freighthero_ai_watchtower_root")
-BACKEND_ROOT = coco.ContextKey[pathlib.Path]("freighthero_backend_root")
-FRONTEND_ROOT = coco.ContextKey[pathlib.Path]("freighthero_frontend_root")
 INDEX_ROOT = coco.ContextKey[pathlib.Path]("freighthero_codebase_index_root")
 
-PROJECT_ROOTS = [
-    ("ai_watchtower", AI_WATCHTOWER_ROOT),
-    ("backend", BACKEND_ROOT),
-    ("frontend", FRONTEND_ROOT),
-]
+# Project discovery has three modes, in priority order. Mirrors the
+# implementation in JoseETeixeira/coding-cli so `freighthero run indexing`
+# can scope the index to the cwd (Windows users typically open VS Code at the
+# project they're working on rather than the monorepo root):
+#
+#   1. CODEBASE_PROJECT_PATHS — explicit ``name=/abs/path`` entries, joined
+#      by commas. Used when the cwd is outside the workspace, so the project
+#      can live anywhere on disk.
+#   2. CODEBASE_PROJECTS      — comma-separated names resolved under
+#      REPO_ROOT. Used when the cwd is inside the workspace and we want to
+#      scope to a single sibling project.
+#   3. Auto-discover          — the historical hardcoded FreightHero set
+#      (ai_watchtower, backend, frontend) when neither env var is set, so
+#      legacy callers keep working unchanged.
+PROJECTS_ENV = os.getenv("CODEBASE_PROJECTS", "").strip()
+PROJECT_PATHS_ENV = os.getenv("CODEBASE_PROJECT_PATHS", "").strip()
+DEFAULT_PROJECT_NAMES = ("ai_watchtower", "backend", "frontend")
+
+
+def _parse_project_paths(raw: str) -> list[tuple[str, pathlib.Path]]:
+    entries: list[tuple[str, pathlib.Path]] = []
+    for item in raw.split(","):
+        item = item.strip()
+        if not item or "=" not in item:
+            continue
+        name, _, path_str = item.partition("=")
+        name = name.strip()
+        path_str = path_str.strip()
+        if not name or not path_str:
+            continue
+        candidate = pathlib.Path(path_str).expanduser().resolve()
+        if candidate.is_dir():
+            entries.append((name, candidate))
+    return entries
+
+
+def _discover_projects() -> list[tuple[str, pathlib.Path]]:
+    if PROJECT_PATHS_ENV:
+        return _parse_project_paths(PROJECT_PATHS_ENV)
+    if PROJECTS_ENV:
+        names = [item.strip() for item in PROJECTS_ENV.split(",") if item.strip()]
+    else:
+        names = list(DEFAULT_PROJECT_NAMES)
+    projects: list[tuple[str, pathlib.Path]] = []
+    for name in names:
+        project_root = (REPO_ROOT / name).resolve()
+        if project_root.is_dir():
+            projects.append((name, project_root))
+    return projects
+
+
+# Resolved at import time so the rest of the pipeline can build ContextKeys
+# and provide(...) calls deterministically.
+PROJECT_LIST: list[tuple[str, pathlib.Path]] = _discover_projects()
+
+# One ContextKey per discovered project, keyed by name so callers can fetch
+# the right one without juggling a separate map. The key namespace mirrors
+# the legacy ``freighthero_<name>_root`` shape for backwards compatibility
+# with anything that introspects the index.
+PROJECT_ROOT_KEYS: dict[str, "coco.ContextKey[pathlib.Path]"] = {
+    name: coco.ContextKey[pathlib.Path](f"freighthero_{name}_root")
+    for name, _ in PROJECT_LIST
+}
+
+# Legacy aliases for callers that imported the named constants directly.
+# When the corresponding project is not in the current scope these names
+# are intentionally absent from globals so ``from codebase_index import
+# AI_WATCHTOWER_ROOT`` fails loudly rather than silently importing None.
+for _name, _key in PROJECT_ROOT_KEYS.items():
+    globals()[f"{_name.upper()}_ROOT"] = _key
+del _name, _key
+
+PROJECT_ROOTS = [(name, PROJECT_ROOT_KEYS[name]) for name, _ in PROJECT_LIST]
 
 SOURCE_MATCHER = PatternFilePathMatcher(
     included_patterns=[
@@ -110,9 +175,12 @@ async def coco_lifespan(builder: coco.EnvironmentBuilder) -> AsyncIterator[None]
     cocoindex_db.parent.mkdir(parents=True, exist_ok=True)
     INDEX_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     builder.settings.db_path = cocoindex_db
-    builder.provide(AI_WATCHTOWER_ROOT, REPO_ROOT / "ai_watchtower")
-    builder.provide(BACKEND_ROOT, REPO_ROOT / "backend")
-    builder.provide(FRONTEND_ROOT, REPO_ROOT / "frontend")
+    # Provide every discovered project's resolved path against its ContextKey.
+    # When PROJECT_PATHS_ENV was used the path may live outside REPO_ROOT; we
+    # already resolved that in :func:`_discover_projects` so we pass it through
+    # verbatim here rather than re-deriving from REPO_ROOT.
+    for _name, _source_root in PROJECT_LIST:
+        builder.provide(PROJECT_ROOT_KEYS[_name], _source_root)
     builder.provide(INDEX_ROOT, INDEX_OUTPUT_DIR)
     yield
 
@@ -214,6 +282,17 @@ async def index_project(
 @coco.fn
 async def app_main() -> None:
     target_dir = await localfs.mount_dir_target(INDEX_ROOT)
+    if not PROJECT_ROOTS:
+        # No projects matched the current scope. Skip the mount loop instead
+        # of registering an empty pipeline — cocoindex would otherwise log a
+        # confusing "no components" warning. Print so the operator sees why.
+        print(
+            f"codebase_index: no projects to index "
+            f"(CODEBASE_PROJECT_PATHS={PROJECT_PATHS_ENV!r} CODEBASE_PROJECTS={PROJECTS_ENV!r} "
+            f"REPO_ROOT={REPO_ROOT})",
+            file=sys.stderr,
+        )
+        return
     for project, source_root in PROJECT_ROOTS:
         await coco.mount(
             coco.component_subpath("project", project),

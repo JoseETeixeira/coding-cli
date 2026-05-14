@@ -10,6 +10,7 @@ import (
 
 	clierrors "github.com/Freight-Hero/coding-cli/internal/errors"
 	"github.com/Freight-Hero/coding-cli/internal/host"
+	"github.com/Freight-Hero/coding-cli/internal/pyexec"
 	"github.com/Freight-Hero/coding-cli/internal/repos"
 	toml "github.com/pelletier/go-toml/v2"
 )
@@ -54,10 +55,16 @@ func ManagedServers(layout repos.RepoLayout, profile host.HostProfile) map[strin
 				"FREIGHTHERO_REPO_ROOT": layout.Root,
 			},
 		},
-		"mempalace": {
-			Command: "python3",
-			Args:    []string{"-m", "mempalace.mcp_server"},
-		},
+		"mempalace": func() ManagedServer {
+			// Use pyexec to pick the right Python launcher per OS — `python3`
+			// on macOS/Linux, `py -3` on Windows (avoids the Microsoft Store
+			// python3.exe stub that exits non-zero with "Python was not found").
+			pyCmd, pyArgs := pyexec.Command()
+			return ManagedServer{
+				Command: pyCmd,
+				Args:    append(append([]string{}, pyArgs...), "-m", "mempalace.mcp_server"),
+			}
+		}(),
 	}
 
 	githubServer := ManagedServer{

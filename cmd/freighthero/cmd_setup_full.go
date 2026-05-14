@@ -9,6 +9,7 @@ import (
 	"github.com/Freight-Hero/coding-cli/internal/host"
 	"github.com/Freight-Hero/coding-cli/internal/index"
 	"github.com/Freight-Hero/coding-cli/internal/repos"
+	"github.com/Freight-Hero/coding-cli/internal/state"
 	"github.com/spf13/cobra"
 )
 
@@ -93,6 +94,14 @@ func newSetupFullCmd(options *GlobalOptions, dependencies Dependencies) *cobra.C
 
 			if err := runIndexingFlow(cmd.Context(), dependencies, layout); err != nil {
 				return err
+			}
+
+			// Persist the workspace root so `freighthero run indexing` from
+			// outside the workspace (Windows users typically open VS Code at
+			// the project they are working on, not the monorepo root) can
+			// fall back to the last setup target.
+			if err := state.SetDefaultWorkspaceRoot(layout.Root); err != nil {
+				dependencies.Logger.Info(fmt.Sprintf("warning: could not persist default workspace: %v", err))
 			}
 
 			dependencies.Logger.Success("full FreightHero setup completed")

@@ -21,6 +21,14 @@ applyTo: '**'
 
 - You have MemPalace available through MCP.
 - At the start of work, run `mempalace wake-up` and `mempalace_status`.
+- **Auto-bootstrap on first contact with a project.** If `mempalace_status`
+  reports zero drawers for the project's wing OR the project root lacks a
+  `mempalace.yaml`, run `mempalace init .` then `mempalace mine .` from the
+  project root BEFORE issuing any `mempalace_search` / `mempalace_diary_read`.
+  Querying an empty wing wastes tool calls and produces false "no history"
+  signals. Skip only when the wing already has drawers or the user explicitly
+  asks for an inline / hotfix path. See the user-level `mempalace/SKILL.md`
+  § "Bootstrap the current project" for the full protocol.
 - When past decisions, prior discussions, preferences, or project history may matter, use `mempalace_search`.
 - If a specialist fits the task, run `mempalace_list_agents` and use the appropriate agent.
 - When new facts are relevant to project history, save them with MemPalace so they can be retrieved later.
