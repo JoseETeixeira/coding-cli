@@ -62,6 +62,56 @@ First call:
 
 This confirms MemPalace is available and reminds the agent of the current memory protocol.
 
+### 1a. Bootstrap the current project (auto-init + auto-mine when needed)
+
+Before any retrieval, ensure the current project is initialized AND has at least
+one mine pass on record. Skip when the project has clearly already been
+bootstrapped (a recent mine entry shows up in `diary_read`/`search`, or
+`status` reports drawers for the project's wing).
+
+Detection:
+
+1. Resolve the project root for the current task. The natural anchor is the
+   workspace root (the top-level repo directory), or the directory the user
+   referenced when starting work.
+2. Check `mcp_mempalace_mempalace_status`. If the response shows zero drawers
+   for the project's wing, OR if the palace has no `mempalace.yaml` for this
+   project, the project has not been initialized.
+3. Look for a `mempalace.yaml` in the project root. Missing file = not
+   initialized.
+
+Bootstrap actions, in order, both run from the project root:
+
+1. If no `mempalace.yaml` exists:
+   ```bash
+   mempalace init .
+   ```
+   This creates `mempalace.yaml`, registers a wing for the project, and
+   prepares the palace directory.
+2. Once initialized, run an initial mine so retrieval has something to work
+   against:
+   ```bash
+   mempalace mine .
+   ```
+   On large repos this may take a few minutes; the user wins back the cost
+   on the first prompt that needs project history.
+
+Rules:
+
+- **Init and mine BEFORE retrieval.** A `diary_read` / `search` against an
+  empty wing wastes a tool call and produces a false "no prior context"
+  signal. Bootstrapping first means the very first retrieval is honest.
+- **Don't re-init.** Running `mempalace init .` on a project that already
+  has `mempalace.yaml` is a no-op but is unnecessary noise. Check first.
+- **Don't re-mine on every session.** Once a project has been mined at
+  least once, subsequent sessions rely on hook-driven incremental mines.
+  Only run `mempalace mine .` again if the user explicitly asks, or if
+  the project root contains many files the palace clearly has not yet
+  seen (large gap between filesystem and `status` counts for the wing).
+- If `mempalace init` or `mempalace mine` fails, surface the error and
+  continue without retrieval. Never block the user's task on a memory
+  bootstrap failure.
+
 Then decide whether retrieval is needed.
 
 For history-sensitive or resume-style work, use one or both of:
