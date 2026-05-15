@@ -96,6 +96,7 @@ func ResolveProfile(kind HostKind, resolver paths.Resolver) (HostProfile, error)
 				AgentDir:       resolver.VSCodeAgentDir(),
 				SkillDir:       resolver.GenericSkillDir(),
 				MCPConfigPath:  resolver.VSCodeMCPConfigPath(),
+				SettingsPath:   resolver.VSCodeSettingsPath(),
 			},
 		}, nil
 	case HostBatman:
@@ -111,6 +112,7 @@ func ResolveProfile(kind HostKind, resolver paths.Resolver) (HostProfile, error)
 				AgentDir:       resolver.VSCodeAgentDir(),
 				SkillDir:       resolver.GenericSkillDir(),
 				MCPConfigPath:  resolver.VSCodeMCPConfigPath(),
+				SettingsPath:   resolver.VSCodeSettingsPath(),
 			},
 		}, nil
 	case HostClaudeCode:

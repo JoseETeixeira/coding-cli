@@ -72,6 +72,13 @@ func newSetupAgentCmd(options *GlobalOptions, dependencies Dependencies) *cobra.
 				logHookResult(dependencies.Logger, hookResult)
 			}
 
+			logStep(dependencies.Logger, fmt.Sprintf("install git guardrails for %s", profile.DisplayName))
+			guardrailResult, err := config.InstallGitGuardrails(profile, layout)
+			if err != nil {
+				return err
+			}
+			logHookResult(dependencies.Logger, guardrailResult)
+
 			dependencies.Logger.Success("agent asset setup completed")
 			return nil
 		},

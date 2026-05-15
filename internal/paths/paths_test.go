@@ -45,6 +45,23 @@ func TestResolverUsesDefaultMacPaths(t *testing.T) {
 	}
 }
 
+func TestVSCodeSettingsPathDefaultsAndOverride(t *testing.T) {
+	t.Parallel()
+
+	resolver := NewResolverWith("/Users/tester", "darwin", nil)
+	want := filepath.Join("/Users/tester", "Library", "Application Support", "Code", "User", "settings.json")
+	if got := resolver.VSCodeSettingsPath(); got != want {
+		t.Fatalf("VSCodeSettingsPath() = %q, want %q", got, want)
+	}
+
+	override := NewResolverWith("/tmp/home", "linux", lookupMap(map[string]string{
+		"VSCODE_SETTINGS_PATH": "/etc/code/settings.json",
+	}))
+	if got := override.VSCodeSettingsPath(); got != "/etc/code/settings.json" {
+		t.Fatalf("VSCodeSettingsPath() override = %q", got)
+	}
+}
+
 func TestClaudeSettingsPathFollowsClaudeRoot(t *testing.T) {
 	t.Parallel()
 

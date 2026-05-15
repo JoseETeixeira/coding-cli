@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-05-15
+
+- Added `freighthero setup agent` and `setup full` provider-aware git guardrail installation. Claude Code gets a real PreToolUse hook (`block-dangerous-git.sh`) blocking `git push`, `reset --hard`, `clean -f`, `branch -D`, `checkout .`, `restore .`. VS Code / Batman get deny rules merged into `chat.tools.terminal.autoApprove` in user settings.json. Codex gets a managed guardrail block written to `~/.codex/AGENTS.md` (advisory — Codex has no shell PreToolUse hook).
+- Bundled `coding-cli/.claude/hooks/block-dangerous-git.sh` as the canonical source of the Claude Code hook script. The CLI copies it into `~/.claude/hooks/` and merges the hook entry into the existing PreToolUse Bash matcher without disturbing other hooks.
+- Added new shipped skills mirrored under `coding-cli/skills/`: `diagnose` (disciplined bug-diagnosis loop), `handoff` (compact session into handoff doc), `git-guardrails-claude-code` (skill that installs the Claude Code hook directly).
+- Added `paths.VSCodeSettingsPath()` resolver and `SettingsPath` field on the VS Code and Batman host profile roots so the guardrail installer can locate `Code/User/settings.json` cross-platform.
+
 ## 2026-05-13
 
 - Added the shipped `grill-me` skill and wired the Batman workflow (`batman.agent.md`, `BASE_SYSTEM_PROMPT.instructions.md`) to run a Grill-Me Pass before requesting user approval at the end of each planning phase (Understanding, Requirements, Design, Task Planning).
