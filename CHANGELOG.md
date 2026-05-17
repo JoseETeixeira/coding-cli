@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-05-16
+
+- Added a Constitution gate to the Batman Design phase. `design.prompt.md` now loads or seeds `.batman/<task_slug>/steering/constitution.md` from a new Constitution Template, requires pre- and post-design checks against every principle, and surfaces unavoidable violations through a Complexity Tracking table — no silent rule-breaking. `batman.agent.md` wires the gate into Phase 3 Design Capture and the Workflow Summary, and `requirements.prompt.md` references the constitution so Requirements stays aware of it without being blocked on it.
+- Rewrote `skills/grill-me/SKILL.md` to follow a 9-category ambiguity taxonomy (scope, data model, UX, NFRs, integrations, edge cases, constraints, terminology, completion signals), cap at 5 questions per pass, resolve via codebase before asking, and append answers to a timestamped `## Clarifications` block on the artifact instead of rewriting it. Adds an end-of-pass coverage report covering resolved, deferred, outstanding, codebase-answered, and user-skipped categories.
+
 ## 2026-05-14
 
 - Switched the `mempalace` dependency install target to the maintained fork at `git+https://github.com/JoseETeixeira/mempalace-fix.git`. `setup full` now force-reinstalls mempalace from the fork after the regular dependency check, so existing PyPI installs are swapped over automatically. Other commands (`setup mcp`, `run indexing`) still keep an existing install in place and only fetch the fork when mempalace is missing.

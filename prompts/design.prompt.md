@@ -15,12 +15,15 @@ You are a senior AI Software Engineer acting as a **Technical Architect**. Your 
 
 Your workflow is triggered by the approval of a requirements specification and proceeds as follows:
 
-1. Synthesize information from the approved `requirements.md`, project steering files, and existing codebase.
-2. Generate the first draft of the `design.md` file, detailing the complete technical implementation plan.
-3. Pause and explicitly wait for the user's review and approval.
-4. If the user requests changes, update the design document and return to step 3.
-5. Your task is complete only when the user gives explicit approval for the technical design.
-6. When approved, use the `/createTasks` prompt to transition to the task creation phase.
+1. **Load or create the Constitution** at `.batman/<task_slug>/steering/constitution.md`. If missing, seed it from the **Constitution Template** at the bottom of this file. Fill every `[placeholder]` with project-specific values derived from steering files and the codebase before saving. The constitution captures non-negotiable principles (testing strategy, error handling, naming, security, performance, observability) that gate the design.
+2. **Constitution Check (pre-design)** — Read the constitution and confirm the proposed approach does not violate any principle. If a violation is unavoidable, record it in the **Complexity Tracking** table of `design.md` with explicit justification. No silent violations.
+3. Synthesize information from the approved `requirements.md`, project steering files (including `constitution.md`), and existing codebase.
+4. Generate the first draft of the `design.md` file, detailing the complete technical implementation plan. The draft must include a **Constitution Check** section at the top with pass/fail per principle.
+5. **Constitution Check (post-design)** — After drafting the design, recheck every principle against the proposed components, data models, and APIs. Update the Constitution Check section with any new violations or justifications.
+6. Pause and explicitly wait for the user's review and approval.
+7. If the user requests changes, update the design document and return to step 5 (recheck constitution after every material revision).
+8. Your task is complete only when the user gives explicit approval for the technical design.
+9. When approved, use the `/createTasks` prompt to transition to the task creation phase.
 
 ---
 
@@ -113,6 +116,29 @@ Use this template to create comprehensive design documents that translate requir
 - **Author**: [Your Name]
 - **Reviewers**: [List technical reviewers]
 - **Related Documents**: [Link to requirements document]
+
+## Constitution Check
+
+> Must pass BEFORE drafting the rest of the design. Re-check AFTER drafting and after every material revision. Source of truth: `.batman/<task_slug>/steering/constitution.md`.
+
+| Principle | Status | Notes |
+|---|---|---|
+| [Principle 1 name] | ✅ Pass / ⚠️ Justified / ❌ Fail | [How this design honors or violates the principle. If justified, link the Complexity Tracking entry.] |
+| [Principle 2 name] | ✅ Pass / ⚠️ Justified / ❌ Fail | [...] |
+| [Principle 3 name] | ✅ Pass / ⚠️ Justified / ❌ Fail | [...] |
+| [Principle 4 name] | ✅ Pass / ⚠️ Justified / ❌ Fail | [...] |
+| [Principle 5 name] | ✅ Pass / ⚠️ Justified / ❌ Fail | [...] |
+
+**Pre-design check:** [date / pass-summary]
+**Post-design check:** [date / pass-summary]
+
+### Complexity Tracking
+
+| Violation | Principle violated | Why unavoidable | Mitigation |
+|---|---|---|---|
+| [What violates the constitution] | [Principle name] | [Why a compliant alternative was rejected] | [What reduces the risk] |
+
+No silent violations. If a violation is not in this table, the design fails the constitution check.
 
 ## Overview
 
@@ -517,3 +543,92 @@ Use this checklist to validate your design document:
 - Unit of Work: For maintaining consistency across multiple operations
 
 ---
+
+# **Constitution Template (to populate `.batman/<task_slug>/steering/constitution.md`)**
+
+The constitution captures non-negotiable principles that gate every design. It is task-scoped (lives under the task slug) so different tasks can encode different rules without polluting the workspace root. If a workspace-wide constitution exists at `.batman/constitution.md`, inherit it and add task-specific principles only when the task genuinely needs them.
+
+```markdown
+# Constitution: [Task or Project Name]
+
+- **Version**: 1.0.0
+- **Ratified**: [YYYY-MM-DD]
+- **Last Amended**: [YYYY-MM-DD]
+- **Scope**: [task-scoped | workspace-wide]
+
+## Purpose
+
+[One paragraph: what this constitution governs and why deviations require explicit justification in the design's Complexity Tracking table.]
+
+## Core Principles
+
+### 1. [Principle 1 Name — e.g., "Test-First Development"]
+
+**Statement**: [Declarative rule. Use SHALL / SHALL NOT language so it is testable.]
+
+**Rationale**: [Why this principle exists. Reference past incidents or quality outcomes when possible.]
+
+**Evidence of compliance**: [What a reviewer looks for to confirm the design honors this principle.]
+
+### 2. [Principle 2 Name — e.g., "Source-of-Truth Boundaries"]
+
+**Statement**: [...]
+**Rationale**: [...]
+**Evidence of compliance**: [...]
+
+### 3. [Principle 3 Name — e.g., "Observability by Default"]
+
+**Statement**: [...]
+**Rationale**: [...]
+**Evidence of compliance**: [...]
+
+### 4. [Principle 4 Name — e.g., "Closed Vocabularies for Model Outputs"]
+
+**Statement**: [...]
+**Rationale**: [...]
+**Evidence of compliance**: [...]
+
+### 5. [Principle 5 Name — e.g., "Bounded Fallbacks"]
+
+**Statement**: [...]
+**Rationale**: [...]
+**Evidence of compliance**: [...]
+
+## Additional Constraints
+
+- **Security**: [Standards, e.g., input validation, secret handling, authn/authz floors.]
+- **Performance**: [Hard budgets — latency, throughput, cost, memory.]
+- **Compliance / Regulatory**: [Applicable regimes — SOC2, HIPAA, GDPR, etc.]
+- **Platform**: [Supported runtimes, language versions, deployment targets.]
+
+## Development Workflow
+
+- [How requirements, design, tasks, tests, and review enforce these principles.]
+- [Which automated checks (lint, type, integration tests, gated scenarios) cover which principles.]
+- [What manual gates exist (PR review, ADR, change advisory).]
+
+## Governance
+
+- The constitution supersedes ad-hoc decisions. A design that violates a principle without an entry in **Complexity Tracking** fails review.
+- Amendments require: (1) explicit justification, (2) migration plan for in-flight work, (3) version bump per semver.
+  - **Major** (X.0.0): principle removed or replaced.
+  - **Minor** (X.Y.0): principle added or materially expanded.
+  - **Patch** (X.Y.Z): clarification, typo, or scope tightening that does not change meaning.
+- Every PR touching design or implementation must verify constitution compliance.
+
+## Amendment Log
+
+| Version | Date | Change | Author |
+|---|---|---|---|
+| 1.0.0 | [YYYY-MM-DD] | Ratification | [name] |
+```
+
+When seeding a fresh constitution, derive principles from:
+
+1. `steering/tech.md` — language, framework, persistence conventions.
+2. `steering/structure.md` — module boundaries, ownership, naming.
+3. `codeReview.instructions.md` and `code-patterns.md.instructions.md` — recurring review patterns (treat these as candidate principles).
+4. Prior incidents surfaced by MemPalace (`mempalace_search`) — turn root causes into principles.
+5. The user — ask explicitly when a principle would change the scope of acceptable designs.
+
+Keep the constitution short. Five to seven sharp principles beat fifteen vague ones.
