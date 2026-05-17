@@ -32,7 +32,7 @@ Use this skill as a quick map; jump into the canonical guide for:
 - §7 broker dimension — tool-table language, default-in-intent, named-procedures catalog, caller/callee contracts (§7.6.7a, §7.6.7b)
 - §8 distributed self-containment, single-invocation completeness, boundary statements
 - §9 evaluation-driven authoring and Claude A / Claude B loop
-- §10 anti-patterns catalogue
+- §10 anti-patterns catalogue (includes §10.12 engineering vocabulary, §10.13 composition narration, §10.14 broker-channel enumeration — all PR #1358 additions)
 - §11 reviewer checklist — run this as a pass/fail gate
 - §12 token budgets reference
 - §13 audit playbook
@@ -54,6 +54,8 @@ Use this skill as a quick map; jump into the canonical guide for:
 3. Cross-check the diff against §10 anti-patterns. Flag any match with the section number (e.g., "§10.1 monolith" or "§10.4 meta-mechanism leakage").
 4. Verify token budget per §5.1 / §12 using the `wc` commands.
 5. For broker profile changes, verify §7.1 (no invisible tool references), §7.2 (unambiguous tool-table language), §7.3 (default-in-intent), §7.5 (no workflow logic in profile body), §7.6 (named-procedures catalog opt-in).
+5a. For agent factory changes under `app/graphs/<workflow>/`, verify §1.4(f) progressive-disclosure shape (catalog + `load_skill`/`load_skill_reference` + `SkillToolOutputMiddleware` + `PostRunContextEditingMiddleware`) — including single-intent sub-agents. No `runtime_facts` kwarg on simple single-intent factories.
+5b. For workflow overrides under `intents/<skill>/workflow-overrides/`, verify §7.1 extension — no enumeration of broker-profile capabilities/channels (§10.14). Run the §3.6 banned-vocabulary grep; expected zero hits (§10.12). Verify §10.13 — no composition-mechanism narration paragraphs. Cross-check every imperative against the workflow tool list and composed broker profile (§7.1 imperative cross-check).
 6. For multi-stage scenarios, verify §8.3 single-invocation completeness — no reliance on prior-invocation skill state.
 7. Output findings using the `caveman-review` severity prefixes (🔴 bug, 🟡 risk, 🔵 nit, ❓ q). Cite the violated section number for every 🔴/🟡 finding.
 
