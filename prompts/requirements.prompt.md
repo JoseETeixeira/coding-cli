@@ -21,6 +21,7 @@ Before any spec work, ensure the task-specific steering context exists and is lo
   - `product.md`: Describes the product’s purpose, key features, and objectives. Seed from `coding-cli/prompts/templates/steering/product-template.md`.
   - `tech.md`: Documents the technologies, frameworks, and tools used. Seed from `coding-cli/prompts/templates/steering/tech-template.md`.
   - `structure.md`: Outlines the project’s file organization and conventions. Seed from `coding-cli/prompts/templates/steering/structure-template.md`.
+  - `constitution.md` *(created lazily — Design phase seeds it from the template in `design.prompt.md` if missing)*: Non-negotiable principles that gate the technical design. Reference here so requirements stay aware of constraints (testing strategy, security, performance budgets) but do not block requirements drafting on it.
   - Read each template file, then fill in every `[placeholder]` with project-specific details derived from the codebase before saving.
 - **Custom files**: The project may include additional steering docs (e.g., `api-style-guide.md`, `security-principles.md`). If present, treat them as authoritative guidance. If missing and necessary, suggest creating them.
 
