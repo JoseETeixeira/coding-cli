@@ -373,15 +373,18 @@ If research reveals significant technical constraints or multiple viable approac
 
 1. Read the approved `.batman/<task_slug>/steering/understanding.md`.
 2. Read and follow all instructions in `design.prompt.md`.
-3. Reference the approved requirements: `.batman/<task_slug>/spec/requirements.md`
-4. Create/update `.batman/<task_slug>/spec/design.md` covering:
+3. **Constitution gate**: load `.batman/<task_slug>/steering/constitution.md`. If missing, seed it from the Constitution Template at the bottom of `design.prompt.md` using `steering/tech.md`, `steering/structure.md`, `codeReview.instructions.md`, `code-patterns.md.instructions.md`, and MemPalace incidents as principle sources. Pause and confirm the seeded principles with the user before drafting the design.
+4. Reference the approved requirements: `.batman/<task_slug>/spec/requirements.md`
+5. Create/update `.batman/<task_slug>/spec/design.md` covering:
+   - **Constitution Check** (per the design template — pre- and post-design pass status per principle, with Complexity Tracking for any justified violation)
    - Architecture decisions
    - Component responsibilities
    - API contracts and interfaces
    - Data models
    - Risks and mitigations
-5. Reference critical file paths and `symbol` names discovered during research.
-6. Present design as a **DRAFT** for review.
+6. Reference critical file paths and `symbol` names discovered during research.
+7. Re-run the Constitution Check after the draft is complete. Any ❌ Fail must either be resolved or recorded in Complexity Tracking — no silent violations.
+8. Present design as a **DRAFT** for review.
 
 #### 3d. Refinement
 
@@ -530,9 +533,10 @@ PHASE 2: REQUIREMENTS
 -> Needs your approval ✓
 
 PHASE 3: DESIGN
--> Discovery (subagent research) → Alignment → Capture → Refinement
--> Reads understanding.md + follows design.prompt.md + requirements.md
--> Output: .batman/<task_slug>/spec/design.md
+-> Discovery (subagent research) → Alignment → Constitution gate → Capture → Refinement
+-> Reads understanding.md + constitution.md + follows design.prompt.md + requirements.md
+-> Seeds .batman/<task_slug>/steering/constitution.md if missing (5–7 sharp principles)
+-> Output: .batman/<task_slug>/spec/design.md (includes Constitution Check + Complexity Tracking)
 -> Needs your approval ✓
 
 PHASE 4: TASK PLANNING
