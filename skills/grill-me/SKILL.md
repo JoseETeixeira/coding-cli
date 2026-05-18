@@ -11,7 +11,7 @@ Stress-test a draft artifact (understanding, requirements, design, tasks) agains
 
 1. **Load the draft** — read the artifact file (`understanding.md` / `requirements.md` / `design.md` / `tasks.md`) plus any prior approvals in the same `.batman/<task_slug>/` folder.
 2. **Scan against the taxonomy** below — flag every gap, ambiguity, or unverified assumption per category.
-3. **Resolve via codebase first** — for each flag, try `query-code/:search_codebase`, `:explain_code`, `Read`, or `Grep` before forming a question. If the codebase answers it, record the answer in the artifact and move on. No question fired.
+3. **Resolve via codebase first** — for each flag, try `freighthero-codebase/:search_codebase` to locate the relevant area, then `freighthero-codebase/:explain_code` to read the full file(s) behind the symbol, falling back to `Read` or `Grep` only when the index does not cover the path. If the codebase answers the flag, record the answer in the artifact and move on. No question fired.
 4. **Rank remaining flags** by impact: architecture > testing > UX > operations > compliance. Drop low-impact items.
 5. **Ask up to 5 questions per pass**, one at a time, each with a recommended answer. Pass = one round of grilling before a single approval request.
 6. **Atomic append** — after every answer, write it under a `## Clarifications` section at the bottom of the artifact, timestamped (ISO `YYYY-MM-DD`). Never rewrite the body silently; preserve original wording above the Clarifications block.

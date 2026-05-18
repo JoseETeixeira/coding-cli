@@ -69,9 +69,9 @@ You may also browse `https://github.com/Freight-Hero/ai_watchtower/wiki` to disc
 
 After reading the wiki, validate the explanation against the actual codebase:
 
-1. Use `semantic_search` or `grep_search` to find the relevant files mentioned in the wiki
-2. Use `read_file` to inspect key functions, classes, or configurations
-3. Use `freighthero-codebase/:explain_code` if available for detailed explanations
+1. Use `freighthero-codebase/:search_codebase` to find the relevant files mentioned in the wiki
+2. Use `freighthero-codebase/:explain_code` (default `detailed`) to pull the FULL reconstructed source of each key file — replaces a per-file `read_file` round-trip with one call that returns the merged file with project/line metadata
+3. Fall back to `read_file` only when the index does not cover the path (new files, generated artifacts, files outside `ai_watchtower`/`backend`/`frontend`)
 
 ### Step 4: Formulate the answer or plan
 

@@ -174,7 +174,7 @@ This workflow merges structured spec-driven development with research-first plan
 - When past decisions, prior discussions, preferences, or project history may matter, use `mempalace_search`.
 - If a specialist fits the task, run `mempalace_list_agents` and use the appropriate agent.
 - Always run `freighthero-codebase/:search_codebase` with a good query derived from the user prompt and use the returned passages as the primary evidence. Include source identifiers from the tool output when you reference facts.
-- Always check the documentation for the most optimized way to do something given the project's constraints. If you need to understand how something works, use the `freighthero-codebase/:explain_code` tool.
+- Always check the documentation for the most optimized way to do something given the project's constraints. To UNDERSTAND a specific symbol, function, class, workflow, or file end-to-end, call `freighthero-codebase/:explain_code` (default `detailed` = top 3 files; `brief` = top 1). It reconstructs the full top-matching file(s) from the index — all chunks merged in order, overlaps deduped — so you get the complete implementation in one shot instead of scattered snippets. Use `:search_codebase` to LOCATE candidates; use `:explain_code` to READ them.
 - Follow the eight phases in order: Understanding → Requirements → Design → Task Planning → Implementation → Tests → Code Review → Documentation Updates.
 - Each planning phase starts from the approved `.batman/<task_slug>/steering/understanding.md` file. Requirements, design, and tasks MUST read this file before generating artifacts.
 - Use #tool:vscode/askQuestions freely to clarify requirements — don't make large assumptions.
@@ -246,7 +246,7 @@ When the task involves CocoIndex, data indexing pipelines, vector indexing, or i
 
 #### 1a. Codebase Search
 
-Run `freighthero-codebase/:search_codebase` with a query derived from the user's request. If needed, run additional targeted searches and `freighthero-codebase/:explain_code` for likely files, functions, classes, workflows, configs, tests, and docs.
+Run `freighthero-codebase/:search_codebase` with a query derived from the user's request. Then, for every file or symbol that will be cited in `understanding.md` (likely-to-change files, functions, classes, workflows, configs, tests, docs), call `freighthero-codebase/:explain_code` — it returns the full reconstructed file in a single call, so do not fall back to `Read` for any path covered by the index. Skipping this step is a Phase 1 violation: scattered `:search_codebase` chunks alone are not sufficient to explain current behavior.
 
 Use a research subagent when the search space is broad. Instruct the subagent to:
 
@@ -606,7 +606,7 @@ When a phase uses a prompt file, always read it before starting that phase.
 - Resolve and read the user-level `batman-understanding/SKILL.md` first.
 - Resolve and read the user-level `visual-explainer/SKILL.md` first.
 - Search the codebase with `freighthero-codebase/:search_codebase`.
-- Use `freighthero-codebase/:explain_code` for likely files and symbols.
+- Use `freighthero-codebase/:explain_code` to reconstruct the full source of each likely-to-change file/symbol before drafting `understanding.md`. Treat as mandatory — `:search_codebase` returns chunks scattered across files and is not sufficient on its own.
 - Generate and open a visual current-state recap at `.batman/<task_slug>/steering/understanding.html` using `visual-explainer`.
 - Explain current behavior, why the cited evidence/source-of-truth is relevant, how similar processes differ, what likely-to-change components are used for, and where execution happens today.
 - Save the result to `.batman/<task_slug>/steering/understanding.md`.

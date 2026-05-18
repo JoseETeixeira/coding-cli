@@ -157,6 +157,101 @@ function formatContext(results: SearchResult[]): string {
     .join("\n\n");
 }
 
+type ReconstructedFile = {
+  filePath: string;
+  project: string;
+  lineStart: number;
+  lineEnd: number;
+  content: string;
+  topScore: number;
+  chunkCount: number;
+};
+
+async function reconstructTopFiles(
+  query: string,
+  fileCount: number,
+): Promise<ReconstructedFile[]> {
+  const index = await loadIndex();
+  const tokens = tokenize(query);
+
+  const fileBestScore = new Map<string, number>();
+  for (const entry of index) {
+    const score = scoreEntry(entry, query, tokens);
+    if (score <= 0) {
+      continue;
+    }
+    const prev = fileBestScore.get(entry.filePath) ?? 0;
+    if (score > prev) {
+      fileBestScore.set(entry.filePath, score);
+    }
+  }
+
+  const topFiles = [...fileBestScore.entries()]
+    .sort(
+      ([leftPath, leftScore], [rightPath, rightScore]) =>
+        rightScore - leftScore || leftPath.localeCompare(rightPath),
+    )
+    .slice(0, fileCount);
+
+  return topFiles.map(([filePath, topScore]) => {
+    const fileChunks = index
+      .filter((entry) => entry.filePath === filePath)
+      .sort((left, right) => left.chunkStart - right.chunkStart);
+
+    let merged = "";
+    let lastEnd = -1;
+    let project = "";
+    let lineStart = Number.POSITIVE_INFINITY;
+    let lineEnd = 0;
+
+    for (const chunk of fileChunks) {
+      project = chunk.project;
+      lineStart = Math.min(lineStart, chunk.lineStart);
+      lineEnd = Math.max(lineEnd, chunk.lineEnd);
+
+      if (lastEnd < 0) {
+        merged = chunk.content;
+        lastEnd = chunk.chunkEnd;
+        continue;
+      }
+
+      if (chunk.chunkStart >= lastEnd) {
+        if (chunk.chunkStart > lastEnd) {
+          merged += `\n... [${chunk.chunkStart - lastEnd} chars elided] ...\n`;
+        }
+        merged += chunk.content;
+        lastEnd = chunk.chunkEnd;
+        continue;
+      }
+
+      const overlapChars = lastEnd - chunk.chunkStart;
+      if (overlapChars < chunk.content.length) {
+        merged += chunk.content.slice(overlapChars);
+      }
+      lastEnd = chunk.chunkEnd;
+    }
+
+    return {
+      filePath,
+      project,
+      lineStart: lineStart === Number.POSITIVE_INFINITY ? 0 : lineStart,
+      lineEnd,
+      content: merged,
+      topScore,
+      chunkCount: fileChunks.length,
+    };
+  });
+}
+
+function formatReconstructedFiles(files: ReconstructedFile[]): string {
+  return files
+    .map(
+      (file, index) =>
+        `--- File ${index + 1}: ${file.filePath} (project ${file.project}, lines ${file.lineStart}-${file.lineEnd}, ${file.chunkCount} chunk(s) merged, top score ${file.topScore.toFixed(1)}) ---\n${file.content}`,
+    )
+    .join("\n\n");
+}
+
 const server = new McpServer({
   name: "freighthero-codebase",
   version: "1.0.0",
@@ -263,24 +358,25 @@ server.tool(
 
 server.tool(
   "explain_code",
-  "Retrieve local code snippets for a function, class, or pattern so the calling agent can explain them.",
+  "Reconstruct the FULL top-matching file(s) from the local CocoIndex index for a symbol, function, class, or pattern. Returns each top file as a single merged blob (all chunks reassembled in order with overlaps deduped), so the calling agent can read the complete implementation in context. Use this when you want to UNDERSTAND a symbol end-to-end; use search_codebase when you just want to LOCATE matches across the codebase.",
   {
     query: z.string().describe("Function name, class name, or description of the code to find"),
     detail_level: z
       .enum(["brief", "detailed"])
       .default("detailed")
-      .describe("Desired explanation depth for the calling agent"),
+      .describe("brief = top 1 file reconstructed; detailed = top 3 files reconstructed"),
   },
   async ({ query, detail_level }) => {
     try {
-      const results = await searchIndex(query, detail_level === "brief" ? 3 : 8);
+      const fileCount = detail_level === "brief" ? 1 : 3;
+      const files = await reconstructTopFiles(query, fileCount);
       return {
         content: [
           {
             type: "text" as const,
             text:
-              results.length > 0
-                ? `Use this local code context to produce a ${detail_level} explanation:\n\n${formatContext(results)}`
+              files.length > 0
+                ? `Top-matching ${files.length === 1 ? "file" : "files"} reconstructed in full from the local CocoIndex index. Use to explain the queried symbol/pattern in context:\n\n${formatReconstructedFiles(files)}`
                 : "No matching code found in the local CocoIndex index.",
           },
         ],

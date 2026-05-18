@@ -44,17 +44,17 @@ Do not use this skill for tiny one-off answers, direct command output, or alread
 
 ### 2. Search The Codebase
 
-Run `freighthero-codebase/:search_codebase` with a query derived from the user request.
+Run `freighthero-codebase/:search_codebase` with a query derived from the user request to locate candidate files (scored chunks across many files).
 
-Then use targeted follow-up searches or `freighthero-codebase/:explain_code` for likely:
+Then, for every file or symbol you intend to describe in `understanding.md`, call `freighthero-codebase/:explain_code` (default `detailed`, top 3 files). It reconstructs the full file from index chunks, merged in order and deduped, so the section you write reflects the actual end-to-end implementation instead of a single chunk. Treat this as the default for closely-read files — one `:explain_code` call replaces both a follow-up `:search_codebase` AND a manual `Read`. Apply to likely:
 
-- files and symbols;
-- service boundaries;
-- graph/workflow nodes;
-- Skills/SOPs, prompts, templates, or tools;
-- tests and fixtures;
-- infrastructure/configuration;
-- docs and runbooks.
+- files and symbols (call `:explain_code` per symbol);
+- service boundaries (call `:explain_code` per service class);
+- graph/workflow nodes (call `:explain_code` per node module);
+- Skills/SOPs, prompts, templates, or tools (call `:explain_code` per skill/tool file);
+- tests and fixtures (call `:explain_code` to read full test bodies);
+- infrastructure/configuration (call `:explain_code` per config module);
+- docs and runbooks (call `:explain_code` per doc file).
 
 For each source of truth you mention, such as a table, queue, index, log, config, or API, determine what question it can answer and why it is the right place to inspect. For each similar-sounding process or workflow, determine how it differs in trigger, owner, inputs, outputs, and side effects. For each component likely to change, determine what it is used for, who calls it, and where it executes today.
 

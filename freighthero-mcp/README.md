@@ -63,9 +63,9 @@ npm run build
 
 | Tool | Description |
 | --- | --- |
-| `search_codebase` | Search the local CocoIndex chunk index. Supports file path filtering. |
+| `search_codebase` | LOCATE matches across the codebase. Searches the local CocoIndex chunk index and returns scored chunk snippets from many files. Supports `file_filter` and `limit`. Use when you don't yet know which file to read. |
 | `analyze_error` | Retrieve local code context for an error message or stack trace. |
-| `explain_code` | Retrieve local code snippets for a function, class, or pattern. |
+| `explain_code` | READ the full implementation. Reconstructs the top-matching file(s) by pulling EVERY chunk for the same file path from the index, sorting by chunk offset, and deduping overlap, so the returned blob is the complete source merged in order. `detail_level: brief` returns the top 1 file; `detailed` returns the top 3. Prefer over `search_codebase` once you know which symbol/file to read; prefer over `read_file` for any path covered by the index. |
 | `indexing_status` | Check local index path, chunk count, and per-project counts. |
 
 ## MCP Configuration
