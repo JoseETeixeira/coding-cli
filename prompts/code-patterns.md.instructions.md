@@ -54,6 +54,90 @@ path = assert_within(skills_root / workflow / broker / f"{skill_slug}.md", skill
 - Log structured routing, classification, override, shadow/live, fallback, and error context without sensitive data.
 - Bound provider/model retries and fallbacks; prevent fallback loops and emit events when fallback is triggered.
 
+## Best-Effort Side-Effects Must Not Live in Functional Transactions
+
+Side-effects whose failure should not block the critical path (UX reactions, notifications, logging, analytics) must be isolated from the functional dispatch they accompany. The fastest way to silently break a system is to put a best-effort call and a load-bearing call inside the same DB / queue transaction:
+
+```ts
+// ANTI-PATTERN — observed in chat-received.ts:106-198
+await db.transaction(async (transaction) => {
+  await Repository.createRow(transaction, { ... });        // functional: persists the inbound row
+  await Repository.createEvent(transaction, { ... });      // functional: load event
+  await externalApi.reactWithEyes({ messageId });          // BEST-EFFORT: UX reaction to Slack
+  await downstreamQueue.sendMessage({ ... });              // CRITICAL: dispatches to the agent
+});
+```
+
+When `externalApi.reactWithEyes` throws, the transaction rolls back. Every line above AND below rolls with it — including the queue send. The downstream agent never receives the message, retries replay the same failure, and the message dead-letters with zero functional record. The symptom in production looks like "the agent didn't answer and didn't react", which masks the upstream side-effect failure as a downstream agent bug.
+
+Apply ONE of these (in preference order):
+
+1. **Move the best-effort call outside the transaction.** If the reaction / notification doesn't need transactional consistency with the DB writes, fire it after the transaction commits.
+2. **Wrap the best-effort call in `try / catch`** that logs the failure and continues. Critical path still runs.
+3. **Use an outbox-style queue** for the best-effort call: write a row inside the transaction, dispatch the side-effect from a separate worker that can fail in isolation.
+
+Production case (Freight-Hero/backend#628, 2026-05-19): the `:eyes:` Robin-processing reaction in `chat-received.ts:161-170` lived inside `consoleDb.transaction` alongside `agentInboundQueue.sendMessage`. When Slack returned `message_not_found` on the reaction (race condition / bot membership), the transaction rolled back, the queue send never fired, ai_watchtower never received the message, robin-gpt never computed an answer. Symptom: "Robin didn't react and didn't answer" for hours, even though the user-facing analytical path on robin-gpt was fully functional. Fix: try/catch around the reaction call.
+
+Detection: when a downstream agent / worker shows zero traces for a request that definitely entered the system (webhook delivered, BE log shows the inbound), and the upstream service has retry events that all fail identically, suspect a transaction-wrapped side-effect blocking the dispatch. The Sentry trail will show the side-effect's error N times (once per SQS retry) while the downstream trail is silent.
+
+## AI Watchtower Robin GPT Bridge Timeout Diagnosis
+
+When a user reports a chat message went unanswered (Robin posted nothing in Slack, not even an error), trace the bridge call in this order — most failures cluster around the bridge timeout, not the agent itself.
+
+- **Robin-gpt service usually computes an answer.** The deployed `robin_gpt_bridge` in `ai_watchtower/app/services/robin_gpt_bridge.py` calls `POST /system/loads/{load_id}/chat-messages` on the robin-gpt service with `httpx.Timeout(self._settings.ROBIN_GPT_CHAT_TIMEOUT_SECONDS)`. The setting defaults to 25 s — too short for analytical questions that touch many tools (`get_tracking_history`, `get_state_transitions`, multi-stop ETA inference) or hit cold caches.
+- **The diagnostic trail lives in `/ecs/<stage>-ai-watchtower`** under three event names: `robin_chat_message_received`, `robin_chat_message_timeout`, `robin_chat_message_exception`, `robin_chat_message_completed`. Filter on the load UUID or `trace_id` to follow a single conversation. A pair of `_received → _timeout → _exception(504)` followed by a second `_received` with the SAME `idempotency_key` ~10–30 s later is the canonical bridge-timeout signature.
+- **Robin-gpt's own idempotency layer keeps working past the timeout.** When the bridge gives up at 25 s, the in-flight claim on robin-gpt continues; the BE's retry on the same idempotency key joins the existing run and returns the cached response in seconds. The 200 OK on the retry is the answer the agent always intended — but the user-facing chat path has already 504'd, so Slack never relays it.
+- **CloudWatch query template** (substitute stage, load_uuid, time window):
+
+  ```
+  AWS_PROFILE=freighthero aws logs filter-log-events \
+    --log-group-name /ecs/<stage>-ai-watchtower \
+    --start-time <epoch_ms> \
+    --filter-pattern '"robin_chat_message"' \
+    --query 'events[].[timestamp,message]' --output text
+  ```
+
+  Pair with `/ecs/<stage>-robin-gpt` filtered on `"chat-messages"` to see the matching robin-gpt-side 200/5xx response.
+
+- **Fix paths** (apply in order):
+  1. Bump `ROBIN_GPT_CHAT_TIMEOUT_SECONDS` in Doppler for the affected stage (recommended 45–60 s for analytical surfaces). No code deploy.
+
+     ```bash
+     # FreightHero Doppler project for ai_watchtower + robin-gpt services.
+     # Stages: local / dev / prd (no stg in this project).
+     doppler secrets set ROBIN_GPT_CHAT_TIMEOUT_SECONDS=60 \
+       --project freight-hero-agents --config <stage> --no-interactive
+
+     # Force ECS rolling restart so new tasks pick up the new env at start.
+     # The API service runs the bridge; workers do not need to restart for
+     # this setting.
+     AWS_PROFILE=freighthero aws ecs update-service \
+       --cluster prd-ai-watchtower-cluster \
+       --service prd-ai-watchtower-green-service \
+       --force-new-deployment
+     ```
+
+  2. If robin-gpt itself is the bottleneck (look for slow LLM calls or unbudgeted tool payloads), bump the per-tool token budgets (e.g. `agent_tracking_history_tool_budget_tokens`) or downsample tool payloads (see "AI Watchtower Agent Tool Payload Compaction" below).
+  3. Move the chat path to async / queue-based delivery so a slow Robin response cannot time out the user-facing call. Larger change, defer until #1 + #2 stop helping.
+
+- **Deploy verification** (before assuming a recent build is live): the API service runs `prd-ai-watchtower-api-ecr:green`, but the `green` tag does NOT auto-update on every push — it is moved explicitly by the deploy pipeline. Check the actual taskdef + deployment timestamp before concluding code is live.
+
+  ```bash
+  AWS_PROFILE=freighthero aws ecs describe-services \
+    --cluster prd-ai-watchtower-cluster \
+    --services prd-ai-watchtower-green-service \
+    --query 'services[0].deployments[].[status,createdAt,taskDefinition,rolloutState]' --output text
+
+  AWS_PROFILE=freighthero aws ecs describe-services \
+    --cluster prd-robin-gpt-cluster \
+    --services prd-robin-gpt-chat-service \
+    --query 'services[0].deployments[].[status,createdAt,taskDefinition,rolloutState]' --output text
+  ```
+
+  Robin-gpt uses timestamp image tags (e.g. `20260519173427`), so the image push time in ECR maps directly to "what is live". Cross-reference the push time against the failure timestamp to confirm whether the failure hit the pre-deploy image (most common cause of "I deployed but the failure shape persists").
+
+- **Common false-positive: thinking the message never reached robin-gpt.** Check `/ecs/<stage>-robin-gpt` with the SAME load UUID. If you see a 200 OK in robin-gpt right after the ai-watchtower `_timeout`, the agent computed an answer; the failure is in the bridge layer, not robin-gpt. Conversely, zero robin-gpt traffic for that load UUID means the BE never forwarded the message — check the BE's `agent-chat` flow (`backend/packages/console/src/communications/services/agent-chat.ts`).
+
 ## AI Watchtower Agent Tool Payload Compaction
 
 When an LLM agent tool envelope (Robin GPT, deep agents, any tool that returns a list of rows the model has to reason over) might exceed its token budget, compact the payload by preserving information density, not by random or strided dropping:
