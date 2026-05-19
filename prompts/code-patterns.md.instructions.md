@@ -54,6 +54,37 @@ path = assert_within(skills_root / workflow / broker / f"{skill_slug}.md", skill
 - Log structured routing, classification, override, shadow/live, fallback, and error context without sensitive data.
 - Bound provider/model retries and fallbacks; prevent fallback loops and emit events when fallback is triggered.
 
+## AI Watchtower Agent Tool Payload Compaction
+
+When an LLM agent tool envelope (Robin GPT, deep agents, any tool that returns a list of rows the model has to reason over) might exceed its token budget, compact the payload by preserving information density, not by random or strided dropping:
+
+1. **Field strip first** — drop per-row bookkeeping the model never references (IDs, providers, sources), rename to short keys (`t`/`lat`/`lon`). Every row survives.
+2. **Round / coarsen second** — round floats to the lowest meaningful precision (e.g. lat/lon to 3 dp ≈ 110 m), truncate timestamps to minute precision when sub-minute resolution is not needed. Every row survives.
+3. **Cluster / segment third** — collapse consecutive rows that share a semantic group (same city, same status, same dwell location) into one row carrying `from_t`/`to_t`/`count`/`dwell_minutes`. Every row is accounted for; the agent reads the answer directly off the cluster instead of inferring it from a sample.
+4. **Only THEN drop rows** — and when you do, surface an explicit `partial` envelope with a marker (`omitted_due_to_context_budget`) and a warning. Never silently return `status: "ok"` while having dropped data.
+
+Avoid uniform-stride or random sampling as the first response to a budget overflow: it discards rows the agent might need without warning and breaks analytical queries (dwell, idle, ordering, gap detection). Information-preserving compaction is almost always cheaper than the LLM tokens you save by dropping rows.
+
+## AI Watchtower Agent Multi-Party Thread Response Gating
+
+When an LLM agent participates in a multi-party chat (Slack thread, Teams channel, etc.) where teammates and the agent post in the same room, an upstream deterministic "directed at the agent" flag is not enough. Once the agent is engaged, upstream may forward every subsequent reply — including side conversations that tag a different teammate — and the agent will try to answer them.
+
+- Add an LLM-based secondary gate at the chat-service layer. The classifier reads the prior thread context plus the latest message and returns one of `directed | not_directed | unclear`.
+- Keep the upstream deterministic flag as a cheap fast-path for the obvious cases (no LLM call when upstream already says "definitely not the agent"). The LLM gate only runs when upstream says "directed".
+- On `not_directed`, return an explicit ignore envelope (`status="ignored"`, `should_reply=False`, `answer_text=""`). Record the idempotent response so retries are stable. Never let the orchestrator (LLM or deterministic) run — both paths can hallucinate a generic load-summary answer for an unrelated message.
+- Treat `unclear` as `directed` (safe default — never silence a real question).
+- Any classifier failure (transport error, unparseable response, missing API key) must also fall back to `directed`. Infrastructure problems must never silence the agent.
+- Reuse the main agent's model factory so the classifier inherits the workspace's existing provider routing (OpenRouter / OpenAI / Bedrock). Do not introduce a second provider config surface.
+
+## AI Watchtower Agent User-Facing String Discipline
+
+Internal slugs (kebab-case milestone states, snake_case transition types, enum string values) are bookkeeping identifiers, not display text. They must not appear verbatim in any user-facing LLM answer.
+
+- Enrich tool payloads at the retrieval / normalization layer with companion `*_label` fields carrying the human-readable form (e.g. `milestone_state_label`, `from_state_label`, `to_state_label`). The slug stays for any caller that keys off it; the label is what the agent quotes.
+- Source the canonical label map from a single place — typically mirror the frontend display map (e.g. `loadStatusLabel` in `frontend/packages/console/src/types/loads.ts`) so the agent and the console UI never disagree on what a state is called.
+- For unknown slugs, fall back to Title Case English (`brand-new-state` → "Brand New State", `snake_case_state` → "Snake Case State") so even uncovered cases never emit a raw slug.
+- In the system prompt, explicitly forbid echoing raw kebab-case / snake_case slug values and point the model at the `*_label` companion fields. A passive "use plain language" instruction is not enough — the model will copy whatever slug it sees in the tool payload if nothing tells it not to.
+
 ## Repository Pattern
 
 - All database operations must go through repository namespaces, never inline in handlers
