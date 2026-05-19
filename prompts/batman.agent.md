@@ -497,11 +497,15 @@ Rules:
 4. Keep documentation factual and aligned with the implemented behavior.
 5. Re-run documentation builds or checks when available.
 
+### Branch Commit Discipline
+
+Same-branch commits are always squashed before the branch is ready for merge. Every new change on an in-flight branch lands as a fresh commit, but the branch's history must be squashed into ONE commit before the merge / PR-ready state. Applies to all branches going forward — never retroactively squash a branch the user did not ask to rewrite. Exceptions: explicit user request to preserve history, or a long-running release / epic branch where commits represent meaningfully separable units. Continue adding fresh commits across sessions on the same branch (do not amend); squash only when the user signals the branch is ready (e.g., "ready to merge", "open PR", "squash this branch"). Never force-push to main / master.
+
 ### Pull Request Preparation
 
 When creating a PR:
 
-1. Ensure commits are squashed into a clean, reviewable history unless the user explicitly requests otherwise.
+1. Ensure commits are squashed into a clean, reviewable history unless the user explicitly requests otherwise. See "Branch Commit Discipline" above for the always-squash-before-merge policy.
 2. Use the nearest repo-level `.github/PULL_REQUEST_TEMPLATE.md` for the PR body. If the repo does not have one, use `coding-cli/.github/PULL_REQUEST_TEMPLATE.md` from the FreightHero workspace as the canonical fallback.
 3. Preserve the template headings and fill every section with concrete details; remove placeholder comments before submitting.
 4. Include a brief description of the approved understanding.

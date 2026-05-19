@@ -65,6 +65,24 @@ When an LLM agent tool envelope (Robin GPT, deep agents, any tool that returns a
 
 Avoid uniform-stride or random sampling as the first response to a budget overflow: it discards rows the agent might need without warning and breaks analytical queries (dwell, idle, ordering, gap detection). Information-preserving compaction is almost always cheaper than the LLM tokens you save by dropping rows.
 
+## AI Watchtower Planner Intent Routing
+
+When the orchestrator's keyword / intent planner routes a request to a deterministic handler, each semantically distinct intent must map to its own focus — even when the focuses look similar at first glance.
+
+- Distinct user questions need distinct focuses. `GFOTD` ("good for on-time delivery") and `GFOTP` ("good for on-time pickup") answer different operator questions and can disagree on the same load (e.g. pickup already complete while delivery is at risk). Sharing `focus="eta"` lets the wrong leg's appointment / ETA fields leak into the answer.
+- Each focus needs its own deterministic handler that reads only the relevant slice of the payload. Filter `load_summary.locations` by stop type (`pickup` / `delivery`) at the handler entry — do not surface every stop's facts and trust phrasing to disambiguate.
+- Each handler must short-circuit on milestone progression. GFOTP after pickup completion → "pickup is already complete; GFOTP no longer applies". GFOTD before pickup completion → "pickup is not yet complete; delivery on-time outlook depends on pickup finishing first." Returning the raw delivery ETA when pickup is still pending mis-implies the load is ahead of schedule.
+- Add a `_OPERATOR_KEYWORD_PLANS` distinct-focus regression test so a future refactor cannot silently collapse the two focuses back into one.
+
+## AI Watchtower Multi-Shape Payload Normalization
+
+WT BE timeline-style endpoints emit data in two shapes — flat (`timeline_items`, each item is an event row) and grouped (`load_events`, each item is a scope container whose actual events live under nested `events`). Any code that searches the timeline must normalize through a single flattener before matching.
+
+- Use `_iter_timeline_items(timeline_payload)` (in `robin-gpt/app/retrieval.py`) as the entry point for any new milestone / event search. It walks both shapes and emits a uniform row layout with `event_type`, `event_at`, `payload`, `scope`, etc.
+- Never read `timeline_data.get("timeline_items") or timeline_data.get("load_events")` and iterate the result directly. The grouped shape returns scope containers, your match condition reads `event_type` from a container that has none, and no row ever matches — terminal-only behavior silently regresses to "no data available".
+- Coordinates / payload fields land in the grouped shape's nested `event.payload` dict. Fall back to `chosen.get("payload", {}).get(field)` so the matched event still surfaces lat / lon / timestamps after the flatten.
+- Add a regression test that builds the grouped shape verbatim (`load_events: [{ events: [{ type, payload, date }] }]`) and asserts the search code still finds the milestone. The flat shape passing alone is not enough — that path doesn't exercise the flattener.
+
 ## AI Watchtower Agent Multi-Party Thread Response Gating
 
 When an LLM agent participates in a multi-party chat (Slack thread, Teams channel, etc.) where teammates and the agent post in the same room, an upstream deterministic "directed at the agent" flag is not enough. Once the agent is engaged, upstream may forward every subsequent reply — including side conversations that tag a different teammate — and the agent will try to answer them.
@@ -84,6 +102,7 @@ Internal slugs (kebab-case milestone states, snake_case transition types, enum s
 - Source the canonical label map from a single place — typically mirror the frontend display map (e.g. `loadStatusLabel` in `frontend/packages/console/src/types/loads.ts`) so the agent and the console UI never disagree on what a state is called.
 - For unknown slugs, fall back to Title Case English (`brand-new-state` → "Brand New State", `snake_case_state` → "Snake Case State") so even uncovered cases never emit a raw slug.
 - In the system prompt, explicitly forbid echoing raw kebab-case / snake_case slug values and point the model at the `*_label` companion fields. A passive "use plain language" instruction is not enough — the model will copy whatever slug it sees in the tool payload if nothing tells it not to.
+- Inverse rule: when matching state in code, key off the canonical slug value (from the source enum), never the display label string. `LoadMilestoneState.PodReceived = 'pod-received'` is the canonical value; `"POD Collected"` is the label only — code that does `if active in {"delivered", "pod-collected"}:` is dead matching because the backend never emits `pod-collected` on `milestone_state`. Anchor any new state-matching set on the source-of-truth enum (mirror it in a constant if needed) and add a regression test that asserts the canonical slug is in the set and the display label is not.
 
 ## Repository Pattern
 
