@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-20
+
+- Added a `git-guardrails-claude-code` skill plus a `.claude/hooks/block-dangerous-git.sh` PreToolUse hook that blocks `git push`, `git reset --hard`, `git clean -f[d]`, `git branch -D`, and `git checkout/restore .` before Claude Code can execute them. `coding-cli setup agent` / `setup full` now run `config.InstallGitGuardrails` for every host: Claude Code copies the hook + merges a PreToolUse Bash entry into `~/.claude/settings.json`, VS Code / Batman merge deny rules into `chat.tools.terminal.autoApprove` in user `settings.json`, and Codex maintains a managed `<!-- coding-cli:git-guardrails:* -->` block inside `AGENTS.md`. Installer is idempotent across all three host paths.
+- Added `paths.Resolver.VSCodeSettingsPath()` and populated `HostVSCode` / `HostBatman` `Roots.SettingsPath` so the VS Code guardrail merge has a target file.
+- Added new generic skills `diagnose` (reproduce → minimise → hypothesise → instrument → fix → regression-test loop with an `hitl-loop.template.sh` helper) and `handoff` (compact-conversation summary for picking up work in a fresh session).
+
 ## 2026-05-16
 
 - Added a Constitution gate to the Batman Design phase. `design.prompt.md` now loads or seeds `.batman/<task_slug>/steering/constitution.md` from a new Constitution Template, requires pre- and post-design checks against every principle, and surfaces unavoidable violations through a Complexity Tracking table — no silent rule-breaking. `batman.agent.md` wires the gate into Phase 3 Design Capture and the Workflow Summary, and `requirements.prompt.md` references the constitution so Requirements stays aware of it without being blocked on it.

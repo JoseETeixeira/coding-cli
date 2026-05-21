@@ -109,6 +109,14 @@ func (resolver Resolver) VSCodeMCPConfigPath() string {
 	return filepath.Join(resolver.VSCodeUserDir(), "mcp.json")
 }
 
+func (resolver Resolver) VSCodeSettingsPath() string {
+	if path, ok := resolver.lookupExpanded("VSCODE_SETTINGS_PATH"); ok {
+		return path
+	}
+
+	return filepath.Join(resolver.VSCodeUserDir(), "settings.json")
+}
+
 func (resolver Resolver) ClaudeRoot() string {
 	if path, ok := resolver.lookupExpanded("CLAUDE_CONFIG_DIR"); ok {
 		return path

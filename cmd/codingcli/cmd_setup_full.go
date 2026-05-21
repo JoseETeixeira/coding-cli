@@ -91,6 +91,13 @@ func newSetupFullCmd(options *GlobalOptions, dependencies Dependencies) *cobra.C
 				logDefaultAgentResult(dependencies.Logger, agentResult)
 			}
 
+			logStep(dependencies.Logger, "install git guardrails")
+			guardrailResult, err := config.InstallGitGuardrails(profile, layout)
+			if err != nil {
+				return err
+			}
+			logGuardrailResult(dependencies.Logger, guardrailResult)
+
 			logStep(dependencies.Logger, "verify indexing dependencies")
 			indexDependencyResults, err := deps.VerifyDependencies(cmd.Context(), dependencies.Runner, deps.IndexingSpecs())
 			logDependencyResults(dependencies.Logger, indexDependencyResults)
