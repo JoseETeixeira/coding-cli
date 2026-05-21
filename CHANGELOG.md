@@ -1,9 +1,11 @@
 # Changelog
 
+## 2026-05-21
+
+- Reverted the `git-guardrails-claude-code` skill, the `.claude/hooks/block-dangerous-git.sh` PreToolUse hook, and the `config.InstallGitGuardrails` installer (Claude Code / VS Code / Batman / Codex backends) ported in the prior day's commit. The substring-match script blocked legitimate commits whose messages described destructive patterns and shifted bypass burden onto callers; removing it restores the simpler PreToolUse surface. `paths.Resolver.VSCodeSettingsPath()` and the `HostVSCode` / `HostBatman` `Roots.SettingsPath` populations introduced for the VS Code backend are reverted with it.
+
 ## 2026-05-20
 
-- Added a `git-guardrails-claude-code` skill plus a `.claude/hooks/block-dangerous-git.sh` PreToolUse hook that blocks `git push`, `git reset --hard`, `git clean -f[d]`, `git branch -D`, and `git checkout/restore .` before Claude Code can execute them. `coding-cli setup agent` / `setup full` now run `config.InstallGitGuardrails` for every host: Claude Code copies the hook + merges a PreToolUse Bash entry into `~/.claude/settings.json`, VS Code / Batman merge deny rules into `chat.tools.terminal.autoApprove` in user `settings.json`, and Codex maintains a managed `<!-- coding-cli:git-guardrails:* -->` block inside `AGENTS.md`. Installer is idempotent across all three host paths.
-- Added `paths.Resolver.VSCodeSettingsPath()` and populated `HostVSCode` / `HostBatman` `Roots.SettingsPath` so the VS Code guardrail merge has a target file.
 - Added new generic skills `diagnose` (reproduce → minimise → hypothesise → instrument → fix → regression-test loop with an `hitl-loop.template.sh` helper) and `handoff` (compact-conversation summary for picking up work in a fresh session).
 
 ## 2026-05-16

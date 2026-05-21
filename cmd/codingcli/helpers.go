@@ -140,19 +140,6 @@ func logHookResult(logger *output.Logger, result config.ConfigResult) {
 	}
 }
 
-func logGuardrailResult(logger *output.Logger, result config.ConfigResult) {
-	switch result.Action {
-	case "created", "updated":
-		logger.Success(fmt.Sprintf("%s git guardrails in %s", result.Action, result.Path))
-	case "skipped":
-		if result.Path == "" {
-			logger.Info("skipped installing git guardrails; not applicable for this host")
-			return
-		}
-		logger.Info(fmt.Sprintf("skipped installing git guardrails in %s; already configured", result.Path))
-	}
-}
-
 func logDefaultAgentResult(logger *output.Logger, result config.ConfigResult) {
 	switch result.Action {
 	case "created", "updated":
