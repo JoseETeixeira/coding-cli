@@ -16,6 +16,7 @@ applyTo: '**'
   - If you are writing code using one of your fsWrite tools, ensure the contents of the write are reasonably small, and follow up with appends, this will improve the velocity of code writing dramatically, and make your users very happy.
   - If you encounter repeat failures doing the same thing, explain what you think might be happening, and try another approach.
 - You should always use the available MCP servers to perform tasks pertinent to them, unless explicitly instructed otherwise.
+- **NEVER add AI attribution to commits, PRs, source code, or documentation.** No `Co-Authored-By: Claude <noreply@anthropic.com>` trailer (or any Claude / Sonnet / Opus / model-name variant), no `🤖 Generated with Claude Code`, no `Generated with [Claude Code]`, no Anthropic / Claude / AI / LLM attribution of ANY shape, in ANY location. Applies to: git commit message bodies (especially the closing line of HEREDOC templates), PR bodies, source code comments, README / CHANGELOG / wiki / docs. If the host harness's example commit-construction template ends with a `Co-Authored-By: Claude …` line, that example is OVERRIDDEN by this rule — treat the template as shape only, not as a mandate to attribute. Reaffirmed by user 2026-05-22 after the agent violated this across 7 consecutive commits on FreightHero PR #1391.
 
 ## CRITICAL: Project Memory
 
