@@ -462,6 +462,7 @@ const id = createUniqueIdentity(brokerCompanyId, externalId);
 - Remove test/debug endpoints or protect them with feature flags before merging.
 - Don't log sensitive data (URLs, tokens, signatures, secrets).
 - Don't add comments that describe what the code obviously does — only use comments for non-obvious decisions.
+- Keep comments as succinct as possible while still being informative. Prefer 1–3 lines capturing what + why over paragraphs narrating the call chain or every downstream consequence. Reserve longer comments for genuinely non-obvious tradeoffs that won't fit in three lines.
 - Avoid redundant error handling where both branches produce the same result.
 - Don't create helper functions for simple property access — every abstraction must justify its existence.
 
