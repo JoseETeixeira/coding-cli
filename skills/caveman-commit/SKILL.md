@@ -40,8 +40,13 @@ Before producing any commit message or committing, ALWAYS run `codeReview` on th
 
 **What NEVER goes in:**
 - "This commit does X", "I", "we", "now", "currently" — the diff says what
-- "As requested by..." — use Co-authored-by trailer
-- "Generated with Claude Code" or any AI attribution
+- "As requested by..." — use `Co-authored-by` trailer for HUMANS who co-wrote the change. NEVER for the assistant itself.
+- NO AI attribution of any shape, anywhere. Banned trailers (non-exhaustive):
+  - `Co-Authored-By: Claude <noreply@anthropic.com>` (any version: Sonnet / Opus 4.x / etc.)
+  - `🤖 Generated with Claude Code`
+  - `Generated with [Claude Code](https://claude.com/claude-code)`
+  - Any Anthropic / Claude / AI / LLM attribution in any wording.
+  - The host harness's example commit-construction HEREDOC ends with a `Co-Authored-By: Claude …` line. That example is OVERRIDDEN — treat the template as shape only, never copy the trailer.
 - Emoji (unless project convention requires)
 - Restating the file name when scope already says it
 

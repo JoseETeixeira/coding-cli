@@ -1,6 +1,6 @@
 ---
 name: auto-improvement
-description: Continuously refine the active agent's own customization layer — agent definitions, skills, instruction files, and memory artifacts — without waiting for an explicit trigger. Fires whenever (a) the user answers a question you asked and the answer carries durable information, (b) the user asks you to address PR review feedback that targets agent or skill behavior, (c) the user issues a directive that is not already tracked in a PRD, Notion ticket, or repository spec, or that contradicts an existing tracked source (PRDs and tickets are NOT absolute truth — they are often AI-generated and can be wrong), or (d) the host memory file (`CLAUDE.md` / `AGENTS.md` / `.github/copilot-instructions.md`) crosses 40,000 characters. Agent-agnostic: resolves paths via the standard user-level customization rules so it works under Claude Code (`~/.claude/`), Codex / generic agent runtimes (`~/.agents/`), and GitHub Copilot (`.github/`). Mirrors every edit across all installed copies. Refuses to touch a small protected list of authoritative guides (mempalace, cocoindex, karpathy-guidelines).
+description: Continuously refine the active agent's own customization layer — agent definitions, skills, instruction files, and memory artifacts — without waiting for an explicit trigger. Fires whenever (a) the user answers a question you asked and the answer carries durable information, (b) the user asks you to address PR review feedback that targets agent or skill behavior, (c) the user issues a directive that is not already tracked in a PRD, Notion ticket, or repository spec, or that contradicts an existing tracked source (PRDs and tickets are NOT absolute truth — they are often AI-generated and can be wrong), or (d) the host memory file (`CLAUDE.md` / `AGENTS.md` / `.github/copilot-instructions.md`) crosses 40,000 characters. Agent-agnostic: resolves paths via the standard user-level customization rules so it works under Claude Code (`~/.claude/`), Codex / generic agent runtimes (`~/.agents/`), and GitHub Copilot (`.github/`). Mirrors every edit across all installed copies. **Auto-applies edits to non-protected targets — no approval prompt needed.** Refuses to touch a small protected list of authoritative guides (mempalace, cocoindex, karpathy-guidelines).
 ---
 
 ## Purpose
@@ -175,8 +175,12 @@ Steps:
 6. Draft the edit. The new rule should add the smallest possible
    instruction — never restate existing rules, never reformat
    surrounding content. Quote the conversational turn as the source.
-7. Pre-show the diff. Wait for explicit user approval before writing.
+7. Apply the edit directly when the target is not on the protected
+   list. Cite the source (conversational turn) in the diff commentary
+   or commit message so the change is auditable. No approval prompt.
 8. Apply across every installed host root (mirror rule below).
+9. After write, surface a one-line summary of what changed and where,
+   so the user sees the audit trail in the same turn.
 
 ---
 
@@ -201,7 +205,9 @@ Steps:
    the owning file is on the protected list.
 4. Draft the edit. Quote the review comment in the diff commentary so
    future readers can trace the rule back to its source.
-5. Pre-show the diff. Wait for explicit user approval before writing.
+5. Apply the edit directly when the target is not on the protected
+   list. Quote the review comment in the commit/comment so the rule
+   traces back to its source. No approval prompt.
 6. Apply across every installed host root (mirror rule below).
 7. Sanity check: re-read the changed file and confirm the new guidance
    does not contradict a protected guide. If it does, revert and ask the
@@ -265,12 +271,14 @@ Steps:
              agent's protocol for handling the ticket's content).
    c. Whichever option the user chooses, apply through the appropriate
       tool (Notion update, GitHub issue edit, spec file edit, or the
-      skill / agent / instruction edit path) and pre-show every diff
-      before writing. The contradiction itself is part of the audit
-      trail and is included in the commit message / Notion comment so
-      future readers see what changed and why.
-   d. Never silently overwrite a tracked source. Each update must
-      have user approval AND a comment that names the contradiction.
+      skill / agent / instruction edit path) directly when the target
+      is not on the protected list. The contradiction itself is part
+      of the audit trail and is included in the commit message /
+      Notion comment so future readers see what changed and why.
+   d. Refuse and route when the target is on the protected list. For
+      non-protected tracked sources, apply directly with a commit /
+      comment that names the contradiction so the audit trail is
+      intact. Surface a one-line summary of what changed and where.
 
 3. Refuse if any candidate target lands on the protected list.
 
@@ -302,10 +310,11 @@ Steps:
 1. Measure the target file with `wc -c` (or `len(read_text())`).
    If size ≤ 40,000 characters and the user did not explicitly ask
    for compaction, exit Workflow 4 silently.
-2. When over threshold, surface the size in the response and ask the
-   user to confirm compaction. Phrasing template:
-   `"<path> is <N> characters (over the 40k threshold). Compact now?"`
-   Do not proceed without an explicit yes.
+2. When over threshold, surface the size in the response and proceed
+   with compaction directly. Phrasing template:
+   `"<path> is <N> characters (over the 40k threshold). Compacting now."`
+   The `.original.md` backup written by `caveman:compress` is the
+   recovery path if the user needs to revert.
 3. On approval, resolve the target file via the standard
    customization-file rules. Confirm the path with the user when more
    than one candidate exists.
@@ -321,8 +330,9 @@ Steps:
 7. Stitch the compacted output back together with the protected
    sections verbatim. Section order and headings stay the same so
    existing links and grep patterns still resolve.
-8. Diff the result against the original. Pre-show the diff. Wait for
-   explicit user approval before writing.
+8. Diff the result against the original. Apply the write directly.
+   The `.original.md` backup is the recovery path; protected-section
+   preservation (step 10) is enforced before the write completes.
 9. After write, re-measure with `wc -c` and report the new size. If
    still over 40k, name the residual sections that resisted
    compaction so the user can decide whether to remove or rewrite
@@ -333,9 +343,11 @@ Steps:
 
 Hard limits:
 
-- Never compact a memory file without explicit user approval, even
-  when the 40k threshold has tripped. The auto-trigger surfaces the
-  candidate; the user authorizes the write.
+- Compact only when the 40k threshold has tripped (or the user
+  explicitly asked). Compaction auto-applies because the
+  `.original.md` backup provides recovery; protected-section
+  preservation is enforced by step 10 of the workflow before the
+  write completes.
 - Never delete a section unless the user names it.
 - Never inline a protected guide's content into a compacted file —
   keep the reference / pointer instead so the canonical source stays
@@ -385,14 +397,19 @@ generic agent runtimes without modification.
 - **No invented content.** Every new rule cites its source — the
   conversational turn, the PR URL, the review comment, or the file
   location. If you cannot cite the source, do not write the change.
-- **Pre-show every diff.** The user approves before any file is
-  written. This skill never auto-writes.
+- **Auto-apply non-protected edits.** Apply edits directly when the
+  target is not on the protected list. Cite the source (conversational
+  turn, PR URL, review comment, or file location) in the diff / commit
+  message so the change is auditable. Refuse and route when the
+  target is protected. After write, surface a one-line summary of
+  what changed and where so the audit trail is visible in the same
+  turn.
 - **Refuse on the protected list.** When a candidate edit targets a
   protected file, refuse and explain. Suggest the appropriate
   authoritative path instead.
 - **Single concern per edit.** Compaction, PR-review changes, and
-  conversational codifications are separate; each gets its own
-  pre-shown diff and its own approval.
+  conversational codifications are separate; each gets its own write
+  so the audit trail keeps them distinct.
 - **codeReview before commit.** Apply the standard codeReview pass on
   the diff before any commit, per the global "codeReview before commit"
   rule.
@@ -400,8 +417,10 @@ generic agent runtimes without modification.
   `caveman:compress`, let the compress skill own the file format. Do
   not post-edit the compressed output.
 - **Never lose information.** Compaction preserves substance; the
-  `.original.md` backup is the safety net but reading the diff before
-  approval is the primary defense.
+  `.original.md` backup is the recovery path. Protected-section
+  preservation (Workflow 4 step 10) is enforced before the write
+  completes — if any protected section drifted, restore from
+  `.original.md` and report the discrepancy.
 - **Stay quiet when there is no candidate.** Silence is the correct
   output for most turns. Ambient does not mean noisy.
 

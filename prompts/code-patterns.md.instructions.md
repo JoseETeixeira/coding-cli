@@ -44,6 +44,30 @@ path = assert_within(root / scope / name / f"{slug}.md", root, "scope")
 - Log structured routing, classification, override, shadow/live, fallback, and error context without sensitive data.
 - Bound provider/model retries and fallbacks; prevent fallback loops and emit events when fallback is triggered.
 
+## Best-Effort Side-Effects Must Not Live in Functional Transactions
+
+Side-effects whose failure should not block the critical path (UX reactions, notifications, logging, analytics) must be isolated from the functional dispatch they accompany. The fastest way to silently break a system is to put a best-effort call and a load-bearing call inside the same DB / queue transaction:
+
+```ts
+// ANTI-PATTERN
+await db.transaction(async (transaction) => {
+  await Repository.createRow(transaction, { ... });   // functional: persists the inbound row
+  await Repository.createEvent(transaction, { ... });  // functional: load event
+  await externalApi.reactWithEyes({ messageId });      // BEST-EFFORT: UX reaction
+  await downstreamQueue.sendMessage({ ... });          // CRITICAL: dispatches to the next stage
+});
+```
+
+When the best-effort call throws, the transaction rolls back. Every line above AND below rolls with it — including the queue send. The downstream consumer never receives the message, retries replay the same failure, and the message dead-letters with zero functional record. The symptom looks like "the next stage didn't run", which masks the upstream side-effect failure as a downstream bug.
+
+Apply ONE of these (in preference order):
+
+1. **Move the best-effort call outside the transaction.** If the reaction / notification doesn't need transactional consistency with the DB writes, fire it after the transaction commits.
+2. **Wrap the best-effort call in `try / catch`** that logs the failure and continues. Critical path still runs.
+3. **Use an outbox-style queue** for the best-effort call: write a row inside the transaction, dispatch the side-effect from a separate worker that can fail in isolation.
+
+Detection: when a downstream consumer shows zero traces for a request that definitely entered the system (webhook delivered, upstream log shows the inbound), and the upstream service has retry events that all fail identically, suspect a transaction-wrapped side-effect blocking the dispatch. The error trail shows the side-effect's error N times (once per retry) while the downstream trail is silent.
+
 ## 1. Repository & Data Access Patterns
 
 - Never perform database operations directly in endpoint handlers. Always use a `Repository` namespace.
@@ -206,6 +230,7 @@ const id = createUniqueIdentity(brokerCompanyId, externalId);
 - Remove test/debug endpoints or protect them with feature flags before merging.
 - Don't log sensitive data (URLs, tokens, signatures, secrets).
 - Don't add comments that describe what the code obviously does — only use comments for non-obvious decisions.
+- Keep comments as succinct as possible while still being informative. Prefer 1–3 lines capturing what + why over paragraphs narrating the call chain or every downstream consequence. Reserve longer comments for genuinely non-obvious tradeoffs that won't fit in three lines.
 - Avoid redundant error handling where both branches produce the same result.
 - Don't create helper functions for simple property access — every abstraction must justify its existence.
 

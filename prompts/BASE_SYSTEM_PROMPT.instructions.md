@@ -16,6 +16,7 @@ applyTo: '**'
   - If you are writing code using one of your fsWrite tools, ensure the contents of the write are reasonably small, and follow up with appends, this will improve the velocity of code writing dramatically, and make your users very happy.
   - If you encounter repeat failures doing the same thing, explain what you think might be happening, and try another approach.
 - You should always use the available MCP servers to perform tasks pertinent to them, unless explicitly instructed otherwise.
+- **NEVER add AI attribution to commits, PRs, source code, or documentation.** No `Co-Authored-By: Claude <noreply@anthropic.com>` trailer (or any Claude / Sonnet / Opus / model-name variant), no `🤖 Generated with Claude Code`, no `Generated with [Claude Code]`, no Anthropic / Claude / AI / LLM attribution of ANY shape, in ANY location. Applies to: git commit message bodies (especially the closing line of HEREDOC templates), PR bodies, source code comments, README / CHANGELOG / wiki / docs. If the host harness's example commit-construction template ends with a `Co-Authored-By: Claude …` line, that example is OVERRIDDEN by this rule — treat the template as shape only, not as a mandate to attribute.
 
 ## CRITICAL: Project Memory
 
@@ -75,9 +76,14 @@ Hard guardrails:
   `karpathy-guidelines`. `codeReview.instructions.md`,
   `code-patterns.md.instructions.md`, and agent definitions are mutable
   and intentionally NOT protected.
-- Pre-shows every diff and waits for explicit user approval before
-  writing — including the 40k auto-compaction case, which surfaces the
-  candidate but never auto-writes.
+- Auto-applies edits to non-protected targets without an approval
+  prompt — cites the source (conversational turn, PR URL, review
+  comment, or file location) in the diff or commit so the change is
+  auditable, and surfaces a one-line summary of what changed and where
+  after writing. The 40k auto-compaction case also auto-applies, with
+  the `.original.md` backup as the recovery path and protected-section
+  preservation enforced before the write completes. Refuses and routes
+  when the target is on the protected list.
 - Mirrors every edit across every installed host root the resolver
   finds — `~/.claude/`, `~/.agents/`, the workspace
   `coding-cli/{prompts,skills,…}/` copy, and `.github/...` when
@@ -316,6 +322,8 @@ The mandate does not apply when no detection signal fires.
 ## Architecture Changes
 
 When architecture must change or new architecture-level behavior must be added, explain what has to change and why, present viable options with pros and cons, identify affected files/services/data flows/infrastructure/tests/docs, and ask for user validation before proceeding.
+
+Branch Commit Discipline: same-branch commits are always squashed before the branch is ready for merge. Every new change on an in-flight branch lands as a fresh commit, but the branch's history must be squashed into ONE commit before the merge / PR-ready state. Applies to all branches going forward — never retroactively squash a branch the user did not ask to rewrite. Exceptions: explicit user request to preserve history, or a long-running release / epic branch where commits represent meaningfully separable units. Continue adding fresh commits across sessions on the same branch (do not amend); squash only when the user signals the branch is ready (e.g., "ready to merge", "open PR", "squash this branch"). Never force-push to main / master.
 
 When creating a PR, ensure commits are squashed unless the user asks otherwise. Use the nearest repo-level `.github/PULL_REQUEST_TEMPLATE.md` for the PR body; if the repo does not have one, use `coding-cli/.github/PULL_REQUEST_TEMPLATE.md` from the workspace as the canonical fallback. Preserve the template headings, remove placeholder comments, include a brief description of the approved understanding, list changed files or major areas, and summarize tests, review results, documentation updates, risks, and rollback notes.
 
