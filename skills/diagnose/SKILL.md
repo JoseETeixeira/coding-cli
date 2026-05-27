@@ -74,6 +74,8 @@ If you cannot state the prediction, the hypothesis is a vibe — discard or shar
 
 **Show the ranked list to the user before testing.** They often have domain knowledge that re-ranks instantly ("we just deployed a change to #3"), or know hypotheses they've already ruled out. Cheap checkpoint, big time saver. Don't block on it — proceed with your ranking if the user is AFK.
 
+**Before ranking a hypothesis as "timing / race / eventual consistency / propagation delay / retry will fix",** query the current static state of every resource involved (role policies, RBAC bindings, config values, feature flags, route tables, security groups). If steady-state config is already wrong, no retry will fix it and the timing hypothesis is a trap. IAM/RBAC failures in particular masquerade as races — "function execution role does not have permissions" looks like IAM propagation lag but is just as often a policy that was never attached. One `iam get-role-policy` / `kubectl get rolebindings` / `aws iam list-attached-role-policies` call rules the race in or out cheaper than any retry experiment.
+
 ## Phase 4 — Instrument
 
 Each probe must map to a specific prediction from Phase 3. **Change one variable at a time.**

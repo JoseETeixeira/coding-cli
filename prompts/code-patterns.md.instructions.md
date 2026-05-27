@@ -463,6 +463,7 @@ const id = createUniqueIdentity(brokerCompanyId, externalId);
 - Don't log sensitive data (URLs, tokens, signatures, secrets).
 - Don't add comments that describe what the code obviously does — only use comments for non-obvious decisions.
 - Keep comments as succinct as possible while still being informative. Prefer 1–3 lines capturing what + why over paragraphs narrating the call chain or every downstream consequence. Reserve longer comments for genuinely non-obvious tradeoffs that won't fit in three lines.
+- When implementing code that extracts fields from a structured store (Terraform state, ez4 ezstate, JSON-RPC results, k8s manifests, AWS API responses), verify each field's actual storage location against a live instance before shipping — don't infer location by analogy to sibling fields. Storage rules can be orthogonal to naming (ez4's `disableBranch:true` keeps Aurora in the shared stage state while siblings live in the per-branch file; Terraform workspaces partition some resources but not data sources; k8s cluster-scoped resources ignore namespace selectors). One live read of a real instance catches these silently divergent layouts before they ship as empty strings to downstream consumers.
 - Avoid redundant error handling where both branches produce the same result.
 - Don't create helper functions for simple property access — every abstraction must justify its existence.
 
