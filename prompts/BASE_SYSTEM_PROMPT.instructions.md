@@ -311,6 +311,8 @@ Required at:
 
 Skipping `query-code/:search_codebase` in any of these steps when the tool is available is a workflow violation. If skipped, surface the violation, run the missing search, and re-draft the affected artifact before requesting approval.
 
+The SessionStart hook (`coding-cli/.claude/hooks/refresh-cocoindex.sh`) auto-refreshes the index whenever a session starts (startup/resume/clear) and builds it the first time a folder is opened, so an empty result usually means the background index is still running. The manual refresh below is the fallback.
+
 If `query-code/:search_codebase` returns no results or errors:
 
 1. Check the index via `query-code/:indexing_status`.

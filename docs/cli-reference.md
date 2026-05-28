@@ -48,7 +48,7 @@ Phases, in order:
 5. Sync assets (`setup agent`).
 6. Build `query-code-mcp` (`npm install` + `npm run build`).
 7. Write MCP config.
-8. Install Claude Code SessionStart hook (Claude Code only).
+8. Install Claude Code SessionStart hook (Claude Code only) — registered for the `startup`, `resume`, and `clear` sources so it refreshes on every session start, and it indexes the opened folder the first time it isn't in the index yet.
 9. Verify indexing dependencies (`IndexingSpecs`).
 10. Run the indexing flow (build MCP if missing, create venv, run `mempalace wake-up`, run `cocoindex update`).
 

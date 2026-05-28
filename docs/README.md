@@ -16,7 +16,7 @@ When you run `coding-cli setup full --<host>`, three things happen:
 
 1. **Assets** (prompts, instructions, agents, skills) are copied from this repo into the host's user-level customization folder. The exact destinations are listed in [cli-reference.md](cli-reference.md#host-profiles).
 2. **MCP configuration** is written into the host's native config (`mcp.json`, `~/.claude.json`, or `~/.codex/config.toml`). The generated config always includes the `query-code`, `mempalace`, and `github` servers — see [query-code-mcp.md](query-code-mcp.md) for the `query-code` details.
-3. **Indexing** runs: `query-code-mcp` is built, a Python venv is created with `cocoindex` installed, `mempalace wake-up` is called, and the workspace is indexed for the first time. After that, the SessionStart hook (Claude Code only) keeps it fresh.
+3. **Indexing** runs: `query-code-mcp` is built, a Python venv is created with `cocoindex` installed, `mempalace wake-up` is called, and the workspace is indexed for the first time. After that, the SessionStart hook (Claude Code only) keeps it fresh — it runs on every session start (`startup`/`resume`/`clear`) and also builds the index the first time you open a folder that isn't indexed yet (including standalone git repos outside the workspace). See [query-code-mcp.md](query-code-mcp.md#how-indexing-works).
 
 ## How the workspace is discovered
 
