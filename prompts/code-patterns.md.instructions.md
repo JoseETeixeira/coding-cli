@@ -341,6 +341,7 @@ await database.table.upsertOne({
 - Shared types belong in common locations — don't duplicate locally.
 - Prefer simple `type` declarations over `interface`/`class` unless EZ4 requires it.
 - For queue message types, export a client type alias: `export type StartLoadTaskClient = StartLoadTaskQueue['client']`.
+- For a closed set of domain values, prefer a `const enum` over a string-literal union type — matches the codebase (`LoadStatus`, `LoadTaskStatus`, `StopType`, `StopStatus`, `AgentLoadStatus`, …) and is enforced in review (Freight-Hero/frontend#129, 2026-05-28). Reference enum members in maps/comparisons (`status === RobinInternalStatus.Scheduled`), not raw string literals. The enum's string values still match the wire payload, so the API contract is unchanged.
 
 ```ts
 // Bad — unnecessary return type
