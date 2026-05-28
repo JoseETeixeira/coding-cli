@@ -34,6 +34,33 @@ applyTo: '**'
 - If a specialist fits the task, run `mempalace_list_agents` and use the appropriate agent.
 - When new facts are relevant to project history, save them with MemPalace so they can be retrieved later.
 
+## CRITICAL: Codebase Intelligence — Always Use query-code Tools First
+
+When the `query-code` MCP tools are available (`search_codebase`,
+`explain_code`, `analyze_error`), they are the DEFAULT way to understand
+this codebase on EVERY turn where existing code matters — inline questions
+and quick fixes included, not only the eight-phase workflow's Discovery
+steps.
+
+- Before grepping or reading files to understand how something works,
+  FIRST run `search_codebase` with a natural-language query derived from
+  the user's request. Treat the returned passages as primary evidence and
+  cite their source identifiers.
+- When you need to understand a specific file, function, class, or symbol,
+  use `explain_code` instead of reading the whole file blind.
+- When diagnosing an error or stack trace, run `analyze_error` before
+  manual investigation.
+- `Grep` / `Read` are pinpoint follow-ups AFTER the semantic search has
+  located the area, or for when you already know the exact file and symbol
+  — not the first move for "how does X work" questions.
+
+This is an always-on default, independent of whether the formal workflow
+triggers. Skip the semantic tools only when the workspace is not indexed
+(tool absent), the task touches no existing code (pure greenfield file
+creation or a chat-only answer), or the user explicitly says to skip them.
+If `search_codebase` returns nothing, check `indexing_status` and refresh
+before falling back to blind grep.
+
 ## CRITICAL: Auto-Improvement of the Customization Layer
 
 The `auto-improvement` skill is **always armed** — it does not require a
