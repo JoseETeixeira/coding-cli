@@ -63,18 +63,55 @@ func InstallClaudeCodeHooks(profile host.HostProfile, layout repos.RepoLayout) (
 	return ConfigResult{Path: settingsPath, Action: action}, nil
 }
 
-// mergeSessionStartHook ensures a SessionStart "startup" matcher referencing
-// the given command exists. Returns true when settings were mutated.
+// sessionStartMatchers lists the SessionStart sources that should re-run the
+// codebase-index refresh. "startup" covers a brand-new session, "resume" a
+// resumed one, and "clear" a /clear — together they mean "whenever a session is
+// started". "compact" is intentionally omitted: it fires mid-session and the
+// refresh would add churn without a folder change.
+var sessionStartMatchers = []string{"startup", "resume", "clear"}
+
+// mergeSessionStartHook ensures a SessionStart matcher referencing the given
+// command exists for each source in sessionStartMatchers. Returns true when
+// settings were mutated. Existing matchers and unrelated commands are left
+// untouched, so the merge is idempotent.
 func mergeSessionStartHook(settings map[string]any, command string) bool {
 	hooks := ensureMap(settings, "hooks")
 	matchers := ensureSlice(hooks, "SessionStart")
 
+	changed := false
+	for _, matcherName := range sessionStartMatchers {
+		if sessionStartMatcherHasCommand(matchers, matcherName, command) {
+			continue
+		}
+		matchers = append(matchers, map[string]any{
+			"matcher": matcherName,
+			"hooks": []any{
+				map[string]any{
+					"type":    "command",
+					"command": command,
+					"timeout": 10,
+				},
+			},
+		})
+		changed = true
+	}
+
+	if changed {
+		hooks["SessionStart"] = matchers
+	}
+
+	return changed
+}
+
+// sessionStartMatcherHasCommand reports whether a SessionStart matcher of the
+// given name already references command.
+func sessionStartMatcherHasCommand(matchers []any, matcherName string, command string) bool {
 	for _, entry := range matchers {
 		matcher, ok := entry.(map[string]any)
 		if !ok {
 			continue
 		}
-		if matcher["matcher"] != "startup" {
+		if matcher["matcher"] != matcherName {
 			continue
 		}
 		innerHooks, ok := matcher["hooks"].([]any)
@@ -87,23 +124,12 @@ func mergeSessionStartHook(settings map[string]any, command string) bool {
 				continue
 			}
 			if hookMap["command"] == command {
-				return false
+				return true
 			}
 		}
 	}
 
-	hooks["SessionStart"] = append(matchers, map[string]any{
-		"matcher": "startup",
-		"hooks": []any{
-			map[string]any{
-				"type":    "command",
-				"command": command,
-				"timeout": 10,
-			},
-		},
-	})
-
-	return true
+	return false
 }
 
 func ensureSlice(root map[string]any, key string) []any {

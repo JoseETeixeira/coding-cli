@@ -40,6 +40,33 @@ func TestInstallClaudeCodeHooksCreatesSettings(t *testing.T) {
 	if !strings.Contains(string(content), want) {
 		t.Fatalf("settings missing hook command %q: %s", want, string(content))
 	}
+
+	hookCommand := filepath.Join(layout.CodingCLI, ".claude", "hooks", "refresh-cocoindex.sh")
+	for _, matcher := range []string{"startup", "resume", "clear"} {
+		if !sessionStartMatcherInJSON(t, content, matcher, hookCommand) {
+			t.Fatalf("settings missing SessionStart %q matcher for hook command: %s", matcher, string(content))
+		}
+	}
+}
+
+// sessionStartMatcherInJSON parses settings JSON and reports whether a
+// SessionStart matcher of the given name references command.
+func sessionStartMatcherInJSON(t *testing.T, content []byte, matcherName string, command string) bool {
+	t.Helper()
+
+	parsed := map[string]any{}
+	if err := json.Unmarshal(content, &parsed); err != nil {
+		t.Fatalf("Unmarshal returned error: %v", err)
+	}
+	hooks, ok := parsed["hooks"].(map[string]any)
+	if !ok {
+		return false
+	}
+	matchers, ok := hooks["SessionStart"].([]any)
+	if !ok {
+		return false
+	}
+	return sessionStartMatcherHasCommand(matchers, matcherName, command)
 }
 
 // jsonEscape returns the JSON-encoded form of a path, which is what we expect
@@ -136,8 +163,9 @@ func TestInstallClaudeCodeHooksPreservesExistingHooks(t *testing.T) {
 	if !ok {
 		t.Fatalf("SessionStart wrong type: %T", hooks["SessionStart"])
 	}
-	if len(sessionStart) != 2 {
-		t.Fatalf("SessionStart len = %d, want 2 (existing + ours)", len(sessionStart))
+	// 1 pre-existing "other-tool" startup matcher + our startup/resume/clear.
+	if len(sessionStart) != 4 {
+		t.Fatalf("SessionStart len = %d, want 4 (existing + startup/resume/clear)", len(sessionStart))
 	}
 
 	want := jsonEscape(filepath.Join(layout.CodingCLI, ".claude", "hooks", "refresh-cocoindex.sh"))
@@ -146,6 +174,13 @@ func TestInstallClaudeCodeHooksPreservesExistingHooks(t *testing.T) {
 	}
 	if !strings.Contains(string(content), "other-tool") {
 		t.Fatalf("existing SessionStart entry was dropped: %s", string(content))
+	}
+
+	hookCommand := filepath.Join(layout.CodingCLI, ".claude", "hooks", "refresh-cocoindex.sh")
+	for _, matcher := range []string{"startup", "resume", "clear"} {
+		if !sessionStartMatcherInJSON(t, content, matcher, hookCommand) {
+			t.Fatalf("missing SessionStart %q matcher for hook command: %s", matcher, string(content))
+		}
 	}
 }
 

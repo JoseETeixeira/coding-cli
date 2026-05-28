@@ -63,7 +63,13 @@ cocoindex update codebase_index.py            # one-shot
 cocoindex update codebase_index.py -L         # live mode, re-indexes on file change
 ```
 
-The Claude Code SessionStart hook (installed by `setup agent --claude-code`) does this for you on every new Claude Code session — see [`.claude/hooks/refresh-cocoindex.sh`](../.claude/hooks/refresh-cocoindex.sh).
+The Claude Code SessionStart hook (installed by `setup agent --claude-code`) does this for you — see [`.claude/hooks/refresh-cocoindex.sh`](../.claude/hooks/refresh-cocoindex.sh). It runs on every session start (`startup`, `resume`, and `clear`) and indexes the folder the session opened in:
+
+- cwd is the workspace root → every top-level project under it is refreshed;
+- cwd is under the workspace → just that top-level project;
+- cwd is a standalone git repo outside the workspace → that repo, indexed on its own.
+
+When the current folder has never been indexed it is built from scratch; otherwise the run is incremental. Everything happens in the background (guarded by a pid lock at `${COCOINDEX_REFRESH_LOCK:-/tmp/cocoindex-update.lock}`, logged to `${COCOINDEX_REFRESH_LOG:-/tmp/cocoindex-update.log}`) so the session starts immediately. Opening a session in `$HOME` or another non-project directory is skipped so it never triggers a huge crawl.
 
 ## MCP tools
 
