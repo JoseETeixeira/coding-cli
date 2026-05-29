@@ -123,6 +123,7 @@ SOURCE_MATCHER = PatternFilePathMatcher(
         "**/.git/**",
         "**/.venv/**",
         "**/venv/**",
+        "**/site-packages/**",
         "**/node_modules/**",
         "**/__pycache__/**",
         "**/.pytest_cache/**",

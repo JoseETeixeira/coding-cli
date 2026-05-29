@@ -23,6 +23,8 @@ CODING_CLI_DIR="$(cd "$SCRIPT_DIR/../.." && pwd -P)"
 WORKSPACE_ROOT="$(cd "$CODING_CLI_DIR/.." && pwd -P)"
 MCP_DIR="$CODING_CLI_DIR/query-code-mcp"
 VENV_ACTIVATE="$MCP_DIR/.venv/bin/activate"
+# Windows venvs put the activate script under Scripts/ instead of bin/.
+[ -f "$VENV_ACTIVATE" ] || VENV_ACTIVATE="$MCP_DIR/.venv/Scripts/activate"
 INDEX_DIR="${CODEBASE_INDEX_DIR:-$MCP_DIR/.cocoindex/codebase-index}"
 LOG_FILE="${COCOINDEX_REFRESH_LOG:-/tmp/cocoindex-update.log}"
 LOCK_FILE="${COCOINDEX_REFRESH_LOCK:-/tmp/cocoindex-update.lock}"
@@ -79,8 +81,24 @@ else
   CODEBASE_PROJECT_PATHS_ENV="${PROJECT_KEY}=${CWD}"
 fi
 
-if [ ! -f "$VENV_ACTIVATE" ]; then
-  echo "[cocoindex] venv missing at $VENV_ACTIVATE; run 'coding-cli setup full' to bootstrap" >&2
+# Prefer the coding-cli binary (cwd-aware target resolution, ensures the venv
+# and MCP build exist); fall back to the venv pipeline with explicit scoping
+# when it isn't on PATH. Resolve it up front so a missing or non-Unix venv
+# layout (e.g. Windows Scripts/) never aborts a perfectly good binary refresh.
+CLI_BIN=""
+for cand in \
+  "$(command -v coding-cli 2>/dev/null || true)" \
+  "$HOME/.local/bin/coding-cli" \
+  "/usr/local/bin/coding-cli" \
+  "$CODING_CLI_DIR/dist/coding-cli"; do
+  if [ -n "$cand" ] && [ -x "$cand" ]; then
+    CLI_BIN="$cand"
+    break
+  fi
+done
+
+if [ -z "$CLI_BIN" ] && [ ! -f "$VENV_ACTIVATE" ]; then
+  echo "[cocoindex] no coding-cli binary and venv missing at $MCP_DIR/.venv; run 'coding-cli setup full' to bootstrap" >&2
   exit 0
 fi
 
@@ -108,21 +126,6 @@ if [ "$indexed" = "yes" ]; then
 else
   echo "[cocoindex] $SCOPE_LABEL not indexed yet; building index in background (log: $LOG_FILE)"
 fi
-
-# Prefer the coding-cli binary (cwd-aware target resolution, ensures the venv
-# and MCP build exist); fall back to the venv pipeline with explicit scoping
-# when it isn't on PATH.
-CLI_BIN=""
-for cand in \
-  "$(command -v coding-cli 2>/dev/null || true)" \
-  "$HOME/.local/bin/coding-cli" \
-  "/usr/local/bin/coding-cli" \
-  "$CODING_CLI_DIR/dist/coding-cli"; do
-  if [ -n "$cand" ] && [ -x "$cand" ]; then
-    CLI_BIN="$cand"
-    break
-  fi
-done
 
 # Launch the refresh in the background. The lock holds the worker's pid (written
 # by the parent via $!, since macOS bash 3.2 has no BASHPID); the worker clears

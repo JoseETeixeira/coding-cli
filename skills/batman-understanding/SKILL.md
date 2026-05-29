@@ -44,7 +44,9 @@ Do not use this skill for tiny one-off answers, direct command output, or alread
 
 ### 2. Search The Codebase
 
-Run `query-code/:search_codebase` with a query derived from the user request.
+MANDATORY: `query-code/:search_codebase` is the first move here, before any grep or read. Run it with a natural-language query derived from the user request and treat the returned passages as primary evidence, citing their source identifiers. Do not draft understanding from blind file reads while the index is available.
+
+If `search_codebase` returns nothing or errors, check `query-code/:indexing_status` and refresh the index before falling back to grep/read. An empty result usually means the background index is still building (the SessionStart hook indexes the current directory and the PostToolUse hook keeps it fresh), not that the code is absent.
 
 Then use targeted follow-up searches or `query-code/:explain_code` for likely:
 
