@@ -74,6 +74,28 @@ If none of the three resolve, the command exits with an error suggesting `setup 
 
 In all cases the chunks are written into the host workspace's `query-code-mcp/.cocoindex/codebase-index/`, so your MCP host (Claude Code, Copilot, Codex) sees them through the existing `query-code` MCP server without reconfiguration.
 
+### `coding-cli update [--<host>]`
+
+Updates an existing install to a published release: it refreshes the shipped prompts/skills/hooks and self-replaces the binary.
+
+**Flags** (in addition to the global flags):
+
+- `--tag <tag>` — install a specific release tag instead of the latest published release.
+- `--owner <owner>` / `--repo <repo>` — GitHub source of releases (default `JoseETeixeira/coding-cli`).
+- `--skip-binary` — only refresh assets/hooks/config; leave the binary untouched.
+- a host flag (`--claude-code`, `--vscode`, `--codex`, `--batman`) when host auto-detection is ambiguous.
+
+**Steps:**
+
+1. Resolve the workspace the same way `run indexing` does (`--workspace-root` → cwd ancestry → persisted default).
+2. Resolve the target release tag from the GitHub API (`--tag` overrides). For a private repo, set `GITHUB_PAT_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN`.
+3. Skip early when the installed `--version` already matches the latest tag, unless `--force` or an explicit `--tag` is given.
+4. Download that tag's source archive and overlay `prompts/`, `skills/`, and `.claude/` onto the workspace `coding-cli/` tree. Runtime state not shipped in the release (e.g. `query-code-mcp/.venv`, `.cocoindex/`) is left untouched.
+5. Re-run asset sync, MCP config, and (on Claude Code) the SessionStart hook + default agent — the same steps as `setup full`.
+6. Download the release binary for the host OS/arch and swap it in place (staged rename, so a running Windows image is moved aside rather than deleted). Skipped with `--skip-binary`.
+
+The version reported by `coding-cli --version` is injected at build time via ldflags; local `go build`s without the flag report `dev`, which `update` always treats as out of date.
+
 ## Host profiles
 
 Each `--<host>` flag selects a profile with its own write destinations and rendering rules. Resolved at runtime by `internal/host` and `internal/paths`.

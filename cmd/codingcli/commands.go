@@ -1,6 +1,9 @@
 package codingcli
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/coding-cli/coding-cli/internal/version"
+	"github.com/spf13/cobra"
+)
 
 func Execute() error {
 	return NewRootCommand(defaultDependencies()).Execute()
@@ -13,6 +16,7 @@ func NewRootCommand(dependencies Dependencies) *cobra.Command {
 		Use:           "coding-cli",
 		Short:         "Coding workspace onboarding and setup CLI",
 		Long:          "coding-cli bootstraps assistant assets, MCP config, and codebase indexing for a workspace.",
+		Version:       version.Version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRun: func(_ *cobra.Command, _ []string) {
@@ -45,6 +49,7 @@ func NewRootCommand(dependencies Dependencies) *cobra.Command {
 	cmd.AddCommand(
 		newSetupCmd(options, dependencies),
 		newRunCmd(options, dependencies),
+		newUpdateCmd(options, dependencies),
 	)
 
 	return cmd

@@ -29,12 +29,25 @@ param(
     [string]$OutputDir,
     [string]$TargetOS,
     [string]$TargetArch,
+    [string]$Version,
     [switch]$Archive
 )
 
 $ErrorActionPreference = 'Stop'
 
 $rootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+if (-not $Version) {
+    if ($env:VERSION) {
+        $Version = $env:VERSION
+    }
+    else {
+        $Version = (& git -C $rootDir describe --tags --always --dirty 2>$null)
+        if ($LASTEXITCODE -ne 0 -or -not $Version) { $Version = 'dev' }
+        $Version = "$Version".Trim()
+    }
+}
+$ldflags = "-s -w -X github.com/coding-cli/coding-cli/internal/version.Version=$Version"
 if (-not $OutputDir) {
     $OutputDir = Join-Path $rootDir 'dist'
 }
@@ -79,7 +92,7 @@ try {
     $env:CGO_ENABLED = '0'
     $env:GOOS = $TargetOS
     $env:GOARCH = $TargetArch
-    & go build -o $binaryPath .
+    & go build -ldflags $ldflags -o $binaryPath .
     if ($LASTEXITCODE -ne 0) {
         throw "go build failed with exit code $LASTEXITCODE"
     }

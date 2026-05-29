@@ -74,6 +74,18 @@ coding-cli setup agent --vscode --force   # re-sync prompts/skills, overwriting 
 coding-cli help              # full command reference
 ```
 
+### Updating to a new release
+
+```bash
+coding-cli update                 # pull the latest release, refresh prompts/skills/hooks, swap the binary
+coding-cli update --claude-code   # target a specific host when auto-detection is ambiguous
+coding-cli update --tag v0.3.0    # install a specific tag instead of the latest
+coding-cli update --skip-binary   # only refresh assets/hooks/config, leave the binary in place
+coding-cli --version              # show the installed version
+```
+
+`update` resolves the latest release from GitHub (override with `--owner`/`--repo`, or set `GITHUB_PAT_TOKEN`/`GH_TOKEN`/`GITHUB_TOKEN` for a private repo), downloads that tag's source archive, overlays the shipped `prompts/`, `skills/`, and `.claude/` onto the workspace tree, re-syncs them to your host, and self-replaces the binary. It is a no-op when you already run the latest version unless you pass `--force` or an explicit `--tag`.
+
 ## Docs
 
 The detailed reference lives in [docs/](docs/README.md):

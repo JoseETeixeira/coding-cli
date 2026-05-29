@@ -29,7 +29,10 @@ if [[ "$TARGET_GOOS" != "$HOST_GOOS" || "$TARGET_GOARCH" != "$HOST_GOARCH" ]]; t
 	binary_path="$OUTPUT_DIR/${BINARY_NAME}_${TARGET_GOOS}_${TARGET_GOARCH}${binary_suffix}"
 fi
 
-CGO_ENABLED=0 GOOS="$TARGET_GOOS" GOARCH="$TARGET_GOARCH" go build -o "$binary_path" .
+VERSION="${VERSION:-$(git -C "$ROOT_DIR" describe --tags --always --dirty 2>/dev/null || echo dev)}"
+LDFLAGS="-s -w -X github.com/coding-cli/coding-cli/internal/version.Version=${VERSION}"
+
+CGO_ENABLED=0 GOOS="$TARGET_GOOS" GOARCH="$TARGET_GOARCH" go build -ldflags "$LDFLAGS" -o "$binary_path" .
 
 if [[ "$ARCHIVE" == "true" ]]; then
 	staging_dir="$(mktemp -d)"
