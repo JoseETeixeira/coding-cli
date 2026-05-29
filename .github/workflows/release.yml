@@ -10,7 +10,11 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  # Build each platform archive in parallel and stash it as a workflow artifact.
+  # No job touches the GitHub release here, so there is no concurrent
+  # release-creation race (the cause of intermittent "already_exists: tag_name"
+  # failures that left releases missing some platform binaries).
+  build:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -38,6 +42,10 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          # Full history + tags so build.sh's `git describe --tags` resolves the
+          # release version for the embedded ldflags.
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -55,7 +63,27 @@ jobs:
           ARCHIVE: 'true'
         run: bash ./build.sh
 
-      - name: Publish archive
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coding-cli_${{ matrix.goos }}_${{ matrix.goarch }}
+          path: dist/coding-cli_${{ matrix.goos }}_${{ matrix.goarch }}.${{ matrix.ext }}
+          if-no-files-found: error
+          retention-days: 1
+
+  # Single job that creates the release exactly once after every archive built.
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/coding-cli_${{ matrix.goos }}_${{ matrix.goarch }}.${{ matrix.ext }}
+          files: dist/*
+          fail_on_unmatched_files: true
