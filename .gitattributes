@@ -1,0 +1,20 @@
+# Normalize line endings. Text files are stored and checked out with LF on every
+# platform so the `coding-cli update` overlay — which writes the release
+# tarball's LF bytes onto the workspace tree — does not churn a CRLF working
+# tree on Windows. Shipped .sh hooks also require LF to run.
+* text=auto eol=lf
+
+# Windows-native scripts keep CRLF.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Treat common binary assets as binary regardless of content sniffing.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.gz binary
+*.zip binary
+*.exe binary

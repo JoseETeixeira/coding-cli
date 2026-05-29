@@ -36,12 +36,12 @@ func TestInstallClaudeCodeHooksCreatesSettings(t *testing.T) {
 		t.Fatalf("ReadFile returned error: %v", err)
 	}
 
-	want := jsonEscape(filepath.Join(layout.CodingCLI, ".claude", "hooks", "refresh-cocoindex.sh"))
+	want := jsonEscape(CocoIndexRefreshHookCommand(layout))
 	if !strings.Contains(string(content), want) {
 		t.Fatalf("settings missing hook command %q: %s", want, string(content))
 	}
 
-	hookCommand := filepath.Join(layout.CodingCLI, ".claude", "hooks", "refresh-cocoindex.sh")
+	hookCommand := CocoIndexRefreshHookCommand(layout)
 	for _, matcher := range []string{"startup", "resume", "clear"} {
 		if !sessionStartMatcherInJSON(t, content, matcher, hookCommand) {
 			t.Fatalf("settings missing SessionStart %q matcher for hook command: %s", matcher, string(content))
@@ -168,7 +168,7 @@ func TestInstallClaudeCodeHooksPreservesExistingHooks(t *testing.T) {
 		t.Fatalf("SessionStart len = %d, want 4 (existing + startup/resume/clear)", len(sessionStart))
 	}
 
-	want := jsonEscape(filepath.Join(layout.CodingCLI, ".claude", "hooks", "refresh-cocoindex.sh"))
+	want := jsonEscape(CocoIndexRefreshHookCommand(layout))
 	if !strings.Contains(string(content), want) {
 		t.Fatalf("hook command missing: %s", string(content))
 	}
@@ -176,11 +176,84 @@ func TestInstallClaudeCodeHooksPreservesExistingHooks(t *testing.T) {
 		t.Fatalf("existing SessionStart entry was dropped: %s", string(content))
 	}
 
-	hookCommand := filepath.Join(layout.CodingCLI, ".claude", "hooks", "refresh-cocoindex.sh")
+	hookCommand := CocoIndexRefreshHookCommand(layout)
 	for _, matcher := range []string{"startup", "resume", "clear"} {
 		if !sessionStartMatcherInJSON(t, content, matcher, hookCommand) {
 			t.Fatalf("missing SessionStart %q matcher for hook command: %s", matcher, string(content))
 		}
+	}
+}
+
+func TestInstallClaudeCodeHooksMigratesLegacyBarePathEntries(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	settingsPath := filepath.Join(dir, "settings.json")
+	layout := repos.RepoLayout{CodingCLI: "/work/workspace/coding-cli"}
+
+	// Seed the broken state older versions produced on Windows: SessionStart
+	// entries whose command is the bare .sh path (not runnable via cmd).
+	barePath := filepath.Join(layout.CodingCLI, ".claude", "hooks", "refresh-cocoindex.sh")
+	seed := map[string]any{
+		"hooks": map[string]any{
+			"SessionStart": []any{
+				map[string]any{"matcher": "startup", "hooks": []any{map[string]any{"type": "command", "command": barePath, "timeout": 10}}},
+				map[string]any{"matcher": "resume", "hooks": []any{map[string]any{"type": "command", "command": barePath, "timeout": 10}}},
+				map[string]any{"matcher": "clear", "hooks": []any{map[string]any{"type": "command", "command": barePath, "timeout": 10}}},
+			},
+		},
+	}
+	raw, _ := json.Marshal(seed)
+	if err := os.WriteFile(settingsPath, raw, 0o644); err != nil {
+		t.Fatalf("WriteFile returned error: %v", err)
+	}
+
+	profile := host.HostProfile{Kind: host.HostClaudeCode, Roots: host.HostRoots{SettingsPath: settingsPath}}
+
+	result, err := InstallClaudeCodeHooks(profile, layout)
+	if err != nil {
+		t.Fatalf("InstallClaudeCodeHooks returned error: %v", err)
+	}
+	if result.Action != "updated" {
+		t.Fatalf("result.Action = %q, want updated (legacy entries should be migrated)", result.Action)
+	}
+
+	content, err := os.ReadFile(settingsPath)
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	parsed := map[string]any{}
+	if err := json.Unmarshal(content, &parsed); err != nil {
+		t.Fatalf("Unmarshal returned error: %v", err)
+	}
+	sessionStart := parsed["hooks"].(map[string]any)["SessionStart"].([]any)
+
+	// Exactly the 3 canonical entries — no duplicates left behind.
+	if len(sessionStart) != 3 {
+		t.Fatalf("SessionStart len = %d, want 3 (deduped canonical entries): %s", len(sessionStart), string(content))
+	}
+
+	wantCommand := CocoIndexRefreshHookCommand(layout)
+	if !strings.HasPrefix(wantCommand, "bash ") {
+		t.Fatalf("canonical command should be bash-wrapped, got %q", wantCommand)
+	}
+	for _, entry := range sessionStart {
+		cmd := entry.(map[string]any)["hooks"].([]any)[0].(map[string]any)["command"].(string)
+		if cmd != wantCommand {
+			t.Fatalf("entry command = %q, want %q", cmd, wantCommand)
+		}
+	}
+	if strings.Contains(string(content), jsonEscape(barePath)+"\"") {
+		t.Fatalf("legacy bare-path command should have been removed: %s", string(content))
+	}
+
+	// Second run must be a no-op now that the config is canonical.
+	second, err := InstallClaudeCodeHooks(profile, layout)
+	if err != nil {
+		t.Fatalf("second call returned error: %v", err)
+	}
+	if second.Action != "skipped" {
+		t.Fatalf("second result.Action = %q, want skipped", second.Action)
 	}
 }
 
