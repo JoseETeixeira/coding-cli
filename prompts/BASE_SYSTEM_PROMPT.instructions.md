@@ -307,10 +307,12 @@ Required at:
 
 Skipping `freighthero-codebase/:search_codebase` in any of these steps for a FreightHero-workspace task is a workflow violation. If skipped, surface the violation, run the missing search, and re-draft the affected artifact before requesting approval.
 
-If `freighthero-codebase/:search_codebase` returns no results or errors:
+Update-before-search: every `freighthero-codebase/:search_codebase` invocation must be preceded by an index update — run `cd <workspace-root>/coding-cli/freighthero-mcp && source .venv/bin/activate && cocoindex update codebase_index.py:FreightHeroCodebase` (substitute the detected workspace root) first, then perform the search. When several searches run in the same turn, one update before the first search suffices. (source: user directive 2026-06-11 "whenever cocoindex is invoked on (search_codebase); First update the indexation then perform the search")
+
+If `freighthero-codebase/:search_codebase` returns no results or errors after the update:
 
 1. Check the index via `freighthero-codebase/:indexing_status`.
-2. If the index is stale or empty, instruct the user to refresh: `cd <workspace-root>/coding-cli/freighthero-mcp && source .venv/bin/activate && cocoindex update codebase_index.py:FreightHeroCodebase` (substitute the detected workspace root).
+2. If the index is still stale or empty, re-run the update command above; if the problem persists, surface it to the user.
 3. Record the search outcome (empty / errored / successful + query used) in the affected phase artifact.
 
 The mandate does not apply when no detection signal fires.

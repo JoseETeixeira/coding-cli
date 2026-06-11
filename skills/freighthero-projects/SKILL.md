@@ -5,7 +5,7 @@ description: Use for FreightHero project tasks across ai_watchtower, backend, fr
 
 When working on a freight hero project (ai_watchtower, backend, frontend, robin-error-dashboard) follow the rules below:
 
-0. At the start of every session, refresh the codebase index by running the following from `coding-cli/freighthero-mcp/`:
+0. At the start of every session AND immediately before every `search_codebase` call, refresh the codebase index by running the following from `coding-cli/freighthero-mcp/` (several searches in the same turn → one refresh before the first search suffices; source: user directive 2026-06-11):
    ```bash
    source .venv/bin/activate && cocoindex update codebase_index.py:FreightHeroCodebase
    ```
