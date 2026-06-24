@@ -344,6 +344,20 @@ For changes touching `app/services/skills_service.py`, `app/utils/skill_tools.py
 
 ---
 
+## 18. GitHub Actions / CI Workflow Gating (`.github/workflows/**`)
+
+Review change-gated pipelines (jobs that skip when their change-gate is false) against these `needs:`/`if:` semantics. Getting them wrong lets a deploy run after an upstream failure, or blocks a deploy that should proceed. (Source: ai_watchtower `ci-change-gates.yml`, PRs #1490/#1491; Codex P1 "Gate dev image on the dev plan result".)
+
+- **Guard EVERY transitive upstream stage, not just the immediate parent.** In a chain `plan → apply → deploy`, when `plan` fails the intermediate `apply` AUTO-SKIPS (result `skipped`, not `failure`). A downstream job that only checks `needs.apply.result != 'failure'` therefore still runs after a failed `plan` (skipped ≠ failure). The deploy must also list `plan` in `needs` and check `needs.plan.result != 'failure'`. Mirror the gate across both environments (prd and dev) — an asymmetric gate is the common bug.
+- **`!cancelled()` / `always()` defeats auto-skip — add an explicit success check.** A job whose `if:` contains `!cancelled()` or `always()` does NOT auto-skip when a needed job fails or is skipped. To BLOCK such a job on a gate failure you MUST add `needs.<gate>.result == 'success'`; listing the gate in `needs` alone is insufficient. (E.g. an image deploy that must run on skipped infra but block on failed unit-tests needs both `!cancelled()` and `needs.unit-tests.result == 'success'`.)
+- **`skipped` ≠ `failure` — pick the operator deliberately.** Use `result != 'failure'` for "ran-or-skipped is OK, block only on a real failure" (lets a change-gated no-op proceed). Use `result == 'success'` for "must have actually succeeded." Mixing them up is how a skipped no-op merge silently blocks, or a real failure silently proceeds.
+- **`needs.<job>.result` / `.outputs.*` is only populated when `<job>` is in that job's `needs:`.** A reference to a job absent from `needs` is always empty — a silent mis-gate. Cross-check every `needs.X.*` in an `if:` against the `needs:` list.
+- **Secret-bearing jobs must not run on `pull_request`.** Any job with cloud creds / tokens in `env` (AWS keys, `DOPPLER_TOKEN*`) that checks out and executes repo code must restrict to `github.event_name == 'push' && github.ref == 'refs/heads/main'`, so PR-controlled code never sees the secrets. PR-time feedback belongs in a separate secret-less job (e.g. `terraform validate -backend=false`).
+- **`actions/upload-artifact@v4` errors on duplicate artifact names in one run.** Per-environment artifacts (e.g. prd vs dev plan) need distinct names (`tfplan` vs `tfplan-dev`).
+- **Validate the graph before merge:** parse the YAML, confirm every `needs` target exists, every `needs.X.*` reference is in that job's `needs`, and trace the no-change / upstream-failure / unit-failure / `pull_request` scenarios for each deploy job.
+
+---
+
 ## Review Checklist
 
 Before approving a PR, verify:
@@ -403,3 +417,6 @@ Before approving a PR, verify:
 - [ ] Broker-originated load events still flow via backend TMS notify-event path (blanket broker-ignore guardrail intact across all 5 inbound agents)
 - [ ] Tracking workflow thread_ids scope by `task_uuid` (data graph) / `stop_uuid` (checkpoint routine), never `{load_id}_<direction>`
 - [ ] Provider-translation layer sanitizes tool-use `name` against Bedrock's `[a-zA-Z0-9_-]+` regex when crossing provider boundaries
+- [ ] CI change-gated deploy jobs guard EVERY transitive upstream stage's `result != 'failure'` (not just the immediate parent), symmetrically across envs (§18)
+- [ ] `!cancelled()`/`always()` deploy jobs add explicit `needs.<gate>.result == 'success'` to block on a gate failure (§18)
+- [ ] Secret-bearing workflow jobs restricted to `push` + `refs/heads/main`; per-env upload-artifact names distinct (§18)
