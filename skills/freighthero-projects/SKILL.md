@@ -23,4 +23,20 @@ When working on a freight hero project (ai_watchtower, backend, frontend, robin-
 12. Whenever Python code changes under `ai_watchtower/` or `ai_watchtower/robin-gpt/`, bump the corresponding `pyproject.toml` `version` so deploys pick the change up. The two sources of truth are `ai_watchtower/pyproject.toml` (the AI Watchtower service) and `ai_watchtower/robin-gpt/pyproject.toml` (the Robin GPT service). For `robin-gpt/` changes, also bump the matching `version="..."` in `robin-gpt/app/main.py` FastAPI metadata so the runtime app and the package agree. Semver: behaviour-additive change → minor bump; bugfix or doc-only → patch bump.
 13. AI Watchtower Robot E2E suites under `ai_watchtower/tests/automated/workflows/` run against the DEPLOYED dev service, not local working-tree code. To run/iterate them: set the broker/shipper aliases in `app/configs/broker_aliases.py` FIRST, then deploy the branch to dev with `doppler run -c dev -- make deploy-image` and wait for the `dev-ai-watchtower` API + celery-worker ECS rollout to finish. The suite drives `managers.test.freighthero.ai` over an ssh tunnel and needs `MANAGERS_TEST_EMAIL`/`MANAGERS_TEST_PASSWORD` (GitHub `robot-dev-e2e` env, not Doppler) plus `infrastructure/dev-bastion-key.pem`. dev sandboxes outbound SMS (no console communication record), so verify agent sends in CloudWatch `/ecs/dev-ai-watchtower` (e.g. `sms_tool_attempt`) rather than the Communications tab. (user directive 2026-06-17)
 
+## Codebase intelligence: repowise (complementary to freighthero-codebase)
+
+<!-- repowise-complement -->
+The `repowise` MCP server indexes this whole workspace (all sub-repos) into a dependency graph + git history + code-health model. It complements `freighthero-codebase` (CocoIndex semantic chunk search) — it does not replace it.
+
+- Find / read code -> `freighthero-codebase/:search_codebase` (locate) then `:explain_code` (read full file).
+- Understand structure, impact, ownership, risk, or rationale -> `repowise`:
+  - `get_overview` — architecture summary, module map, entry points. First call on an unfamiliar area.
+  - `get_context` — triage card for files/modules/symbols: callers/callees, ownership, governing decisions, hotspot bit. Batch many targets in one call.
+  - `get_why` — architectural decision records + supersession lineage; falls back to git archaeology.
+  - `get_risk` — hotspots, co-change partners, ownership, test gaps; pass `changed_files` for PR-mode directives (`will_break`, `missing_tests`).
+  - `get_health` — defect-risk / maintainability / performance biomarkers per file, plus graph-aware refactoring plans (`include=["refactoring"]`).
+  - `get_dead_code`, `get_symbol` (exact source bytes for an indexed symbol).
+- `repowise get_answer` / `search_codebase` are semantic RAG over the wiki and need the docs layer generated (`repowise update --repo <r> --docs`); until then, use `freighthero-codebase` for semantic search and `repowise` for graph/git/health/decisions.
+
+
 IMPORTANT: Always ensure that any code you generate or modify is tested and reviewed through the `codeReview.instructions.md` for best practices.

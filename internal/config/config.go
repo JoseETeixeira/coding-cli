@@ -55,6 +55,17 @@ func ManagedServers(layout repos.RepoLayout, profile host.HostProfile) map[strin
 				"FREIGHTHERO_REPO_ROOT": layout.Root,
 			},
 		},
+		// repowise serves the workspace-wide codebase-intelligence index (graph,
+		// git, code-health, dead-code, architectural decisions) over MCP. It runs
+		// in workspace mode against the FreightHero root, so a single server
+		// federates every sub-repo. Complements freighthero-codebase (CocoIndex
+		// semantic chunk search) rather than replacing it. Requires the `repowise`
+		// CLI on PATH (install: `uv tool install repowise`) and a built index
+		// (`repowise init . --index-only` at the workspace root).
+		"repowise": {
+			Command: "repowise",
+			Args:    []string{"mcp", layout.Root},
+		},
 		"mempalace": func() ManagedServer {
 			// Use pyexec to pick the right Python launcher per OS — `python3`
 			// on macOS/Linux, `py -3` on Windows (avoids the Microsoft Store

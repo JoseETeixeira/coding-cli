@@ -38,6 +38,7 @@ func SetupMCPSpecs() []DependencySpec {
 		pipSpec("0.0.0"),
 		mempalaceSpec(),
 		rtkSpec(),
+		repowiseSpec(),
 	}
 }
 
@@ -134,6 +135,23 @@ func cocoindexSpec() DependencySpec {
 		Check:       runner.Command{Name: "python3", Args: []string{"-m", "pip", "show", "cocoindex"}},
 		InstallFunc: installPythonPackage("cocoindex"),
 		Recovery:    "install cocoindex with python3 -m pip install --user cocoindex",
+	}
+}
+
+// repowiseSpec provisions the repowise CLI used by the workspace-wide
+// codebase-intelligence MCP server (registered in config.ManagedServers). It is
+// optional: a missing `uv` or failed install must not break MCP setup — the
+// server entry is still written and starts working once repowise is installed.
+// repowise needs Python 3.11+, so it is installed as an isolated uv tool rather
+// than into the host python used by mempalace/cocoindex.
+func repowiseSpec() DependencySpec {
+	return DependencySpec{
+		Name:       "repowise",
+		MinVersion: "0.0.0",
+		Required:   false,
+		Check:      runner.Command{Name: "repowise", Args: []string{"--version"}},
+		Install:    []runner.Command{{Name: "uv", Args: []string{"tool", "install", "repowise"}}},
+		Recovery:   "install repowise with 'uv tool install repowise' (needs Python 3.11+); see https://github.com/repowise-dev/repowise",
 	}
 }
 

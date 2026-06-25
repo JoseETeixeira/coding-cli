@@ -60,6 +60,18 @@ For each source of truth you mention, such as a table, queue, index, log, config
 
 When the search space is broad, use a read-only subagent. Tell the subagent to return files, symbols, current behavior, source-of-truth reasoning, process distinctions, execution locations, risks, and likely test/doc impact. Do not ask the subagent to draft requirements.
 
+After locating candidates, ground the understanding with `repowise` (workspace-wide graph + git + code-health), complementing — not replacing — the mandatory `freighthero-codebase` search:
+
+- `get_overview` for the architecture/module map when the area is unfamiliar;
+- `get_context` (callers/callees, ownership, governing decisions, hotspot bit) to explain what each likely-to-change component is used for and who depends on it;
+- `get_why` for the architectural decisions / rationale behind current behavior ("why this evidence/source-of-truth matters");
+- `get_risk` and `get_health` to surface hotspots, co-change partners, test gaps, and defect-risk for the change surface and the Risks/Architecture-Change sections.
+
+`repowise get_answer`/`search_codebase` (semantic RAG) need the docs layer; until generated, keep using `freighthero-codebase/:explain_code` for full-file reads.
+
+<!-- repowise-complement -->
+
+
 ### 3. Generate Visual Recap
 
 After the initial search, resolve and read `visual-explainer/SKILL.md`.

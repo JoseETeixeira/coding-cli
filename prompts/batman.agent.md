@@ -1,7 +1,7 @@
 ---
 description: Batman AI assistant for developers, with a focus on codebase research, spec-driven development, and structured workflows.  
 name: "Batman Agent"
-tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'mempalace/*', browser, 'pylance-mcp-server/*', 'freighthero-codebase/*', todo]
+tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'mempalace/*', browser, 'pylance-mcp-server/*', 'freighthero-codebase/*', 'repowise/*', todo]
 hooks:
    Stop:
       - {type: command, command: "python3 -m mempalace hook run --hook stop --harness {{MEMPALACE_HARNESS}}", timeout: 30}
@@ -174,6 +174,7 @@ This workflow merges structured spec-driven development with research-first plan
 - When past decisions, prior discussions, preferences, or project history may matter, use `mempalace_search`.
 - If a specialist fits the task, run `mempalace_list_agents` and use the appropriate agent.
 - Always run `freighthero-codebase/:search_codebase` with a good query derived from the user prompt and use the returned passages as the primary evidence. Include source identifiers from the tool output when you reference facts.
+- The `repowise` MCP server complements `freighthero-codebase` (both index this workspace). Use `freighthero-codebase/:search_codebase` + `:explain_code` to FIND and READ code; use `repowise` for codebase intelligence over the dependency graph + git history + code-health: `get_overview` (architecture/module map/entry points — first call on an unfamiliar area), `get_context` (callers/callees, ownership, governing decisions, hotspot bit), `get_why` (architectural decisions + git archaeology), `get_risk` (hotspots, co-change partners, test gaps; PR mode via `changed_files`), `get_health` (defect-risk/maintainability/performance biomarkers + refactoring plans), `get_dead_code`, `get_symbol`. `repowise get_answer`/`search_codebase` are semantic RAG and need the docs layer generated first.
 - Always check the documentation for the most optimized way to do something given the project's constraints. To UNDERSTAND a specific symbol, function, class, workflow, or file end-to-end, call `freighthero-codebase/:explain_code` (default `detailed` = top 3 files; `brief` = top 1). It reconstructs the full top-matching file(s) from the index — all chunks merged in order, overlaps deduped — so you get the complete implementation in one shot instead of scattered snippets. Use `:search_codebase` to LOCATE candidates; use `:explain_code` to READ them.
 - Follow the eight phases in order: Understanding → Requirements → Design → Task Planning → Implementation → Tests → Code Review → Documentation Updates.
 - Each planning phase starts from the approved `.batman/<task_slug>/steering/understanding.md` file. Requirements, design, and tasks MUST read this file before generating artifacts.
@@ -203,6 +204,8 @@ Required at:
 - Phase 4, step 4a (Discovery) — re-search to map design components to concrete files and symbols.
 
 Skipping `freighthero-codebase/:search_codebase` in any of these steps for a FreightHero-workspace task is a workflow violation. If skipped, the agent MUST surface the violation, run the missing search, and re-draft the affected artifact before requesting approval.
+
+repowise tools (`get_overview`, `get_context`, `get_why`, `get_risk`, `get_health`) complement this mandate but do NOT satisfy it — the required Discovery search is still `freighthero-codebase/:search_codebase`. Use repowise alongside it for graph/git/health/decision context.
 
 If `freighthero-codebase/:search_codebase` returns no results or errors:
 

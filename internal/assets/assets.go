@@ -23,7 +23,7 @@ const (
 	mempalaceHarnessPlaceholder = "{{MEMPALACE_HARNESS}}"
 
 	// vscodeBatmanFrontmatterTools is the tools list in batman.agent.md as authored for the VS Code Batman extension.
-	vscodeBatmanFrontmatterTools = "tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'mempalace/*', browser, 'pylance-mcp-server/*', 'freighthero-codebase/*', todo]"
+	vscodeBatmanFrontmatterTools = "tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'mempalace/*', browser, 'pylance-mcp-server/*', 'freighthero-codebase/*', 'repowise/*', todo]"
 
 	// Note: Claude Code installs intentionally OMIT the frontmatter tools list. Per Claude Code agent
 	// semantics, omitting `tools:` means the agent inherits every tool available to the session — including
