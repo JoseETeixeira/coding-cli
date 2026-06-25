@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-25
+
+- Integrated [repowise](https://github.com/repowise-dev/repowise) as a second codebase-intelligence MCP server, complementary to `freighthero-codebase` (CocoIndex). `config.ManagedServers` now ships a `repowise` server (`repowise mcp <workspace-root>`, workspace mode federating every sub-repo) to all host configs; `deps` adds an optional `repowiseSpec` (installed via `uv tool install repowise`, non-required so a missing `uv` never breaks MCP setup); the VS Code Batman frontmatter tools whitelist gains `'repowise/*'` (Claude Code inherits it automatically).
+- Attached complementary repowise guidance to the focused-set Batman assets: `batman.agent.md` (planning rules + a note that repowise does not satisfy the mandatory `freighthero-codebase` Discovery search), `skills/freighthero-projects/SKILL.md`, and `skills/batman-understanding/SKILL.md`. Guidance routes graph/git/code-health/decision/risk questions to repowise (`get_overview`, `get_context`, `get_why`, `get_risk`, `get_health`, `get_dead_code`, `get_symbol`) and keeps find/read-code on `freighthero-codebase` (`:search_codebase` / `:explain_code`).
+- Added unit coverage: `ManagedServers` includes the repowise server with `repowise mcp <root>`; `SetupMCPSpecs`/`SetupFullSpecs` include an optional repowise spec that installs via `uv`.
+
 ## 2026-05-16
 
 - Added a Constitution gate to the Batman Design phase. `design.prompt.md` now loads or seeds `.batman/<task_slug>/steering/constitution.md` from a new Constitution Template, requires pre- and post-design checks against every principle, and surfaces unavoidable violations through a Complexity Tracking table — no silent rule-breaking. `batman.agent.md` wires the gate into Phase 3 Design Capture and the Workflow Summary, and `requirements.prompt.md` references the constitution so Requirements stays aware of it without being blocked on it.

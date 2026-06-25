@@ -167,6 +167,41 @@ func TestVerifyDependenciesUsesInstallFunc(t *testing.T) {
 	}
 }
 
+func TestSetupSpecsIncludeOptionalRepowise(t *testing.T) {
+	t.Parallel()
+
+	find := func(specs []DependencySpec, name string) (DependencySpec, bool) {
+		for _, spec := range specs {
+			if spec.Name == name {
+				return spec, true
+			}
+		}
+		return DependencySpec{}, false
+	}
+
+	for _, set := range []struct {
+		name  string
+		specs []DependencySpec
+	}{
+		{"SetupMCPSpecs", SetupMCPSpecs()},
+		{"SetupFullSpecs", SetupFullSpecs()},
+	} {
+		spec, ok := find(set.specs, "repowise")
+		if !ok {
+			t.Fatalf("%s: expected a repowise spec", set.name)
+		}
+		if spec.Required {
+			t.Fatalf("%s: repowise spec must be optional so missing uv/repowise does not break setup", set.name)
+		}
+		if spec.Check.Name != "repowise" {
+			t.Fatalf("%s: repowise Check.Name = %q, want repowise", set.name, spec.Check.Name)
+		}
+		if len(spec.Install) == 0 || spec.Install[0].Name != "uv" {
+			t.Fatalf("%s: repowise must install via uv, got %v", set.name, spec.Install)
+		}
+	}
+}
+
 func commandKey(command runner.Command) string {
 	if len(command.Args) == 0 {
 		return command.Name

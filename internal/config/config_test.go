@@ -119,3 +119,21 @@ func TestManagedServersIncludeCodexGithubTokenEnv(t *testing.T) {
 		t.Fatalf("github.BearerTokenEnvVar = %q", github.BearerTokenEnvVar)
 	}
 }
+
+func TestManagedServersIncludeRepowise(t *testing.T) {
+	t.Parallel()
+
+	layout := repos.RepoLayout{Root: "/tmp/root", FreightHeroMCP: "/tmp/root/coding-cli/freighthero-mcp", CodebaseIndex: "/tmp/root/coding-cli/freighthero-mcp/.cocoindex/codebase-index"}
+	servers := ManagedServers(layout, host.HostProfile{Kind: host.HostClaudeCode})
+	repowise, ok := servers["repowise"]
+	if !ok {
+		t.Fatal("expected repowise server")
+	}
+	if repowise.Command != "repowise" {
+		t.Fatalf("repowise.Command = %q, want repowise", repowise.Command)
+	}
+	want := []string{"mcp", layout.Root}
+	if len(repowise.Args) != len(want) || repowise.Args[0] != want[0] || repowise.Args[1] != want[1] {
+		t.Fatalf("repowise.Args = %v, want %v", repowise.Args, want)
+	}
+}
