@@ -37,6 +37,7 @@ The `repowise` MCP server indexes this whole workspace (all sub-repos) into a de
   - `get_health` — defect-risk / maintainability / performance biomarkers per file, plus graph-aware refactoring plans (`include=["refactoring"]`).
   - `get_dead_code`, `get_symbol` (exact source bytes for an indexed symbol).
 - `repowise get_answer` / `search_codebase` are semantic RAG over the wiki and need the docs layer generated (`repowise update --repo <r> --docs`); until then, use `freighthero-codebase` for semantic search and `repowise` for graph/git/health/decisions.
+- **Keep the repowise index fresh:** it auto-refreshes (graph/git/health, no LLM) at session start via the `refresh-repowise` SessionStart hook. After a significant code change, run `repowise update --workspace` from the FreightHero root to refresh the graph + docs/RAG (incremental, reuses the graph; uses the key in `.repowise/.env`); add `--index-only` for a fast no-LLM refresh.
 
 
 IMPORTANT: Always ensure that any code you generate or modify is tested and reviewed through the `codeReview.instructions.md` for best practices.
