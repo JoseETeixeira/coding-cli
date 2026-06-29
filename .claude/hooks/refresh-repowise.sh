@@ -53,6 +53,15 @@ echo "[repowise] refreshing FreightHero workspace index in background (log: $LOG
   echo "$$" > "$LOCK_FILE"
   cd "$FREIGHTHERO_ROOT" || exit 0
   {
+    # Re-apply the Markdown-eligibility patch to the installed repowise tool.
+    # `uv tool upgrade repowise` overwrites package source, so this keeps the
+    # patch live every session. Idempotent + fail-soft (never aborts the run).
+    PATCH_PY="$SCRIPT_DIR/patch-repowise-markdown.py"
+    PYTHON_BIN="$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true)"
+    if [ -n "$PYTHON_BIN" ] && [ -f "$PATCH_PY" ]; then
+      echo "=== $(date '+%Y-%m-%d %H:%M:%S') repowise-md-patch start ==="
+      "$PYTHON_BIN" "$PATCH_PY" || true
+    fi
     echo "=== $(date '+%Y-%m-%d %H:%M:%S') repowise update --workspace --index-only start ($FREIGHTHERO_ROOT) ==="
     "$REPOWISE_BIN" update --workspace --index-only
     echo "=== $(date '+%Y-%m-%d %H:%M:%S') repowise update done (exit $?) ==="
