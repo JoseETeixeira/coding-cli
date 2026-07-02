@@ -103,6 +103,35 @@ For root-causing a specific load, cross-reference the finding's `evidence_json`
 (e.g. `missing_schedules`, `backend_milestone_state` vs `snapshot_milestone_state`)
 and `mcp__freighthero-codebase__search_codebase`/`explain_code` on the cited evaluator.
 
+### Known false-positive classes (validity audit 2026-07-01: 8/13 findings FP)
+
+Caveat findings matching these patterns before reporting them as actionable:
+
+1. **SIG-WF-001 successor-blindness** (worst offender): workflow legitimately runs
+   AHEAD of a lagging milestone — arrival handoff completes `*_eta_checkpoint` and
+   activates `confirm_pickup`/`confirm_delivery` while `milestone_state` still reads
+   the prior leg. The finding's own `evidence_json.open_tasks_snapshot` shows the
+   ACTIVE successor → not a stall. Check `open_tasks_snapshot` for an active
+   later-context task first; distrust `no_active_*` timestamps older than the latest
+   task handoff.
+2. **SIG-WF-002 multi-stop blindness**: floor logic assumes a linear 2-stop ladder;
+   a legit TMS multi-stop cycle (at-delivery → at-pickup for stop 2 of a 4-stop
+   load) reads as regression. Check the load's stop count first.
+3. **SIG-ETA-004 fire-race**: suppression covers only strictly-future triggers and
+   the breach threshold equals the cadence, so a detector run seconds after an
+   `at()` schedule fires flags normal EventBridge delivery latency. Confirm the
+   routine actually ran near the trigger (`routine_tracking_checkpoint_received`
+   in `/ecs/prd-ai-watchtower`) before reporting.
+
+True-positive signature for SIG-WF-001: backend dispatch logs
+(`prd-console-start-load-task-queue-process-message`, message
+`load_task_dispatch_outcome`) show `skipped_competing_active_task` /
+`roundtrip_human_task` at the milestone transition and no later `submitted` —
+the human-close path never re-dispatches (WT-1171 family). Also verified real:
+SIG-ETA-001 after a backend re-dispatch replaces the ETA task and the recreated
+`eta-note-d-*` schedule fires into `hourly_eta_tms_note_no_metadata`
+(`should_reschedule=False` consumes the schedule; hourly TMS notes die).
+
 ---
 
 ## Phase 5 — Report
