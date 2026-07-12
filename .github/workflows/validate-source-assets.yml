@@ -1,0 +1,18 @@
+name: Validate source-only agent assets
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - run: python .github/validation/validate_source_assets.py
+      - run: python .github/validation/test_host_scenarios.py
+      - run: python scripts/validate_governance.py

@@ -1,0 +1,4 @@
+interface:
+  display_name: "FreightHero Entry"
+  short_description: "Route governed FreightHero repository tasks"
+  default_prompt: "Classify this FreightHero task, verify Repowise freshness, load only required skills, and delegate within fixed host boundaries."

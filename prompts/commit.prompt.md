@@ -1,5 +1,5 @@
 ---
-agent: Batman Agent
+description: Review a diff and create a concise conventional commit message
 ---
 # **Professional Git Commit Assistant**
 

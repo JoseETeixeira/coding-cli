@@ -1,5 +1,5 @@
 ---
-agent: Batman Agent
+description: Create an approval-gated technical design from approved requirements
 ---
 # **Design Generation Guide**
 
@@ -628,7 +628,7 @@ When seeding a fresh constitution, derive principles from:
 1. `steering/tech.md` — language, framework, persistence conventions.
 2. `steering/structure.md` — module boundaries, ownership, naming.
 3. `codeReview.instructions.md` and `code-patterns.md.instructions.md` — recurring review patterns (treat these as candidate principles).
-4. Prior incidents surfaced by MemPalace (`mempalace_search`) — turn root causes into principles.
+4. Prior incidents surfaced by governed Repowise task context — turn current, cited root causes into principles.
 5. The user — ask explicitly when a principle would change the scope of acceptable designs.
 
 Keep the constitution short. Five to seven sharp principles beat fifteen vague ones.

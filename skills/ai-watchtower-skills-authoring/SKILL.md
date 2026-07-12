@@ -17,7 +17,7 @@ Resolve it relative to the FreightHero workspace root:
 
 - `<freighthero-workspace-root>/ai_watchtower/docs/architecture/skills/authoring-guide.md`
 
-Detect `<freighthero-workspace-root>` by walking up from the active file until you reach a directory that contains two or more of `ai_watchtower/`, `backend/`, `frontend/`, `robin-error-dashboard/`, `coding-cli/`, `freighthero-mcp/` as direct children. Do not hardcode a developer-specific absolute path.
+Detect `<freighthero-workspace-root>` by walking up from the active file until you reach a directory that contains two or more of `ai_watchtower/`, `backend/`, `frontend/`, `robin-error-dashboard/`, or `coding-cli/` as direct children. Do not hardcode a developer-specific absolute path.
 
 Read it in full at least once per authoring or review session. This SKILL.md is a routing index; the authoring-guide.md is the source of truth. Where this skill and the canonical guide disagree, **the canonical guide wins**.
 
@@ -285,4 +285,4 @@ Read these documents in `ai_watchtower/docs/architecture/skills/` for deep under
 
 - `ai-watchtower-wiki` — For general AI Watchtower architecture and wiki reference
 - `batman-understanding` — For structured codebase research before authoring
-- `mempalace` — For persisting authoring decisions and patterns across sessions
+- `repowise-memory` — For current, cited authoring decisions and patterns across sessions

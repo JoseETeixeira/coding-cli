@@ -375,7 +375,7 @@ xcrun xctrace list devices
 
 ```robotframework
 # App not found - use absolute path
-...    app=/Users/me/projects/app.apk
+...    app=/path/to/project/app.apk
 
 # Activity not starting - specify wait activity
 ...    appWaitActivity=.SplashActivity

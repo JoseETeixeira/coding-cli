@@ -1,0 +1,15 @@
+{
+  "description": "Always-armed canonical auto-improvement check",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/.claude/hooks/auto-improvement-nudge.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}

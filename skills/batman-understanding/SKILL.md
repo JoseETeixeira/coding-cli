@@ -44,9 +44,7 @@ Do not use this skill for tiny one-off answers, direct command output, or alread
 
 ### 2. Search The Codebase
 
-Run `freighthero-codebase/:search_codebase` with a query derived from the user request to locate candidate files (scored chunks across many files).
-
-Then, for every file or symbol you intend to describe in `understanding.md`, call `freighthero-codebase/:explain_code` (default `detailed`, top 3 files). It reconstructs the full file from index chunks, merged in order and deduped, so the section you write reflects the actual end-to-end implementation instead of a single chunk. Treat this as the default for closely-read files — one `:explain_code` call replaces both a follow-up `:search_codebase` AND a manual `Read`. Apply to likely:
+Call Repowise `get_index_status`, require a current authoritative snapshot, then run `search_codebase` with a query derived from the request. For every file or symbol described in `understanding.md`, use `get_source`, `get_context`, `get_symbol`, or `get_answer` to retrieve exact current evidence. Apply to likely:
 
 - files and symbols (call `:explain_code` per symbol);
 - service boundaries (call `:explain_code` per service class);
@@ -60,23 +58,21 @@ For each source of truth you mention, such as a table, queue, index, log, config
 
 When the search space is broad, use a read-only subagent. Tell the subagent to return files, symbols, current behavior, source-of-truth reasoning, process distinctions, execution locations, risks, and likely test/doc impact. Do not ask the subagent to draft requirements.
 
-After locating candidates, ground the understanding with `repowise` (workspace-wide graph + git + code-health), complementing — not replacing — the mandatory `freighthero-codebase` search:
+Ground the understanding with Repowise graph, git, code-health, and decision tools:
 
 - `get_overview` for the architecture/module map when the area is unfamiliar;
 - `get_context` (callers/callees, ownership, governing decisions, hotspot bit) to explain what each likely-to-change component is used for and who depends on it;
 - `get_why` for the architectural decisions / rationale behind current behavior ("why this evidence/source-of-truth matters");
 - `get_risk` and `get_health` to surface hotspots, co-change partners, test gaps, and defect-risk for the change surface and the Risks/Architecture-Change sections.
 
-`repowise get_answer`/`search_codebase` (semantic RAG) need the docs layer; until generated, keep using `freighthero-codebase/:explain_code` for full-file reads.
-
-<!-- repowise-complement -->
+Every specialist repeats freshness and scoped retrieval before repository work. Preserve repository, snapshot, commit, path, span, and hash citations.
 
 
 ### 3. Generate Visual Recap
 
 After the initial search, resolve and read `visual-explainer/SKILL.md`.
 
-Prefer `visual-explainer/commands/project-recap.md` when the task needs a broad project or subsystem snapshot. Prefer `visual-explainer/commands/generate-web-diagram.md` when a focused architecture or flow diagram is the clearer artifact.
+Use the canonical project-recap or web-diagram prompt from `prompts/` when a visual adds material clarity.
 
 Generate a self-contained HTML page under `.batman/<task_slug>/steering/understanding.html` and open it in the browser. Include:
 
@@ -161,11 +157,11 @@ Create or update `.batman/<task_slug>/steering/understanding.md` using this temp
 
 ### Files And Symbols
 
-- [path/to/file.py](path/to/file.py) — `<symbol>`: <why it matters>
+- `path/to/file.py` — `<symbol>`: <why it matters>
 
 ### Tests
 
-- [path/to/test_file.py](path/to/test_file.py) — <existing or missing coverage>
+- `path/to/test_file.py` — <existing or missing coverage>
 
 ### Configuration And Infrastructure
 

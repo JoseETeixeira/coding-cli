@@ -1,0 +1,8 @@
+{
+  "name": "freighthero-agent-assets",
+  "version": "1.0.0",
+  "description": "Canonical source-only FreightHero agents, prompts, instructions, and skills",
+  "author": {
+    "name": "FreightHero engineering"
+  }
+}

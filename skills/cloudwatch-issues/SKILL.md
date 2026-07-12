@@ -105,10 +105,8 @@ Raw events → issues. For each distinct problem:
 
 For each ranked issue, before reporting, tie the log signature to code:
 
-- `mcp__freighthero-codebase__analyze_error` with the error text / traceback —
-  maps the failure to the most likely file + lines.
-- `mcp__freighthero-codebase__search_codebase` for the exception class, log
-  message literal, or failing function to locate the emitting code.
+- Repowise `search_codebase` with the exception class, log-message literal, or
+  failing function, followed by `get_source` or `get_answer` for exact evidence.
 - Note the suspected owning module and a one-line hypothesis. Mark confidence
   (confirmed-from-code vs inferred-from-message). Do not assert a root cause you
   could not trace to a file.

@@ -1,0 +1,58 @@
+{
+  "supported": {
+    "claude": {
+      "host": "claude",
+      "model_loop": "native",
+      "canonical_source": "coding-cli",
+      "activation": "--plugin-dir",
+      "entry_skill": "skills/freighthero-entry/SKILL.md",
+      "conformance_mode": "instruction-evaluation",
+      "hard_enforcement_claim": false,
+      "capabilities": {
+        "same_reviewer": true,
+        "reviewer_read_only": true,
+        "reviewer_no_delegation": true,
+        "single_writer": true
+      }
+    },
+    "codex": {
+      "host": "codex",
+      "model_loop": "native",
+      "canonical_source": "coding-cli",
+      "activation": "AGENTS.md",
+      "entry_skill": "skills/freighthero-entry/SKILL.md",
+      "conformance_mode": "instruction-evaluation",
+      "hard_enforcement_claim": false,
+      "capabilities": {
+        "same_reviewer": true,
+        "reviewer_read_only": true,
+        "reviewer_no_delegation": true,
+        "single_writer": true
+      }
+    },
+    "local-copilot": {
+      "host": "local-copilot",
+      "model_loop": "native",
+      "canonical_source": "coding-cli",
+      "activation": "workspace-discovery-paths",
+      "entry_skill": "skills/freighthero-entry/SKILL.md",
+      "conformance_mode": "instruction-evaluation",
+      "hard_enforcement_claim": false,
+      "capabilities": {
+        "same_reviewer": true,
+        "reviewer_read_only": true,
+        "reviewer_no_delegation": true,
+        "single_writer": true
+      }
+    }
+  },
+  "ineligible_profiles": {
+    "claude-no-reviewer-continuity": {
+      "base_host": "claude",
+      "capability_overrides": {
+        "same_reviewer": false
+      },
+      "expected": "MUTATION_REVIEW_HOST_CAPABILITY_UNAVAILABLE"
+    }
+  }
+}

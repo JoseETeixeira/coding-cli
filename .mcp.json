@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "repowise": {
+      "type": "http",
+      "url": "${REPOWISE_SERVICE_URL}/agent/mcp",
+      "headers": {
+        "Authorization": "Bearer ${REPOWISE_ACCESS_TOKEN}"
+      },
+      "description": "repowise: codebase intelligence \u2014 docs, graph, git signals, dead code, decisions"
+    }
+  }
+}

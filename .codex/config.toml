@@ -1,0 +1,3 @@
+[mcp_servers.repowise]
+url = "http://127.0.0.1:7337/agent/mcp"
+bearer_token_env_var = "REPOWISE_ACCESS_TOKEN"

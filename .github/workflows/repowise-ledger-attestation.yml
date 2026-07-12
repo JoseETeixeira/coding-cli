@@ -1,0 +1,19 @@
+name: Repowise ledger attestation
+
+on:
+  pull_request:
+    paths:
+      - '.repowise/config.yaml'
+      - '.repowise-shared/**'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require immutable Repowise release pin
+        run: |
+          echo "::error::Ledger changes stay blocked until this workflow is pinned to the reviewed Repowise fork release commit."
+          exit 1

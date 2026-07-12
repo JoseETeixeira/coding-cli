@@ -1,0 +1,12 @@
+{
+  "task": "freighthero-agent-memory-and-repo-local-repowise",
+  "requirements_sha256": "e9c95aa1ebfa81afaabbd98cf19b87e90e1d3681a35375452398f1a39430c7d6",
+  "design_sha256": "c7bea2bf1482f37283fc7c4d89f27b70d5395aec685eb7d5eee613ebe8e5b96b",
+  "current_amendment": {
+    "task": "freighthero-agent-platform-modernization",
+    "requirements_path": ".batman/freighthero-agent-platform-modernization/spec/requirements.md",
+    "requirements_sha256": "a78b70d06fbcb94cdb60cc98bfb6f003f699385c36b52caf480caa17d36b949e",
+    "design_path": ".batman/freighthero-agent-platform-modernization/spec/design.md",
+    "design_sha256": "36e456f35a9c38ed68228a1beef78f84777c923a20319555fffe5ddf7a0420a5"
+  }
+}

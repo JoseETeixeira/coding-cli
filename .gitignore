@@ -5,5 +5,7 @@ freighthero-mcp/__pycache__/
 freighthero-mcp/dist/
 freighthero-mcp/node_modules/
 skills/console-testing-scenarios/reference.mdZone.Identifier
-.mcp.json
-.repowise/
+
+# Repowise generated state; config.yaml is credential-free policy.
+/.repowise/*
+!/.repowise/config.yaml

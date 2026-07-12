@@ -1,5 +1,5 @@
 ---
-agent: Batman Agent
+description: Create approval-gated EARS requirements from a feature request
 ---
 
 ## **Requirements Generation Guide**

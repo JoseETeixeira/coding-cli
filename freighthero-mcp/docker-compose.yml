@@ -1,8 +1,0 @@
-services:
-  mcp:
-    build: .
-    stdin_open: true
-    environment:
-      - CODEBASE_INDEX_DIR=/index
-    volumes:
-      - ./.cocoindex/codebase-index:/index:ro

@@ -1,73 +1,81 @@
 ---
 name: grill-me
-description: Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their design, or mentions "grill me". Also runs as the mandatory pre-approval pass for every Batman planning phase.
+description: Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs) inline as decisions crystallise. Use when user wants to stress-test a plan against their project's language and documented decisions.
+disable-model-invocation: true
 ---
 
-# Grill-Me Protocol
+Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
 
-Stress-test a draft artifact (understanding, requirements, design, tasks) against a 9-category ambiguity taxonomy before requesting user approval. Walk every branch of the decision tree, resolve dependencies one at a time, ask questions only when the codebase cannot answer them.
+Ask the questions one at a time, waiting for feedback on each question before continuing.
 
-## Operating Loop
+If a question can be answered by exploring the codebase, explore the codebase instead.
 
-1. **Load the draft** — read the artifact file (`understanding.md` / `requirements.md` / `design.md` / `tasks.md`) plus any prior approvals in the same `.batman/<task_slug>/` folder.
-2. **Scan against the taxonomy** below — flag every gap, ambiguity, or unverified assumption per category.
-3. **Resolve via codebase first** — for each flag, try `freighthero-codebase/:search_codebase` to locate the relevant area, then `freighthero-codebase/:explain_code` to read the full file(s) behind the symbol, falling back to `Read` or `Grep` only when the index does not cover the path. If the codebase answers the flag, record the answer in the artifact and move on. No question fired.
-4. **Rank remaining flags** by impact: architecture > testing > UX > operations > compliance. Drop low-impact items.
-5. **Ask up to 5 questions per pass**, one at a time, each with a recommended answer. Pass = one round of grilling before a single approval request.
-6. **Atomic append** — after every answer, write it under a `## Clarifications` section at the bottom of the artifact, timestamped (ISO `YYYY-MM-DD`). Never rewrite the body silently; preserve original wording above the Clarifications block.
-7. **Stop conditions**: user says "done"/"stop"/"skip grilling"/"no questions", or 5-Q cap reached, or all CRITICAL/HIGH flags resolved. Then request explicit approval using the phase's approval phrase.
+## Domain awareness
 
-## 9-Category Ambiguity Taxonomy
+During codebase exploration, also look for existing documentation:
 
-Flag any draft element that fits one of these:
+### File structure
 
-1. **Scope** — what's in/out, MVP boundaries, deferred work, success/exit criteria.
-2. **Data model** — entities, relationships, identifiers, persistence layer, retention, ownership boundaries.
-3. **UX / interface** — actor roles, surface (CLI/HTTP/UI/queue), error surfaces, observable behavior.
-4. **Non-functional** — performance budgets, scale, latency, concurrency, cost, availability targets.
-5. **Integrations** — upstream/downstream systems, contracts, auth boundaries, third-party deps, version pins.
-6. **Edge cases** — empty/null/duplicate input, timeouts, partial failure, retries, race conditions, ordering.
-7. **Constraints** — security, compliance, regulatory, platform, license, host-OS constraints.
-8. **Terminology** — overloaded names, distinct-but-similar concepts (e.g., "user" vs "actor" vs "account"), source-of-truth conflicts.
-9. **Completion signals** — what proves done, who verifies, what tests/metrics/logs confirm behavior.
-
-## Question Format
-
-- One question per turn. No batches.
-- Include a **recommended answer** every time. If the recommendation is grounded in codebase evidence, cite the file/symbol.
-- Prefer multiple-choice (2–5 options) when the answer space is bounded; short-phrase otherwise.
-- Avoid implementation-detail questions if the answer doesn't change architecture, testing, UX, ops, or compliance.
-
-## Clarifications Block Format
-
-Append (never overwrite) after every answer:
-
-```markdown
-## Clarifications
-
-### 2026-05-16 — <pass label, e.g. "Design grill pass 1">
-
-- **[scope]** Q: Should bulk import handle CSV and JSON? → A: CSV only for v1, JSON deferred.
-- **[edge]** Q: What happens on duplicate row in CSV? → A: Reject batch, return row index.
-- **[nfr]** Q: Latency budget per row? → A: 5ms p95.
-```
-
-Bracket tag uses the taxonomy category. One bullet per resolved question. Keep the answer verbatim if the user gave one; otherwise quote the codebase evidence.
-
-## Coverage Report (end of pass)
-
-After the user answers (or stops), emit a short coverage report before the approval phrase:
+Most repos have a single context:
 
 ```
-Grill coverage:
-- Resolved: scope, data-model, terminology
-- Deferred: edge-cases (low impact)
-- Outstanding: none
-- Skipped (codebase-answered): nfr, integrations
+/
+├── CONTEXT.md
+├── docs/
+│   └── adr/
+│       ├── 0001-event-sourced-orders.md
+│       └── 0002-postgres-for-write-model.md
+└── src/
 ```
 
-Then request approval using the phase's exact approval phrase.
+If a `CONTEXT-MAP.md` exists at the root, the repo has multiple contexts. The map points to where each one lives:
 
-## Skip Path
+```
+/
+├── CONTEXT-MAP.md
+├── docs/
+│   └── adr/                          ← system-wide decisions
+├── src/
+│   ├── ordering/
+│   │   ├── CONTEXT.md
+│   │   └── docs/adr/                 ← context-specific decisions
+│   └── billing/
+│       ├── CONTEXT.md
+│       └── docs/adr/
+```
 
-If the user says "skip grilling" or "no questions" for the current phase, log the skip in the coverage report (`Skipped (user-directed): all`) and proceed directly to the approval request. Do not silently bypass — the skip must be visible.
+Create files lazily — only when you have something to write. If no `CONTEXT.md` exists, create one when the first term is resolved. If no `docs/adr/` exists, create it when the first ADR is needed.
+
+## During the session
+
+### Challenge against the glossary
+
+When the user uses a term that conflicts with the existing language in `CONTEXT.md`, call it out immediately. "Your glossary defines 'cancellation' as X, but you seem to mean Y — which is it?"
+
+### Sharpen fuzzy language
+
+When the user uses vague or overloaded terms, propose a precise canonical term. "You're saying 'account' — do you mean the Customer or the User? Those are different things."
+
+### Discuss concrete scenarios
+
+When domain relationships are being discussed, stress-test them with specific scenarios. Invent scenarios that probe edge cases and force the user to be precise about the boundaries between concepts.
+
+### Cross-reference with code
+
+When the user states how something works, check whether the code agrees. If you find a contradiction, surface it: "Your code cancels entire Orders, but you just said partial cancellation is possible — which is right?"
+
+### Update CONTEXT.md inline
+
+When a term is resolved, update `CONTEXT.md` right there. Don't batch these up — capture them as they happen. Use the format in [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md).
+
+Don't couple `CONTEXT.md` to implementation details. Only include terms that are meaningful to domain experts.
+
+### Offer ADRs sparingly
+
+Only offer to create an ADR when all three are true:
+
+1. **Hard to reverse** — the cost of changing your mind later is meaningful
+2. **Surprising without context** — a future reader will wonder "why did they do it this way?"
+3. **The result of a real trade-off** — there were genuine alternatives and you picked one for specific reasons
+
+If any of the three is missing, skip the ADR. Use the format in [ADR-FORMAT.md](./ADR-FORMAT.md).

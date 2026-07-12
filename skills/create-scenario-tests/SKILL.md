@@ -273,8 +273,13 @@ poetry run pytest tests/deep_agents/workflow/ -v --timeout=120
    - [ ] Added to `SCENARIO_BUILDERS` list
    - [ ] ID is unique and descriptive (snake_case)
    - [ ] Imported judge in scenario_definitions.py
+   - [ ] Manifest entry added to the workflow's `catalog_metadata.yaml` — strict `validate_manifest("<workflow>", strict=True)` flags any `SCENARIO_BUILDERS` id without one (caught by Codex on ai_watchtower PR #1511). Mirror a sibling entry's shape; pick `specificity` from `shared` / `broker_specific` / `shipper_specific`.
 
-4. **Verification**
+4. **Tool-only expectations** (when the scenario has a tool_only stage contract)
+   - [ ] Wired into `active_builders.py` + `expectations/<module>.py` + `registry.py`
+   - [ ] Ordering asserted, not just presence: any branch governed by `standards/email-thread-exception` (or any first-side-effect rule) sets `must_precede` on the `reply_best_email_thread` expectation over every other side effect (`send_sms`, `send_tms_notes`, `update_load_state_*`, `set_timer`) — a presence-only contract silently passes transcripts that mutate state before the thread check (caught by Codex on ai_watchtower PR #1511). Precedence is per-stage: earlier stages' tool calls do not leak into a later stage's assertion.
+
+5. **Verification**
    - [ ] `pytest --collect-only` shows new scenario
    - [ ] No linter errors in modified files
 

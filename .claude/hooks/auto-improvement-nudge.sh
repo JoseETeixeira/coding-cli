@@ -1,28 +1,49 @@
 #!/usr/bin/env bash
-# Auto-improvement nudge — fires once at Stop to prompt the LLM to scan
-# the just-completed conversation for codification candidates per the
-# auto-improvement skill (~/.claude/skills/auto-improvement/SKILL.md).
-# Stays silent when no candidate is found.
-#
-# Loop guard: respects stop_hook_active so we only nudge once per task end.
 
 set -euo pipefail
 
 input=$(cat)
+state=$(printf '%s' "$input" | python3 -c '
+import json
+import sys
 
-stop_hook_active=$(printf '%s' "$input" | python3 -c "
-import json, sys
 try:
-    d = json.load(sys.stdin)
-    print(d.get('stop_hook_active', False))
-except Exception:
-    print(False)
-" 2>/dev/null || echo "False")
+    value = json.load(sys.stdin)
+except (json.JSONDecodeError, UnicodeDecodeError):
+    raise SystemExit(0)
 
-if [ "$stop_hook_active" = "True" ]; then
+if (
+    isinstance(value, dict)
+    and type(value.get("stop_hook_active")) is bool
+    and value["stop_hook_active"] is False
+):
+    print("emit")
+' 2>/dev/null || true)
+
+if [[ "$state" != "emit" ]]; then
     exit 0
 fi
 
-cat <<'JSON'
-{"decision": "block", "reason": "auto-improvement scan: check this task for codification candidates per ~/.claude/skills/auto-improvement/SKILL.md (Q→A durable answer, PR-review behavior feedback, untracked/contradicting directive, memory > 40k chars). If candidate found and target NOT on protected list — apply edit directly (no approval), mirror to all host roots, surface 1-line summary. If candidate is protected — refuse + route. If none — reply 'auto-improvement: no candidate' and stop."}
-JSON
+python3 - <<'PY'
+import json
+
+print(
+    json.dumps(
+        {
+            "decision": "block",
+            "reason": (
+                "Evaluate the auto-improvement skill bundled with the active "
+                "FreightHero plugin now as the parent entry agent. If no candidate "
+                "exists, produce no user-facing message and "
+                "allow the next Stop. Specialists only report candidates; they never "
+                "edit canonical customization. For a candidate, identify its source "
+                "and any tracked-source conflict, refuse protected targets, show the "
+                "proposed canonical diff, and wait for explicit user approval before "
+                "any write. Edit only the canonical checkout; "
+                "never mirror installed host copies."
+            ),
+        },
+        separators=(",", ":"),
+    )
+)
+PY

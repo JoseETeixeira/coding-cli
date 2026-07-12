@@ -101,7 +101,7 @@ evaluators in `app/services/issue_signals/evaluators/`):
 
 For root-causing a specific load, cross-reference the finding's `evidence_json`
 (e.g. `missing_schedules`, `backend_milestone_state` vs `snapshot_milestone_state`)
-and `mcp__freighthero-codebase__search_codebase`/`explain_code` on the cited evaluator.
+and Repowise `search_codebase` plus `get_source`/`get_answer` on the cited evaluator.
 
 ### Known false-positive classes (validity audit 2026-07-01: 8/13 findings FP)
 

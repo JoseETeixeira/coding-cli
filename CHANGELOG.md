@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-07-10
+
+- Made governed Repowise task context and shared-ledger status mandatory for every parent/specialist repository preflight while keeping task-agent memory read-only.
+- Made `repowise-memory` an explicit required skill in every role and phase, preserving named `grill-me`, `visual-explainer`, auto-improvement, and same-reviewer mutation loops.
+- Added per-repository immutable shared-ledger policy and combined-tree attestation workflows; generated databases and vectors remain ignored and local per developer.
+- Converted `coding-cli` into the canonical source-only repository for native Claude, Codex, and local Copilot agents, prompts, instructions, skills, governance, and conformance fixtures.
+- Added the metadata-first FreightHero entry skill and six fixed native-host specialists with mandatory fresh, scoped Repowise evidence and PRD/ADR gates.
+- Removed the Go distribution/installers, FreightHero MCP/CocoIndex runtime, refresh/patch hooks, duplicate generated host assets, and active OpenWiki dependencies after the frozen retrieval gate passed.
+- Added protected Repowise HTTP pointers, host activation guidance, source/governance validation, host scenarios, retrieval parity regression, and the completion/rollback record.
+
 ## 2026-06-25
 
 - Integrated [repowise](https://github.com/repowise-dev/repowise) as a second codebase-intelligence MCP server, complementary to `freighthero-codebase` (CocoIndex). `config.ManagedServers` now ships a `repowise` server (`repowise mcp <workspace-root>`, workspace mode federating every sub-repo) to all host configs; `deps` adds an optional `repowiseSpec` (installed via `uv tool install repowise`, non-required so a missing `uv` never breaks MCP setup); the VS Code Batman frontmatter tools whitelist gains `'repowise/*'` (Claude Code inherits it automatically).

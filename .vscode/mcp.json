@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "repowise": {
+      "type": "http",
+      "url": "${env:REPOWISE_SERVICE_URL}/agent/mcp",
+      "headers": {
+        "Authorization": "Bearer ${env:REPOWISE_ACCESS_TOKEN}"
+      }
+    }
+  }
+}
