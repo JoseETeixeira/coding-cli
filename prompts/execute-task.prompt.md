@@ -31,16 +31,7 @@ Your workflow is an interactive loop driven by user commands with **mandatory co
 
 # **BYOND Projects**
 
-When working on BYOND projects (.dme, .dm, .dmm, .dmf, .dms files and the sort), ensure all code changes adhere to BYOND's DM language syntax and conventions. Validate that any code snippets or modifications you suggest are compatible with the BYOND engine and its runtime environment. Check the documentation using the following guidelines:
-
-1) Always call #byond-rag-docker/:search_byond_docs with a good query derived from the user prompt.
-2) Use the returned passages as the primary evidence.
-3) If retrieval returns nothing useful, say you couldn’t find support in the KB and ask what source/location to index.
-4) Include source identifiers from the tool output when you reference facts.
-5) If there are multiple ways to do something, check the documentation for the most optimized way given the project's constraints.
-
-IMPORTANT: Always ensure that any code you generate or modify is tested for compatibility with the BYOND engine by compiling it.
-
+When a task involves BYOND or `.dme`, `.dm`, `.dmm`, `.dmf`, or `.dms` files, read and follow `skills/byond-projects/SKILL.md` before planning or changing code. That skill is the single source of truth for documentation evidence, DM compatibility, Dream Maker compilation, and Dragon Ball Universe rules.
 
 # **Behavioral Rules**
 

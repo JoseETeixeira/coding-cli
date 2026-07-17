@@ -1,12 +1,14 @@
 {
   "mcpServers": {
-    "repowise": {
-      "type": "http",
-      "url": "${REPOWISE_SERVICE_URL}/agent/mcp",
-      "headers": {
-        "Authorization": "Bearer ${REPOWISE_ACCESS_TOKEN}"
+    "mnemo": {
+      "type": "stdio",
+      "command": "C:/Users/josee/AppData/Local/Programs/Python/Python312/python.exe",
+      "args": ["C:/Users/josee/source/coding-cli/mnemo/run_server.py"],
+      "env": {
+        "QDRANT_URL": "http://127.0.0.1:1337",
+        "MNEMO_AGENT_ID": "claude-code"
       },
-      "description": "repowise: codebase intelligence \u2014 docs, graph, git signals, dead code, decisions"
+      "description": "mnemo: self-hosted shared agent memory (Qdrant on port 1337, OpenAI embeddings)"
     }
   }
 }

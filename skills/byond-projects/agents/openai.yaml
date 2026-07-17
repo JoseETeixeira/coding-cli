@@ -1,0 +1,4 @@
+interface:
+  display_name: "BYOND Projects"
+  short_description: "Validate BYOND DM changes with docs and compile"
+  default_prompt: "Use $byond-projects to make and validate a BYOND DM change."

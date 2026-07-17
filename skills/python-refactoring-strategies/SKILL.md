@@ -24,42 +24,42 @@ Patterns for refactoring Python codebases using Pydantic models and modular extr
 
 ```python
 # BEFORE: Scattered across files
-broker = load_data.get("companies", {}).get("broker", {}).get("name")
-shipper = load_data.get("companies", {}).get("shipper", {}).get("name")
+customer = order_data.get("companies", {}).get("customer", {}).get("name")
+supplier = order_data.get("companies", {}).get("supplier", {}).get("name")
 # Repeated in 10+ files with inconsistent defaults
 ```
 
 **Solution**: Pydantic model with accessor properties.
 
 ```python
-# app/models/load_context.py
+# app/models/order_context.py
 from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field
 
 
-class LoadContextInput(BaseModel):
-    """Centralized accessor for load context fields.
+class OrderContextInput(BaseModel):
+    """Centralized accessor for order context fields.
     
-    Single source of truth for extracting fields from load_data.
+    Single source of truth for extracting fields from order_data.
     """
     
-    load_id: str
-    load_data: Dict[str, Any]
-    load_summary: Optional[str] = None
+    order_id: str
+    order_data: Dict[str, Any]
+    order_summary: Optional[str] = None
     deployment_color: str = Field(default="blue")
 
     # Accessor properties (single source of truth)
     @property
-    def broker_name(self) -> Optional[str]:
-        return self.load_data.get("companies", {}).get("broker", {}).get("name")
+    def customer_name(self) -> Optional[str]:
+        return self.order_data.get("companies", {}).get("customer", {}).get("name")
 
     @property
-    def shipper_name(self) -> Optional[str]:
-        return self.load_data.get("companies", {}).get("shipper", {}).get("name")
+    def supplier_name(self) -> Optional[str]:
+        return self.order_data.get("companies", {}).get("supplier", {}).get("name")
 
     # Internal helper for DRY
     def _get_location_field(self, location: str, field: str) -> Optional[str]:
-        return self.load_data.get("locations", {}).get(location, {}).get(field)
+        return self.order_data.get("locations", {}).get(location, {}).get(field)
 
     # Dynamic accessor for runtime-determined values
     def get_location_timezone(self, location: str) -> Optional[str]:
@@ -67,22 +67,22 @@ class LoadContextInput(BaseModel):
 
     # Factory methods
     @classmethod
-    def from_dynamodb(cls, load_meta: dict) -> "LoadContextInput":
+    def from_dynamodb(cls, order_meta: dict) -> "OrderContextInput":
         """Extract from DynamoDB response."""
         return cls(
-            load_id=load_meta["load_id"],
-            load_data=load_meta.get("load_data", {}),
-            load_summary=load_meta.get("load_summary"),
-            deployment_color=load_meta.get("deployment_color", "blue"),
+            order_id=order_meta["order_id"],
+            order_data=order_meta.get("order_data", {}),
+            order_summary=order_meta.get("order_summary"),
+            deployment_color=order_meta.get("deployment_color", "blue"),
         )
 
     @classmethod
-    def from_state(cls, state: dict) -> "LoadContextInput":
+    def from_state(cls, state: dict) -> "OrderContextInput":
         """Extract from graph state."""
         return cls(
-            load_id=state.get("load_id", ""),
-            load_data=state.get("load_data", {}),
-            load_summary=state.get("load_summary"),
+            order_id=state.get("order_id", ""),
+            order_data=state.get("order_data", {}),
+            order_summary=state.get("order_summary"),
             deployment_color=state.get("deployment_color", "blue"),
         )
 ```
@@ -91,9 +91,9 @@ class LoadContextInput(BaseModel):
 
 ```python
 # AFTER: Centralized extraction
-ctx = LoadContextInput.from_state(state)
-broker = ctx.broker_name
-shipper = ctx.shipper_name
+ctx = OrderContextInput.from_state(state)
+customer = ctx.customer_name
+supplier = ctx.supplier_name
 timezone = ctx.get_location_timezone("pickup")
 ```
 
@@ -128,7 +128,7 @@ app/workers/
     ├── resumption.py
     ├── time_based.py
     ├── routine.py
-    └── load_update.py
+    └── order_update.py
 ```
 
 **Extraction template**:
@@ -142,19 +142,19 @@ Extracted from task_worker.py for single responsibility.
 from typing import Any, Dict
 from celery import Task
 
-from app.models.load_context import LoadContextInput
-from app.services import load_service, task_service
+from app.models.order_context import OrderContextInput
+from app.services import order_service, task_service
 
 
 def process_task_message(
-    task_instance: Task, message_data: Dict[str, Any], load_id: str
+    task_instance: Task, message_data: Dict[str, Any], order_id: str
 ) -> Dict[str, Any]:
     """Process a task message."""
     # Lazy import to avoid circular dependency
     from app.workers.task_worker import process_task
     
     # Implementation moved from task_worker.py
-    context = LoadContextInput.from_dynamodb(load_service.get_load(load_id))
+    context = OrderContextInput.from_dynamodb(order_service.get_order(order_id))
     # ... rest of logic
 ```
 
@@ -173,13 +173,13 @@ from app.workers.processors.task import process_task_message as _process_task_me
 
 ```python
 # BEFORE: Mixed I/O and logic (hard to test)
-def flush_message_buffer(task_uuid: str, load_id: str):
+def flush_message_buffer(task_uuid: str, order_id: str):
     messages = redis_client.lrange(buffer_key, 0, -1)  # I/O
     
     # 50 lines of transformation logic mixed in
     parsed = []
     for msg in messages:
-        data = json.loads(msg)
+        data = json.orders(msg)
         parsed.append(data)
     
     # More logic...
@@ -211,7 +211,7 @@ def parse_buffered_messages(raw_messages: List[bytes]) -> List[ParsedMessage]:
     messages = []
     for msg in reversed(raw_messages):
         try:
-            data = json.loads(msg)
+            data = json.orders(msg)
             messages.append(ParsedMessage(
                 content=data.get("content", ""),
                 channel=data.get("channel"),
@@ -235,7 +235,7 @@ def aggregate_message_timelines(messages: List[ParsedMessage]) -> Dict[str, Any]
 
 ```python
 # app/workers/task_worker.py
-def flush_message_buffer(task_uuid: str, load_id: str):
+def flush_message_buffer(task_uuid: str, order_id: str):
     """Thin wrapper: I/O only, delegates to pure functions."""
     from app.services.buffer_aggregation_service import (
         parse_buffered_messages,
@@ -262,11 +262,11 @@ def flush_message_buffer(task_uuid: str, load_id: str):
 
 ```python
 # BEFORE: Repeated 4+ times with slight variations
-load_data = {
-    "load_id": load_id,
-    "load_data": current_load_meta.get("load_data", {}),
-    "load_summary": current_load_meta.get("load_summary"),
-    "deployment_color": current_load_meta.get("deployment_color", "blue"),
+order_data = {
+    "order_id": order_id,
+    "order_data": current_order_meta.get("order_data", {}),
+    "order_summary": current_order_meta.get("order_summary"),
+    "deployment_color": current_order_meta.get("deployment_color", "blue"),
 }
 ```
 
@@ -274,20 +274,20 @@ load_data = {
 
 ```python
 # Model with factory
-class LoadContextInput(BaseModel):
+class OrderContextInput(BaseModel):
     @classmethod
-    def from_dynamodb(cls, load_meta: dict) -> "LoadContextInput":
+    def from_dynamodb(cls, order_meta: dict) -> "OrderContextInput":
         """Single source of truth for extraction."""
         return cls(
-            load_id=load_meta["load_id"],
-            load_data=load_meta.get("load_data", {}),
-            load_summary=load_meta.get("load_summary"),
-            deployment_color=load_meta.get("deployment_color", "blue"),
+            order_id=order_meta["order_id"],
+            order_data=order_meta.get("order_data", {}),
+            order_summary=order_meta.get("order_summary"),
+            deployment_color=order_meta.get("deployment_color", "blue"),
         )
 
 # AFTER: All callers use factory
-context = LoadContextInput.from_dynamodb(current_load_meta)
-load_data = context.model_dump()
+context = OrderContextInput.from_dynamodb(current_order_meta)
+order_data = context.model_dump()
 ```
 
 ---
@@ -335,7 +335,7 @@ When extracted modules need to import from original file:
 # app/workers/processors/task.py
 # pyright: reportImportCycles=false
 
-def process_task_message(task_instance, message_data, load_id):
+def process_task_message(task_instance, message_data, order_id):
     # Lazy import to avoid circular dependency
     from app.workers.task_worker import process_task
     

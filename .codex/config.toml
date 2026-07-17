@@ -1,3 +1,4 @@
-[mcp_servers.repowise]
-url = "http://127.0.0.1:7337/agent/mcp"
-bearer_token_env_var = "REPOWISE_ACCESS_TOKEN"
+[mcp_servers.mnemo]
+command = "C:/Users/josee/AppData/Local/Programs/Python/Python312/python.exe"
+args = ["C:/Users/josee/source/coding-cli/mnemo/run_server.py"]
+env = { QDRANT_URL = "http://127.0.0.1:1337", MNEMO_AGENT_ID = "codex" }

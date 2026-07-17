@@ -1,0 +1,10 @@
+mcp>=1.2.0
+qdrant-client>=1.9.0
+openai>=1.40.0
+# Code index: token-accurate truncation (never char-based — minified JS and
+# base64 run ~1:1 token:char and would blow the 8192-token input cap).
+tiktoken>=0.7.0
+# Code index: OS-level lock the kernel releases on process death. Required
+# because hosts reap stdio servers with TerminateProcess and a daemon thread's
+# `finally` never runs, so a userspace lock would leak on every interrupt.
+filelock>=3.12

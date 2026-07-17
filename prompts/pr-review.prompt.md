@@ -1,5 +1,5 @@
 ---
-description: Review a pull request against FreightHero code and test standards
+description: Review a pull request against the project's code and test standards
 ---
 
 # Code Review Prompt

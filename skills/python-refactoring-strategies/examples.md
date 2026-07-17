@@ -4,13 +4,13 @@ Concrete code examples extracted from production refactoring efforts.
 
 ## Example 1: Complete Pydantic Context Model
 
-Full implementation of `LoadContextInput` with all property types:
+Full implementation of `OrderContextInput` with all property types:
 
 ```python
-# app/models/load_context.py
-"""Centralized load context model.
+# app/models/order_context.py
+"""Centralized order context model.
 
-Single source of truth for extracting fields from load_data dictionaries.
+Single source of truth for extracting fields from order_data dictionaries.
 Replaces scattered .get() chains across 15+ files.
 """
 from typing import Any, Dict, List, Optional
@@ -20,21 +20,21 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # Centralized constant - imported by tests
 REQUIRED_CONTEXT_FIELDS = frozenset({
-    "load_id",
-    "load_data",
-    "load_summary",
+    "order_id",
+    "order_data",
+    "order_summary",
     "deployment_color",
 })
 
 
-class LoadContextInput(BaseModel):
-    """Type-safe accessor for load context fields."""
+class OrderContextInput(BaseModel):
+    """Type-safe accessor for order context fields."""
     
     model_config = ConfigDict(extra="forbid")  # Catch typos in field names
     
-    load_id: str
-    load_data: Dict[str, Any]
-    load_summary: Optional[str] = None
+    order_id: str
+    order_data: Dict[str, Any]
+    order_summary: Optional[str] = None
     deployment_color: str = Field(default="blue")
 
     # ─────────────────────────────────────────────────────────
@@ -42,34 +42,34 @@ class LoadContextInput(BaseModel):
     # ─────────────────────────────────────────────────────────
     
     @property
-    def broker_name(self) -> Optional[str]:
-        """Extract broker company name."""
-        return self.load_data.get("companies", {}).get("broker", {}).get("name")
+    def customer_name(self) -> Optional[str]:
+        """Extract customer company name."""
+        return self.order_data.get("companies", {}).get("customer", {}).get("name")
 
     @property
-    def broker_uuid(self) -> Optional[str]:
-        """Extract broker company UUID."""
-        return self.load_data.get("companies", {}).get("broker", {}).get("uuid")
+    def customer_uuid(self) -> Optional[str]:
+        """Extract customer company UUID."""
+        return self.order_data.get("companies", {}).get("customer", {}).get("uuid")
 
     @property
-    def shipper_name(self) -> Optional[str]:
-        """Extract shipper company name."""
-        return self.load_data.get("companies", {}).get("shipper", {}).get("name")
+    def supplier_name(self) -> Optional[str]:
+        """Extract supplier company name."""
+        return self.order_data.get("companies", {}).get("supplier", {}).get("name")
 
     @property
-    def shipper_uuid(self) -> Optional[str]:
-        """Extract shipper company UUID."""
-        return self.load_data.get("companies", {}).get("shipper", {}).get("uuid")
+    def supplier_uuid(self) -> Optional[str]:
+        """Extract supplier company UUID."""
+        return self.order_data.get("companies", {}).get("supplier", {}).get("uuid")
 
     @property
-    def carrier_name(self) -> Optional[str]:
-        """Extract carrier company name."""
-        return self.load_data.get("companies", {}).get("carrier", {}).get("name")
+    def courier_name(self) -> Optional[str]:
+        """Extract courier company name."""
+        return self.order_data.get("companies", {}).get("courier", {}).get("name")
 
     @property
-    def carrier_mc_number(self) -> Optional[str]:
-        """Extract carrier MC number."""
-        return self.load_data.get("companies", {}).get("carrier", {}).get("mc_number")
+    def courier_license_number(self) -> Optional[str]:
+        """Extract courier MC number."""
+        return self.order_data.get("companies", {}).get("courier", {}).get("mc_number")
 
     # ─────────────────────────────────────────────────────────
     # Location Properties (static shortcuts)
@@ -98,7 +98,7 @@ class LoadContextInput(BaseModel):
     @property
     def driver_uuid(self) -> Optional[str]:
         """Extract driver UUID from people section."""
-        return self.load_data.get("people", {}).get("driver", {}).get("uuid")
+        return self.order_data.get("people", {}).get("driver", {}).get("uuid")
 
     # ─────────────────────────────────────────────────────────
     # Internal Helper (DRY - avoids repetition)
@@ -106,7 +106,7 @@ class LoadContextInput(BaseModel):
     
     def _get_location_field(self, location: str, field: str) -> Optional[str]:
         """Internal helper for extracting location fields."""
-        return self.load_data.get("locations", {}).get(location, {}).get(field)
+        return self.order_data.get("locations", {}).get(location, {}).get(field)
 
     # ─────────────────────────────────────────────────────────
     # Dynamic Accessors (runtime-determined location)
@@ -125,41 +125,41 @@ class LoadContextInput(BaseModel):
     # ─────────────────────────────────────────────────────────
     
     @classmethod
-    def from_dynamodb(cls, load_meta: Dict[str, Any]) -> "LoadContextInput":
-        """Extract context from DynamoDB load metadata.
+    def from_dynamodb(cls, order_meta: Dict[str, Any]) -> "OrderContextInput":
+        """Extract context from DynamoDB order metadata.
         
         Used by: task_worker processors, resumption handlers.
         """
         return cls(
-            load_id=load_meta["load_id"],
-            load_data=load_meta.get("load_data", {}),
-            load_summary=load_meta.get("load_summary"),
-            deployment_color=load_meta.get("deployment_color", "blue"),
+            order_id=order_meta["order_id"],
+            order_data=order_meta.get("order_data", {}),
+            order_summary=order_meta.get("order_summary"),
+            deployment_color=order_meta.get("deployment_color", "blue"),
         )
 
     @classmethod
-    def from_state(cls, state: Dict[str, Any]) -> "LoadContextInput":
+    def from_state(cls, state: Dict[str, Any]) -> "OrderContextInput":
         """Extract context from graph state.
         
         Used by: graph nodes, utility functions.
         """
         return cls(
-            load_id=state.get("load_id", ""),
-            load_data=state.get("load_data", {}),
-            load_summary=state.get("load_summary"),
+            order_id=state.get("order_id", ""),
+            order_data=state.get("order_data", {}),
+            order_summary=state.get("order_summary"),
             deployment_color=state.get("deployment_color", "blue"),
         )
 
     @classmethod
-    def empty(cls, load_id: str = "") -> "LoadContextInput":
+    def empty(cls, order_id: str = "") -> "OrderContextInput":
         """Create empty context for testing or defaults.
         
         Used by: test fixtures, error handling.
         """
         return cls(
-            load_id=load_id,
-            load_data={},
-            load_summary=None,
+            order_id=order_id,
+            order_data={},
+            order_summary=None,
             deployment_color="blue",
         )
 ```
@@ -317,7 +317,7 @@ from app.workers.processors.tracking import process_tracking_update
 from app.workers.processors.resumption import process_resumption_event
 from app.workers.processors.time_based import process_time_based_event
 from app.workers.processors.routine import process_routine_event
-from app.workers.processors.load_update import process_load_update
+from app.workers.processors.order_update import process_order_update
 
 __all__ = [
     "process_task_message",
@@ -326,7 +326,7 @@ __all__ = [
     "process_resumption_event",
     "process_time_based_event",
     "process_routine_event",
-    "process_load_update",
+    "process_order_update",
 ]
 ```
 
@@ -341,20 +341,20 @@ from typing import Any, Dict
 
 from celery import Task
 
-from app.models.load_context import LoadContextInput
+from app.models.order_context import OrderContextInput
 from app.models.state import TaskStatus
-from app.services import load_service, task_service, queue_service
+from app.services import order_service, task_service, queue_service
 
 
 def process_task_message(
-    task_instance: Task, message_data: Dict[str, Any], load_id: str
+    task_instance: Task, message_data: Dict[str, Any], order_id: str
 ) -> Dict[str, Any]:
     """Process task-type message.
     
     Args:
         task_instance: Celery task instance for retry handling
         message_data: Raw message payload
-        load_id: ID of load being processed
+        order_id: ID of order being processed
     
     Returns:
         Result dict with status and optional error details
@@ -366,11 +366,11 @@ def process_task_message(
     task_uuid = payload.get("task_uuid")
     
     # Get current data using centralized context model
-    load_meta = load_service.get_load(load_id)
-    if not load_meta:
-        raise ValueError(f"Load {load_id} not found")
+    order_meta = order_service.get_order(order_id)
+    if not order_meta:
+        raise ValueError(f"Order {order_id} not found")
     
-    context = LoadContextInput.from_dynamodb(load_meta)
+    context = OrderContextInput.from_dynamodb(order_meta)
     
     task_data = task_service.get_task(task_uuid)
     if not task_data:
@@ -415,7 +415,7 @@ class ParsedMessage:
     attachment_ids: List[str] = field(default_factory=list)
     inbound_uuid: Optional[str] = None
     buffered_at: Optional[str] = None
-    load_id: Optional[str] = None
+    order_id: Optional[str] = None
     raw_data: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -451,7 +451,7 @@ def parse_buffered_messages(
     
     for raw in items:
         try:
-            data = json.loads(raw)
+            data = json.orders(raw)
             messages.append(ParsedMessage(
                 content=data.get("content", ""),
                 channel=data.get("channel"),
@@ -460,7 +460,7 @@ def parse_buffered_messages(
                 attachment_ids=data.get("attachment_ids", []),
                 inbound_uuid=data.get("inbound_uuid"),
                 buffered_at=data.get("buffered_at"),
-                load_id=data.get("load_id"),
+                order_id=data.get("order_id"),
                 raw_data=data,
             ))
         except (json.JSONDecodeError, TypeError):
@@ -556,7 +556,7 @@ from enum import Enum
 class RoutineName(str, Enum):
     """Valid routine names."""
     
-    HOURLY_ETA_TMS_NOTE = "hourly_eta_tms_note"
+    HOURLY_ETA_CRM_NOTE = "hourly_eta_crm_note"
     HOURLY_TRACKING_CHECKPOINT = "hourly_tracking_checkpoint"
     CONFIRM_APPOINTMENT_REMINDER = "confirm_appointment_reminder"
     PRE_APPOINTMENT_CHECK = "pre_appointment_check"
@@ -606,7 +606,7 @@ class DLQMessage(BaseModel):
     original_message: Dict[str, Any]
     reason: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    load_id: Optional[str] = None
+    order_id: Optional[str] = None
     task_uuid: Optional[str] = None
     error_details: Optional[str] = None
     
@@ -616,7 +616,7 @@ class DLQMessage(BaseModel):
             "original_message": self.original_message,
             "reason": self.reason,
             "timestamp": self.timestamp.isoformat(),
-            "load_id": self.load_id,
+            "order_id": self.order_id,
             "task_uuid": self.task_uuid,
             "error_details": self.error_details,
         }
@@ -637,7 +637,7 @@ dlq_payload = {
 dlq_msg = DLQMessage(
     original_message=message,
     reason=reason,
-    load_id=load_id,
+    order_id=order_id,
     task_uuid=task_uuid,
 )
 queue_service.send_to_dlq(dlq_msg.to_queue_payload())

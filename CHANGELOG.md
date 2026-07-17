@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-14
+
+- Added shared `byond-projects` guidance plus thin Codex, Claude, and execution-prompt pointers, requiring BYOND documentation evidence, DM compatibility, Dream Maker compilation, and Dragon Ball Universe safeguards (user directive 2026-07-14).
+
 ## 2026-07-10
 
 - Made governed Repowise task context and shared-ledger status mandatory for every parent/specialist repository preflight while keeping task-agent memory read-only.

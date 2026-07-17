@@ -143,12 +143,12 @@ See `app/models/schedule_identifier.py` for a production implementation:
 
 ```python
 # Creating schedules (type-safe)
-identifier = ScheduleIdentifier.tracking_checkpoint(load_id, "pickup")
+identifier = ScheduleIdentifier.tracking_checkpoint(order_id, "pickup")
 result = create_routine_schedule(identifier=identifier, trigger_time=time)
 
 # Parsing existing names (in cleanup)
 identifier = ScheduleIdentifier.from_name(schedule_name)
-if identifier.is_routine() and identifier.belongs_to_load(load_id):
+if identifier.is_routine() and identifier.belongs_to_order(order_id):
     delete_schedule(schedule_name)
 ```
 

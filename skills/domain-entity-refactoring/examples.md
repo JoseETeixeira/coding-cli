@@ -4,9 +4,9 @@
 
 ### Problem
 EventBridge schedule names were created with patterns like:
-- `f"rme-{p|d}-{load_id}"` (morning ETA)
-- `f"eta-note-{p|d}-{load_id}"` (hourly ETA)
-- `f"tracking-checkpoint-{p|d}-{load_id}"` (tracking)
+- `f"rme-{p|d}-{order_id}"` (morning ETA)
+- `f"eta-note-{p|d}-{order_id}"` (hourly ETA)
+- `f"tracking-checkpoint-{p|d}-{order_id}"` (tracking)
 - `{task_uuid}` (task timers)
 
 These patterns were scattered across 15+ files with no central authority.
@@ -16,10 +16,10 @@ Created `ScheduleIdentifier` as single source of truth:
 
 ```python
 # Before (scattered)
-event_id = f"tracking-checkpoint-{loc_prefix}-{load_id}"
+event_id = f"tracking-checkpoint-{loc_prefix}-{order_id}"
 
 # After (centralized)
-identifier = ScheduleIdentifier.tracking_checkpoint(load_id, location_context)
+identifier = ScheduleIdentifier.tracking_checkpoint(order_id, location_context)
 event_id = identifier.name
 ```
 
@@ -37,21 +37,21 @@ event_id = identifier.name
 API paths constructed in multiple places:
 ```python
 # In service A
-url = f"/api/v2/loads/{load_id}/status"
+url = f"/api/v2/orders/{order_id}/status"
 
 # In service B  
-url = f"/api/v2/loads/{load_id}/status"  # Duplicated
+url = f"/api/v2/orders/{order_id}/status"  # Duplicated
 
 # In test
-url = f"/api/v2/load/{load_id}/status"  # Typo: "load" vs "loads"
+url = f"/api/v2/order/{order_id}/status"  # Typo: "order" vs "orders"
 ```
 
 ### Solution
 ```python
 class ApiEndpoint:
     @classmethod
-    def load_status(cls, load_id: str) -> str:
-        return f"/api/v2/loads/{load_id}/status"
+    def order_status(cls, order_id: str) -> str:
+        return f"/api/v2/orders/{order_id}/status"
 ```
 
 ---

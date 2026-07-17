@@ -13,7 +13,7 @@ Before any other phase, run a full code review on the diff that will be committe
    - Prefer `USER_INSTRUCTIONS_DIR/codeReview.instructions.md`.
    - Fallback to `$HOME/.agents/instructions/codeReview.instructions.md`.
    - Fallback to workspace `.github/instructions/codeReview.instructions.md`.
-   - Final fallback: `coding-cli/prompts/codeReview.instructions.md` in the FreightHero workspace.
+   - Final fallback: `$USER_INSTRUCTIONS_DIR/codeReview.instructions.md`.
 
 2. **Collect the diff** that will be committed:
    - `git diff --staged` for staged changes.
@@ -22,7 +22,6 @@ Before any other phase, run a full code review on the diff that will be committe
 
 3. **Apply the checklist** from `codeReview.instructions.md` against the full diff. Pay special attention to:
    - Repository pattern, no inline DB ops, no `any` types, no leftover debug code.
-   - AI Watchtower guardrails (path validation, closed vocabularies, source-of-truth boundaries, shadow/live parity) when files under `ai_watchtower/` are touched.
    - Test coverage matching the failure class of the change.
    - No sensitive data in logs or committed files.
 

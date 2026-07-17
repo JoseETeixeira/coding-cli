@@ -1,64 +1,38 @@
-# FreightHero agent assets
+# Generic agent assets
 
-`coding-cli` is the canonical source repository for FreightHero prompts, instructions, static specialist agents, and skills. It contains no task runtime, model router, indexer, installer, or generated user-level copies.
-
-Repository intelligence comes from the maintained FreightHero Repowise fork. Claude, Codex, and local VS Code/Copilot keep their native model loops and credits. Only the Repowise process may receive an OpenAI API credential.
+`coding-cli` is the user's generic customization layer for coding agents — reusable prompts, instructions, the Batman entry agent, skills, and the self-hosted `mnemo` shared-memory engine. It is host-agnostic and works across Claude Code, Codex, and VS Code / Copilot.
 
 ## Repository layout
 
-- `skills/freighthero-entry/`: metadata-first entry workflow and one-level references
-- `agents/`: Batman plus the fixed research, planning, implementation, verification, and documentation specialists
-- `instructions/`: shared system, code-pattern, review, and visual guidance
+- `agents/batman.agent.md`: the generic Batman entry agent (routes every project through `generic-entry`)
+- `skills/`: generic skills — `generic-entry`, `shared-memory`, `mnemo-setup`, `batman-understanding`, `byond-projects`, `caveman*`, `visual-explainer`, `grill-me`, Robot Framework helpers, refactoring guides, etc.
+- `instructions/`: shared code-pattern, review, and visual guidance
 - `prompts/`: reusable task prompts
+- `mnemo/`: the self-hosted shared-memory engine + MCP server (see `mnemo/README.md`)
 - `.claude-plugin/`: Claude Code source discovery manifest
-- `.codex/`: repository-scoped Repowise MCP configuration
-- `.vscode/`: local Copilot discovery and Repowise MCP configuration
-- `.github/validation/`: source-only, host-conformance, and governance checks
+- `.codex/`, `.vscode/`: repository-scoped `mnemo` MCP configuration
 
-## Activation
+## Memory: mnemo shared memory
 
-Install the maintained Repowise fork, configure `REPOWISE_SERVICE_URL`, and
-authenticate without printing a bearer value:
+Durable, cross-agent memory is `mnemo` — a self-hosted engine (Qdrant on port **1337** + OpenAI embeddings) exposed as a stdio MCP server. Claude Code and Codex point at the same substrate, so what one agent writes another can read.
 
-```sh
-repowise service-auth login
-repowise agents activate --coding-cli /path/to/coding-cli --dry-run
-repowise agents activate --coding-cli /path/to/coding-cli --yes
-```
+- Start Qdrant: `mnemo\scripts\mnemo-qdrant.cmd`
+- Register / troubleshoot: `skills/mnemo-setup/SKILL.md`
+- Preflight + guardrails: `skills/shared-memory/SKILL.md`
 
-Run `repowise agents unactivate --yes` for guarded restoration. Do not copy
-these files into a user configuration directory.
+## Entry
 
-See [Native host activation](docs/activation.md) for Claude Code, Codex, local VS Code/Copilot, and clean unactivation.
-
-Every FreightHero task begins with `skills/freighthero-entry/SKILL.md`. It loads
-the mandatory governed-memory preflight plus the smallest other skill set,
-verifies snapshot and shared-ledger status, retrieves scoped task context and
-source evidence, and enforces PRD/ADR gates before behavior-changing work.
-
-## Validation
-
-```sh
-python3 .github/validation/validate_source_assets.py
-python3 .github/validation/test_host_scenarios.py
-python3 scripts/validate_governance.py
-python3 scripts/benchmark_retrieval_parity.py
-```
-
-The checks reject installable task runtimes, duplicate canonical assets, broken direct references, machine-specific paths, literal credentials, retired retrieval/documentation dependencies, invalid governance state, and host-ordering regressions.
+Every task begins with the canonical entry agent (`agents/batman.agent.md`), which routes through `skills/generic-entry/SKILL.md`: ambient auto-improvement, the `shared-memory` preflight, agentic codebase discovery, the eight-phase Batman workflow with PRD/ADR artifacts for non-trivial work, and host-native loops/sandbox/approvals/credits.
 
 ## Supported hosts
 
-- Claude Code through the canonical plugin directory
-- Codex through repository `AGENTS.md` plus `.codex/config.toml`
-- local VS Code/Copilot through workspace discovery paths
-
-GitHub cloud Copilot is intentionally unsupported because it cannot consume the same local canonical checkout and host boundaries.
+- Claude Code (user-scope MCP + `$USER_*_DIR` customization)
+- Codex (`~/.codex/AGENTS.md` + `~/.codex/config.toml`)
+- VS Code / Copilot (User `prompts/` + `mcp.json`)
 
 ## Security and operations
 
-- Task agents never receive the Repowise OpenAI credential.
-- MCP access uses authenticated HTTP with repository, tool, action, and preview-owner scopes.
-- The browser UI binds to loopback only.
-- Existing unrelated MCP servers, safety hooks, RTK settings, and user configuration stay outside this repository.
-- The external GitHub wiki remains untouched; the local managed wiki is served from Repowise shared snapshots.
+- Do not store secrets/tokens in memory; a redactor runs on every write.
+- The `mnemo` OpenAI key resolves from `OPENAI_API_KEY` or `~/.mnemo/openai_api_key` (for hosts that do not pass the env through).
+- `AGENTS.md` and `agents/batman.agent.md` are versioned normally. The `--skip-worktree` guard they used to carry was lifted 2026-07-16 once `origin` became this repo's own remote.
+- Existing unrelated MCP servers, safety hooks, and RTK settings stay outside this repository.

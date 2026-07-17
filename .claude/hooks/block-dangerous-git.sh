@@ -6,7 +6,6 @@
 # they execute. Reads the tool input as JSON on stdin and exits non-zero
 # when the command matches a dangerous pattern.
 #
-# Installed by `freighthero setup agent --claude-code` (or `setup full`).
 # See: coding-cli/skills/git-guardrails-claude-code/SKILL.md
 
 INPUT=$(cat)

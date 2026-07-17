@@ -4,7 +4,7 @@ Concrete examples extracted from production refactoring efforts.
 
 ## Example 1: Characterization Tests for Location Extraction
 
-Before refactoring scattered `.get()` chains into `LoadContextInput` properties, capture existing behavior:
+Before refactoring scattered `.get()` chains into `OrderContextInput` properties, capture existing behavior:
 
 ```python
 """Characterization tests for tool_result_mappers location UUID extraction.
@@ -26,7 +26,7 @@ class TestMapTimelineLocationUuidCharacterization:
             "result": {"calculated_eta": "2026-01-28T15:00:00Z"}
         }
         state = {
-            "load_data": {
+            "order_data": {
                 "locations": {
                     "pickup": {"uuid": "loc-123", "timezone": "America/Chicago"},
                     "delivery": {"uuid": "loc-456", "timezone": "America/New_York"}
@@ -51,7 +51,7 @@ class TestMapTimelineLocationUuidCharacterization:
             "status": "SUCCESS",
             "result": {"calculated_eta": "2026-01-28T15:00:00Z"}
         }
-        state = {"load_data": {}}
+        state = {"order_data": {}}
         injected_context = {"location_id": "loc-123"}
         
         result = map_tool_result(
@@ -71,7 +71,7 @@ class TestMapTimelineLocationUuidCharacterization:
             "result": {"calculated_eta": "2026-01-28T15:00:00Z"}
         }
         state = {
-            "load_data": {
+            "order_data": {
                 "locations": {
                     "pickup": {"timezone": "America/Chicago"},  # No UUID
                     "delivery": {"timezone": "America/New_York"}
@@ -193,7 +193,7 @@ from app.models.state import TaskStatus
 class TestProcessTaskMessageCharacterization:
     """Capture current behavior of task message processing."""
     
-    load_id = "load-123"
+    order_id = "order-123"
     task_uuid = "task-456"
     
     def _build_message(self, **overrides):
@@ -209,14 +209,14 @@ class TestProcessTaskMessageCharacterization:
     @patch("app.workers.task_worker.queue_service")
     @patch("app.workers.task_worker.process_task")
     @patch("app.workers.task_worker.task_service")
-    @patch("app.workers.task_worker.load_service")
+    @patch("app.workers.task_worker.order_service")
     def test_success_when_task_pending(
-        self, mock_load, mock_task, mock_process, mock_queue
+        self, mock_order, mock_task, mock_process, mock_queue
     ):
         """Current behavior: processes successfully when task is PENDING."""
         from app.workers import task_worker
         
-        mock_load.get_load.return_value = {"load_data": {}}
+        mock_order.get_order.return_value = {"order_data": {}}
         mock_task.get_task.return_value = {
             "task_uuid": self.task_uuid,
             "lifecycle_status": TaskStatus.PENDING.value,
@@ -224,7 +224,7 @@ class TestProcessTaskMessageCharacterization:
         mock_process.return_value = {"status": "completed"}
         
         result = task_worker._process_task_message(
-            Mock(), self._build_message(), self.load_id
+            Mock(), self._build_message(), self.order_id
         )
         
         assert result["status"] == "completed"
@@ -233,19 +233,19 @@ class TestProcessTaskMessageCharacterization:
     
     @patch("app.workers.task_worker.queue_service")
     @patch("app.workers.task_worker.task_service")
-    @patch("app.workers.task_worker.load_service")
-    def test_skip_when_task_paused(self, mock_load, mock_task, mock_queue):
+    @patch("app.workers.task_worker.order_service")
+    def test_skip_when_task_paused(self, mock_order, mock_task, mock_queue):
         """Current behavior: skips and DLQs when task is PAUSED."""
         from app.workers import task_worker
         
-        mock_load.get_load.return_value = {"load_data": {}}
+        mock_order.get_order.return_value = {"order_data": {}}
         mock_task.get_task.return_value = {
             "task_uuid": self.task_uuid,
             "lifecycle_status": TaskStatus.PAUSED.value,
         }
         
         result = task_worker._process_task_message(
-            Mock(), self._build_message(), self.load_id
+            Mock(), self._build_message(), self.order_id
         )
         
         assert result["status"] == "skipped"
@@ -253,16 +253,16 @@ class TestProcessTaskMessageCharacterization:
         mock_queue.move_to_dlq.assert_called_once()
     
     @patch("app.workers.task_worker.task_service")
-    @patch("app.workers.task_worker.load_service")
-    def test_error_when_load_not_found(self, mock_load, mock_task):
-        """Current behavior: raises ValueError when load not found."""
+    @patch("app.workers.task_worker.order_service")
+    def test_error_when_order_not_found(self, mock_order, mock_task):
+        """Current behavior: raises ValueError when order not found."""
         from app.workers import task_worker
         
-        mock_load.get_load.return_value = None
+        mock_order.get_order.return_value = None
         
         with pytest.raises(ValueError, match="not found"):
             task_worker._process_task_message(
-                Mock(), self._build_message(), self.load_id
+                Mock(), self._build_message(), self.order_id
             )
 ```
 
@@ -296,7 +296,7 @@ Recommended structure for a refactoring effort:
 ```
 tests/
 ├── models/
-│   ├── test_load_context.py              # Unit tests for model (TDD)
+│   ├── test_order_context.py              # Unit tests for model (TDD)
 │   └── test_task_metadata_context.py     # Unit tests for model (TDD)
 ├── utils/
 │   └── test_tool_result_mappers_characterization.py  # Characterization
@@ -305,7 +305,7 @@ tests/
 ├── graphs/
 │   └── routines/
 │       ├── test_tracking_checkpoint_characterization.py  # Characterization
-│       └── test_hourly_eta_tms_note_characterization.py  # Characterization
+│       └── test_hourly_eta_crm_note_characterization.py  # Characterization
 └── workers/
     └── processors/
         ├── test_task_processor.py        # Characterization + unit
@@ -377,10 +377,10 @@ class TestAggregateMessageTimelines:
         messages = [
             ParsedMessage(content="first", channel="sms", sender_uuid="d1",
                          sender_type="driver", attachment_ids=[], inbound_uuid="i1",
-                         buffered_at=None, load_id=None, raw_data={}),
+                         buffered_at=None, order_id=None, raw_data={}),
             ParsedMessage(content="second", channel="email", sender_uuid="d2",
-                         sender_type="dispatcher", attachment_ids=[], inbound_uuid="i2",
-                         buffered_at=None, load_id=None, raw_data={}),
+                         sender_type="operator", attachment_ids=[], inbound_uuid="i2",
+                         buffered_at=None, order_id=None, raw_data={}),
         ]
         result = aggregate_message_timelines(messages)
         
@@ -395,10 +395,10 @@ class TestAggregateMessageTimelines:
         messages = [
             ParsedMessage(content="a", channel=None, sender_uuid=None, sender_type=None,
                          attachment_ids=["att-1a", "att-1b"], inbound_uuid=None,
-                         buffered_at=None, load_id=None, raw_data={}),
+                         buffered_at=None, order_id=None, raw_data={}),
             ParsedMessage(content="b", channel=None, sender_uuid=None, sender_type=None,
                          attachment_ids=["att-2"], inbound_uuid=None,
-                         buffered_at=None, load_id=None, raw_data={}),
+                         buffered_at=None, order_id=None, raw_data={}),
         ]
         result = aggregate_message_timelines(messages)
         

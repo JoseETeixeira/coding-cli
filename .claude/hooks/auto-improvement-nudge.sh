@@ -32,8 +32,8 @@ print(
         {
             "decision": "block",
             "reason": (
-                "Evaluate the auto-improvement skill bundled with the active "
-                "FreightHero plugin now as the parent entry agent. If no candidate "
+                "Evaluate the canonical auto-improvement skill now as the parent "
+                "entry agent. If no candidate "
                 "exists, produce no user-facing message and "
                 "allow the next Stop. Specialists only report candidates; they never "
                 "edit canonical customization. For a candidate, identify its source "

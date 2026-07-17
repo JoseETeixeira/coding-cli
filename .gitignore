@@ -1,11 +1,6 @@
 dist/
-freighthero-mcp/.cocoindex/
-freighthero-mcp/.venv/
-freighthero-mcp/__pycache__/
-freighthero-mcp/dist/
-freighthero-mcp/node_modules/
-skills/console-testing-scenarios/reference.mdZone.Identifier
+Lib/site-packages/
 
-# Repowise generated state; config.yaml is credential-free policy.
-/.repowise/*
-!/.repowise/config.yaml
+# mnemo shared-memory: local event log (data dir is ~/.mnemo, outside the repo)
+mnemo/**/__pycache__/
+mnemo/.venv/
