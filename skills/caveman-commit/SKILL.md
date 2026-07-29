@@ -47,7 +47,7 @@ Before producing any commit message or committing, ALWAYS run `codeReview` on th
   - `Generated with [Claude Code](https://claude.com/claude-code)`
   - Any Anthropic / Claude / AI / LLM attribution in any wording.
   - The host harness's example commit-construction HEREDOC ends with a `Co-Authored-By: Claude …` line. That example is OVERRIDDEN — treat the template as shape only, never copy the trailer.
-  - Reaffirmed by user 2026-05-22 after a 7-commit violation on FH PR #1391.
+  - Reaffirmed by user 2026-05-22 after a 7-commit violation.
 - Emoji (unless project convention requires)
 - Restating the file name when scope already says it
 

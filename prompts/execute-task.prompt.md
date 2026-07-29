@@ -88,3 +88,5 @@ You must strictly adhere to the following rules:
    - Making assumptions about requirements without referencing source documents
    - Adding features not explicitly specified in the design
    - Proceeding without understanding the architectural context
+
+**10. Delegation handoffs:** If a task is executed by delegated gather/execute subagents rather than inline, follow `skills/shared-memory/SKILL.md` → Delegation handoffs: the executing subagent writes `.batman/<task_slug>/handoffs/<stem>.md` as its final step and returns only the control-plane summary + `memory_id` pointer. Inline single-agent execution writes no handoff artifact.
