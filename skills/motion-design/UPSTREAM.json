@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "skill": "motion-design",
+  "retrieved_at": "2026-08-01",
+  "source": {
+    "repository": "lottiefiles/motion-design-skill",
+    "commit": "f9a8a041b85185ee4881b3471d3415e939aac772",
+    "path": "skills/motion-design"
+  },
+  "origin_chain": [],
+  "licenses": [
+    {
+      "spdx": "MIT",
+      "file": "LICENSE.upstream",
+      "source": "lottiefiles/motion-design-skill",
+      "sha256": "sha256:9fc2e8685daa09e28d54b6afa8a38f168417c5735a3cd676c80c159785e93a80"
+    }
+  ],
+  "upstream_files": {
+    "director/choreography.md": "sha256:f49f9f6da4e6fe4aa7c186c1c7cbc95e4a1a1f4e0c84a06b75f0bb0740932e79",
+    "director/context-adaptation.md": "sha256:d077afcae69991b44fe55d8472a08b4ff3451a567ea69013ed0f347245e0c6db",
+    "director/core-philosophy.md": "sha256:f3adac0bfa780353ae31ea2694e3347485f11cfc04e3a87d5f215562778c60f4",
+    "director/decision-framework.md": "sha256:1231b547da3a81fdd7e2e2da8bc4ef37066b877503a85d8382b38e2d170323f4",
+    "director/disney-principles.md": "sha256:85fba416650206625f038ee31c36eab520e825ff90594bcc74c35c9f0ebbfd5d",
+    "director/emotion-mapping.md": "sha256:ce6ba400634d65a69bb60e7c8f25b5ac81f2af075987b346bf17fb951cee6931",
+    "director/motion-personality.md": "sha256:210055cda5766f17206f1b5ef23a112205d9ea37256170079aa1c3d91d920ea9",
+    "director/narrative-structure.md": "sha256:c19501805593ae0a5a4beb0f08a253190a49d047de68f0f87e1efb7713f10819",
+    "patterns/ambient-continuous.md": "sha256:9339415a2e65e676bdbb057de2c3f2d0f25a3a3c000d2dc1392335b988fe5f0a",
+    "patterns/entrance-exit.md": "sha256:d480b5f2a2ac33ff6704d8dd87b70de8604001708e009e9d18f3cca30f2f31d0",
+    "patterns/multi-element.md": "sha256:209d5b87b1c1d6f1cacb9e80d2a8e90e9e30f5ccdd178808e8e1b7bbd743fded",
+    "patterns/state-feedback.md": "sha256:015df95866a61ace37335cefe71a177b9a7da9610c8add040997b0c30053300b",
+    "reference/property-selection.md": "sha256:58c0d27fb10ceb0998cadd80be4d3c2e2fd4f0f7d6a9175827d7ec19e8daf10b",
+    "reference/quality-checklist.md": "sha256:9d2e4421ab185301e165ad1be77bfb1334692f66984a0402cbfafe60186a7b27",
+    "reference/timing-easing-tables.md": "sha256:31ea1921b740972ea5a753bf5421aeeb01936afef7add17c749f7feaedf96af9",
+    "reference/troubleshooting.md": "sha256:1b3eeee5352d824f8c173a7239434432870857abef6460cb6928a1372e915ad7",
+    "SKILL.md": "sha256:0fa7bd378776e776a9af528db040e5144127834c461ba7fb6805f47d13bc293d"
+  },
+  "adaptations": [],
+  "local_only": [
+    "UPSTREAM.json",
+    "LICENSE.upstream"
+  ]
+}

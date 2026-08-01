@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "skill": "godot-particles",
+  "retrieved_at": "2026-08-01",
+  "source": {
+    "repository": "thedivergentai/GD-Agentic-Skills",
+    "commit": "ebffc2b4f39b54dcf343b52dc9845a4ecc451cf2",
+    "path": "skills/godot-particles"
+  },
+  "origin_chain": [],
+  "licenses": [
+    {
+      "spdx": "LGPL-3.0-only",
+      "file": "LICENSE.upstream",
+      "source": "thedivergentai/GD-Agentic-Skills",
+      "sha256": "sha256:e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118"
+    }
+  ],
+  "upstream_files": {
+    "references/expert-vfx-patterns.md": "sha256:403088f5b76ca0f9baece4ed988d570f4dd29f5de1e994a7f08b3fb2a5a3776a",
+    "scripts/2d_physics_interpolation_fix.gd": "sha256:fd7e7cb92d57934b2514db8f2b6c6321cd60cb9e6112bc0ecaec273a78d5e50e",
+    "scripts/custom_particle_logic.gdshader": "sha256:747e16a5c2d07eb3b71db85c1d115f034eaa0b034c2409362a6d38e7dc7887bd",
+    "scripts/dynamic_userdata_modulation.gd": "sha256:4cccb8cafe4fa65994beb6a3132e28b119069d12a0c4f061eb3e6fd2944324eb",
+    "scripts/local_vs_global_coords.gd": "sha256:4bce21c0c8670954bc44e169dbf7a5df84cf8ccfbf11d497f2b89f951dfcc30a",
+    "scripts/massive_swarm_multimesh.gd": "sha256:b7b61853c28b9b6f05f3f8591aa2988fa84ada4d5ca624f79de0c33e63c7d6ca",
+    "scripts/particle_attractor_opt.gd": "sha256:6f823aee6f13ed040b501b60d51daa76020b91b6d50a4fc58b8fd4145e6c21f4",
+    "scripts/particle_burst_emitter.gd": "sha256:173081425b9717f40b1ba1ce76d44848b0d27b0bf2a476a517d6422262c24fdb",
+    "scripts/particle_lod_manager.gd": "sha256:8c7d168614ddadfa0a2d8b49fea5578b1e2b8141b5ad2e09fc74f7ae3cb6eb54",
+    "scripts/screenspace_weather_heightfield.gd": "sha256:19b1b7a5635726bde1a97733f5d2f5de53d48471f791742102719765b34d517e",
+    "scripts/smart_oneshot_recycler.gd": "sha256:49606caa5ba88f7d6f4b0dd2eacb6dbbc838fefb87dab72f1185af9bbdfb3d8e",
+    "scripts/sub_emitter_impact.gdshader": "sha256:118ed048e7deef27bab88551d4f018a59f706e15c38e24b364cc6c15a28a0cd7",
+    "scripts/vfx_pool_manager.gd": "sha256:5e78079ddf8ddd7365a752f47789d5420cab72017e6368dac67144568ecc3224",
+    "scripts/vfx_shader_manager.gd": "sha256:910184b8276ec43d2aeaa44665ff35781d9ca91698372379896eab319fb24101",
+    "SKILL.md": "sha256:f591303c0509ff9ade9c613cef94d0f8deb4656d7faeb5db5071a71cb8d3c04f"
+  },
+  "adaptations": [
+    {
+      "file": "SKILL.md",
+      "kind": "integration-guardrail",
+      "reason": "Pin optional sibling-skill links and label them external; mark bundled code as project-validated references"
+    }
+  ],
+  "local_only": [
+    "UPSTREAM.json",
+    "LICENSE.upstream"
+  ]
+}

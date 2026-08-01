@@ -1,0 +1,49 @@
+{
+  "captured_at": "2026-08-01",
+  "repository_root": "C:\\Users\\josee\\source\\coding-cli",
+  "skills_root": "C:\\Users\\josee\\source\\coding-cli\\skills",
+  "initial_git_status": [
+    "?? .batman/",
+    "?? docs/"
+  ],
+  "destinations": {
+    "gamedev-workflow": {"existed": false, "contained": true},
+    "game-developer": {"existed": false, "contained": true},
+    "3d-modeling": {"existed": false, "contained": true},
+    "game-designer": {"existed": false, "contained": true},
+    "godot-genre-shooter-fps": {"existed": false, "contained": true},
+    "godot-particles": {"existed": false, "contained": true},
+    "godot-performance-optimization": {"existed": false, "contained": true},
+    "motion-design": {"existed": false, "contained": true}
+  },
+  "host_same_name_destinations": [],
+  "integration_surface_sha256": {
+    "AGENTS.md": "424e00c389ded832aeea9d6edbb8eb67a2688ae72e6d9799fe1b66aa60e44891",
+    "agents/batman.agent.md": "4e5fb3148e7c394c368c9aaacdd16f55e5f98a1cf8f39cddefade0c997253121",
+    "prompts/execute-task.prompt.md": "c6cf71d7c5c2bbfe0725f354f212fe91f5671c923e634ef09e677f7be5b36aa3",
+    "README.md": "94227e4932b6c681fd5f3b209256f5e4c9a4e1c9d22026cf3914aa001491abda"
+  },
+  "pre_existing_docs": [
+    "docs/architecture/adr/0003-byond-project-agent-guidance.md",
+    "docs/architecture/adr/0004-mnemo-shared-memory.md",
+    "docs/architecture/adr/0005-remove-repowise-and-freighthero.md",
+    "docs/architecture/adr/0006-specialized-project-agents.md",
+    "docs/architecture/adr/0007-batman-phase-checkpoints.md",
+    "docs/architecture/adr/0008-batman-delegation-handoffs.md",
+    "docs/prd/shared-memory-mnemo.md",
+    "docs/prd/specialized-project-agents.md",
+    "docs/product/byond-project-agent-guidance-prd.md"
+  ],
+  "task_owned_docs": [
+    "docs/architecture/adr/0009-gamedev-skill-intake-and-routing.md",
+    "docs/prd/gamedev-skills-workflow.md"
+  ],
+  "sources": [
+    {"skill": "game-developer", "repository": "Jeffallan/claude-skills", "commit": "e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319", "path": "skills/game-developer"},
+    {"skill": "3d-modeling", "repository": "majiayu000/claude-skill-registry", "commit": "ef926663574f5f7a0c19b0429b2540373279ed45", "path": "skills/data/3d-modeling"},
+    {"skill": "godot-genre-shooter-fps", "repository": "thedivergentai/GD-Agentic-Skills", "commit": "ebffc2b4f39b54dcf343b52dc9845a4ecc451cf2", "path": "skills/godot-genre-shooter-fps"},
+    {"skill": "godot-particles", "repository": "thedivergentai/GD-Agentic-Skills", "commit": "ebffc2b4f39b54dcf343b52dc9845a4ecc451cf2", "path": "skills/godot-particles"},
+    {"skill": "godot-performance-optimization", "repository": "thedivergentai/GD-Agentic-Skills", "commit": "ebffc2b4f39b54dcf343b52dc9845a4ecc451cf2", "path": "skills/godot-performance-optimization"},
+    {"skill": "motion-design", "repository": "lottiefiles/motion-design-skill", "commit": "f9a8a041b85185ee4881b3471d3415e939aac772", "path": "skills/motion-design"}
+  ]
+}

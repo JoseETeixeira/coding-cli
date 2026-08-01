@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "skill": "3d-modeling",
+  "retrieved_at": "2026-08-01",
+  "source": {
+    "repository": "majiayu000/claude-skill-registry",
+    "commit": "ef926663574f5f7a0c19b0429b2540373279ed45",
+    "path": "skills/data/3d-modeling"
+  },
+  "origin_chain": [
+    {
+      "repository": "omer-metin/skills-for-antigravity",
+      "commit": "e8dcf4e8737921a10088bd5c9eb65e81f74c051f",
+      "path": "skills/3d-modeling",
+      "relation": "content origin identified by registry metadata; SKILL.md bytes match"
+    }
+  ],
+  "licenses": [
+    {
+      "spdx": "Apache-2.0",
+      "file": "LICENSE.upstream",
+      "source": "omer-metin/skills-for-antigravity",
+      "scope": "upstream skill content",
+      "sha256": "sha256:9b19b4bf2d7c6df1974e35c761c84f10f258d9fcab64a60c292b2752e81a9ec2"
+    },
+    {
+      "spdx": "MIT",
+      "file": "LICENSE.registry",
+      "source": "majiayu000/claude-skill-registry",
+      "scope": "requested registry packaging",
+      "sha256": "sha256:6d5a74f51cfd9a94b89e38663a47ed1cc0173ecf640bbe4b21057cb2eb080830"
+    }
+  ],
+  "upstream_files": {
+    "metadata.json": "sha256:c8511a454959014fab53d080caec300a4c51a84652839512067ffc86b86a5958",
+    "SKILL.md": "sha256:d96eb950eb3b759c5e49b0f4925b2f26a6fcc559a3cf22c7b62efa03e07c6a47"
+  },
+  "adaptations": [
+    {
+      "file": "SKILL.md",
+      "kind": "repair",
+      "reason": "Replace three absent mandatory references with approved self-contained production checklist"
+    }
+  ],
+  "local_only": [
+    "UPSTREAM.json",
+    "LICENSE.upstream",
+    "LICENSE.registry"
+  ]
+}

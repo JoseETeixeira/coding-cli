@@ -1,0 +1,4 @@
+interface:
+  display_name: "Game Designer"
+  short_description: "Design testable game systems and loops"
+  default_prompt: "Use $game-designer to turn this game concept into testable mechanics, progression, and playtest questions."

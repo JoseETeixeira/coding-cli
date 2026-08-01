@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "skill": "game-developer",
+  "retrieved_at": "2026-08-01",
+  "source": {
+    "repository": "Jeffallan/claude-skills",
+    "commit": "e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319",
+    "path": "skills/game-developer"
+  },
+  "origin_chain": [],
+  "licenses": [
+    {
+      "spdx": "MIT",
+      "file": "LICENSE.upstream",
+      "source": "Jeffallan/claude-skills",
+      "sha256": "sha256:06dcddbb6908a0c6dd4a9e8ec822eea41d5a460a53089fecccc8a68049e99241"
+    }
+  ],
+  "upstream_files": {
+    "references/ecs-patterns.md": "sha256:5ef2de275b32bcf78a215ac09e101e70c06d5bb64e2577dc61fba811950a49c6",
+    "references/multiplayer-networking.md": "sha256:10c22a22749041b99f09a4e365dadbe6e58fc1b56c90407960bb466aa2de8611",
+    "references/performance-optimization.md": "sha256:57ce6a6de9b66f4ab5b2b7bd7349fa6694e5eb641e5a94bcf80e1351ad4fd4ed",
+    "references/unity-patterns.md": "sha256:0f8b0ffada2a9e997c7db40cc472babf30c670514f01441c3dbd2f25a573fefc",
+    "references/unreal-cpp.md": "sha256:b41b68aa1dba6635924a909c4d749ae199bd6ac8fed263598163c9bbbce807e6",
+    "SKILL.md": "sha256:89297efd2a6ba43237bd711d41d5d8bc50241954fe535d413bc08a1c345bc176"
+  },
+  "adaptations": [],
+  "local_only": [
+    "UPSTREAM.json",
+    "LICENSE.upstream"
+  ]
+}

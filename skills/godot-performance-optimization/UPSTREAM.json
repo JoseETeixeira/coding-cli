@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "skill": "godot-performance-optimization",
+  "retrieved_at": "2026-08-01",
+  "source": {
+    "repository": "thedivergentai/GD-Agentic-Skills",
+    "commit": "ebffc2b4f39b54dcf343b52dc9845a4ecc451cf2",
+    "path": "skills/godot-performance-optimization"
+  },
+  "origin_chain": [],
+  "licenses": [
+    {
+      "spdx": "LGPL-3.0-only",
+      "file": "LICENSE.upstream",
+      "source": "thedivergentai/GD-Agentic-Skills",
+      "sha256": "sha256:e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118"
+    }
+  ],
+  "upstream_files": {
+    "references/profiler-budgets-and-prewarm.md": "sha256:96164de85f6402d5f35ac2758de68dbc0dc3602cf9defb2300f250fb7092ef35",
+    "scripts/custom_monitor_profiler.gd": "sha256:cd3adaca06ae0ae71e2a13d4fc1c02d8f186ebe0ef7247e455f1715562a78bcc",
+    "scripts/custom_performance_monitor.gd": "sha256:2f47ec0614638ee43f54bf3e816b82f3d773b043d03ff08d4bdfab1ee50eb1b2",
+    "scripts/low_level_physics_query.gd": "sha256:f6e4966b733b9baa5b9f5b48479563127cf205d959835e184f9c73d0ca806d08",
+    "scripts/manual_culling_logic.gd": "sha256:7db73f7e71fbeec64b3e8abd475c81e66c976a2ae377cc4a3cc921c631463662",
+    "scripts/multimesh_foliage_manager.gd": "sha256:aa83236de61ba36c1109d63553fa9b8328fa252a3635402318fe8d0e4c602f83",
+    "scripts/multimesh_optimizer.gd": "sha256:15a43e21a076fffbb4db60dd52cfe41881de1a941e318fd951176123d20ae7b9",
+    "scripts/navigation_agent_optimization.gd": "sha256:adc7621d1bfec8235ca78aa0d7e7cfe273af9ded64936ffd916bc2be468ed0f3",
+    "scripts/object_pool_system.gd": "sha256:3874437ad0b65d5a5ae02bbeced2213effab16040dc3e55ab74a1596af7256f4",
+    "scripts/rendering_server_direct.gd": "sha256:20dc5bea2d57d9de07212a8d1fa36955c3a1e5ecdf37ecc145cd84c7b94605bd",
+    "scripts/shared_resource_strategy.gd": "sha256:144032a48000a54d819387c7a49b3837c28ea8684f68363c1925dab6a5a7e6ec",
+    "scripts/texture_array_batching.gd": "sha256:5d3cf4566a3aad2a8c8657ce49e0f9c35703f0d2ee4030b3f1b03eecde782d98",
+    "scripts/worker_thread_pool_manager.gd": "sha256:c62d39c9140e343dab7761c1a36a88e6a9e5a668174dd3fc267f5718f4550747",
+    "SKILL.md": "sha256:6cba0793fabaa572d616123cef53f826750a8fd88be3e2dc8c4c6614384aa984"
+  },
+  "adaptations": [
+    {
+      "file": "SKILL.md",
+      "kind": "integration-guardrail",
+      "reason": "Pin optional sibling-skill links and label them external; mark bundled code as project-validated references"
+    }
+  ],
+  "local_only": [
+    "UPSTREAM.json",
+    "LICENSE.upstream"
+  ]
+}

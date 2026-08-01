@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "skill": "game-designer",
+  "authorship": "clean-room-canonical",
+  "basis": [
+    "approved requirements",
+    "general game-design knowledge"
+  ],
+  "excluded_source": {
+    "repository": "majiayu000/claude-skill-registry",
+    "commit": "ef926663574f5f7a0c19b0429b2540373279ed45",
+    "path": "skills/gaming/game-designer",
+    "requested_url": "https://github.com/majiayu000/claude-skill-registry/tree/main/skills/gaming/game-designer",
+    "skill_file_sha256": "0a48d86b38632b75b003ac5925c1824d96c19da1d2151d45e4191023b08383eb",
+    "metadata_file_sha256": "c249dd58d38642ff32faabaae4348fb9a0db394bd1f53467cb2479ae59787c3a",
+    "reason": "package metadata reports license NOASSERTION and distribution restricted; evaluated as evidence but not vendored"
+  },
+  "decision_date": "2026-08-01",
+  "decision": "User approved an independently authored canonical skill",
+  "no_upstream_endorsement": true,
+  "comparison_evidence": ".batman/gamedev-skills-workflow/evidence/game-designer-overlap.json"
+}

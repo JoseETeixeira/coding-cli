@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "skill": "godot-genre-shooter-fps",
+  "retrieved_at": "2026-08-01",
+  "source": {
+    "repository": "thedivergentai/GD-Agentic-Skills",
+    "commit": "ebffc2b4f39b54dcf343b52dc9845a4ecc451cf2",
+    "path": "skills/godot-genre-shooter-fps"
+  },
+  "origin_chain": [],
+  "licenses": [
+    {
+      "spdx": "LGPL-3.0-only",
+      "file": "LICENSE.upstream",
+      "source": "thedivergentai/GD-Agentic-Skills",
+      "sha256": "sha256:e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118"
+    }
+  ],
+  "upstream_files": {
+    "references/fps-weapon-theory.md": "sha256:c2aa2889df43ca1d9bac28d20d4a3b4764ea44d7c5def4aa1e13fc0d3931db5c",
+    "scripts/advanced_fps_controller.gd": "sha256:ea7bc19345dc0c82633698ba521a90f21fa68d4cf8b16d7c1e0bf0af13b49b2b",
+    "scripts/advanced_weapon_controller.gd": "sha256:35b3acb7b6a63693ffe7cba128dbb29817dee2b796f2c35cc32f87eeff628d95",
+    "scripts/aim_assist.gd": "sha256:6371bf7b8e76a1e91673b28cc7e5efa6c506a4424b69a1bbee4322034c19ee91",
+    "scripts/bullet_decal_spawner.gd": "sha256:c10e8c7abc02f66a86a1cf49634c1f2b0e462ca4898c3382e661b5c436d7693d",
+    "scripts/fps_camera_look.gd": "sha256:009a573b9b26b59730b13302c2db8989f23752e0a5355d447e596c6c45bca1cb",
+    "scripts/fps_movement_logic.gd": "sha256:5b0b2860768aa2bb5c524b8c37aea5eee2fb89481b07bc0a5241b2bf6592f2a4",
+    "scripts/frame_perfect_input.gd": "sha256:663a66b4d33d2fec3ab3ae0b6008935f64bdcccacf936b80b0d4ad001f32a816",
+    "scripts/hitscan_weapon_logic.gd": "sha256:48c26c5bd4f92ec4c8f0a9fbf6da5dfc3ca7fff56e05c0a89805695b6c6dca3f",
+    "scripts/hitscan_weapon_query.gd": "sha256:c7264770ce37e11c24aa7953273c2d13de442cab8f35a9d0eea80f37be240520",
+    "scripts/player_anim_bridge.gd": "sha256:9d95cd5acd80b43348fb6a34cc2e33ddc95b674f43200a1ebfbe70a9466793ce",
+    "scripts/procedural_recoil_handler.gd": "sha256:4bd0e5a8743f88849617f9b8a4ff5669fc9a4b0bbe1a5d8d7183aade7330a74f",
+    "scripts/recoil_system.gd": "sha256:6484bbab537eeb8e8c4c86e8a4dcdc76ad9a8856fae3960d45a13c57a41ed72f",
+    "scripts/server_projectile_instance.gd": "sha256:2683b9309a621a59c55d0504dbfe7498c5e822fe76c3af6437e71d21ec8995ba",
+    "scripts/weapon_bobbing_system.gd": "sha256:13d28d9a566eebf509b93a1a8e2ee5128d2d9433ded0f255c4dfdc93c3e04bc5",
+    "scripts/weapon_spread_calc.gd": "sha256:9cd8ff026ba0741bc32424c7efe283da652667c800d7c3a92916b25352ef323b",
+    "scripts/weapon_state_machine.gd": "sha256:0e107020671e31bb2b79e5a578fe9aa8c280b15d2d4c52891570055ebde02624",
+    "SKILL.md": "sha256:b0b0cc8e4b4c20cc94aae6c6e175841a67a1fff746cc089ea28404621cfac50e"
+  },
+  "adaptations": [
+    {
+      "file": "SKILL.md",
+      "kind": "integration-guardrail",
+      "reason": "Pin optional sibling-skill links and label them external; mark bundled code as project-validated references"
+    }
+  ],
+  "local_only": [
+    "UPSTREAM.json",
+    "LICENSE.upstream"
+  ]
+}

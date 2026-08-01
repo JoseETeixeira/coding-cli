@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-01",
+  "method": "Compare current SHA-256 values with each UPSTREAM.json original-file map; require modified files to equal adaptation records and current non-upstream files to equal local_only.",
+  "packages": {
+    "game-developer": {
+      "source": {
+        "repository": "Jeffallan/claude-skills",
+        "commit": "e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319",
+        "path": "skills/game-developer"
+      },
+      "unchanged_files": [
+        "SKILL.md",
+        "references/ecs-patterns.md",
+        "references/multiplayer-networking.md",
+        "references/performance-optimization.md",
+        "references/unity-patterns.md",
+        "references/unreal-cpp.md"
+      ],
+      "modified_files": [],
+      "local_only_files": [
+        "LICENSE.upstream",
+        "UPSTREAM.json"
+      ],
+      "missing_upstream_files": [],
+      "unaccounted_modified_files": [],
+      "stale_adaptation_records": [],
+      "unaccounted_local_files": [],
+      "stale_local_only_records": [],
+      "status": "pass"
+    },
+    "3d-modeling": {
+      "source": {
+        "repository": "majiayu000/claude-skill-registry",
+        "commit": "ef926663574f5f7a0c19b0429b2540373279ed45",
+        "path": "skills/data/3d-modeling"
+      },
+      "unchanged_files": [
+        "metadata.json"
+      ],
+      "modified_files": [
+        {
+          "file": "SKILL.md",
+          "upstream_sha256": "sha256:d96eb950eb3b759c5e49b0f4925b2f26a6fcc559a3cf22c7b62efa03e07c6a47",
+          "current_sha256": "sha256:95bde94ff8a47192b2133c9cea9e0e35936cdc657b93e603b296216fa8882053",
+          "adaptation": {
+            "file": "SKILL.md",
+            "kind": "repair",
+            "reason": "Replace three absent mandatory references with approved self-contained production checklist"
+          }
+        }
+      ],
+      "local_only_files": [
+        "LICENSE.registry",
+        "LICENSE.upstream",
+        "UPSTREAM.json"
+      ],
+      "missing_upstream_files": [],
+      "unaccounted_modified_files": [],
+      "stale_adaptation_records": [],
+      "unaccounted_local_files": [],
+      "stale_local_only_records": [],
+      "status": "pass"
+    },
+    "godot-genre-shooter-fps": {
+      "source": {
+        "repository": "thedivergentai/GD-Agentic-Skills",
+        "commit": "ebffc2b4f39b54dcf343b52dc9845a4ecc451cf2",
+        "path": "skills/godot-genre-shooter-fps"
+      },
+      "unchanged_files": [
+        "references/fps-weapon-theory.md",
+        "scripts/advanced_fps_controller.gd",
+        "scripts/advanced_weapon_controller.gd",
+        "scripts/aim_assist.gd",
+        "scripts/bullet_decal_spawner.gd",
+        "scripts/fps_camera_look.gd",
+        "scripts/fps_movement_logic.gd",
+        "scripts/frame_perfect_input.gd",
+        "scripts/hitscan_weapon_logic.gd",
+        "scripts/hitscan_weapon_query.gd",
+        "scripts/player_anim_bridge.gd",
+        "scripts/procedural_recoil_handler.gd",
+        "scripts/recoil_system.gd",
+        "scripts/server_projectile_instance.gd",
+        "scripts/weapon_bobbing_system.gd",
+        "scripts/weapon_spread_calc.gd",
+        "scripts/weapon_state_machine.gd"
+      ],
+      "modified_files": [
+        {
+          "file": "SKILL.md",
+          "upstream_sha256": "sha256:b0b0cc8e4b4c20cc94aae6c6e175841a67a1fff746cc089ea28404621cfac50e",
+          "current_sha256": "sha256:9f8bc697d59128c1748adedabde00640663700627187a5af404a388f6a8002a7",
+          "adaptation": {
+            "file": "SKILL.md",
+            "kind": "integration-guardrail",
+            "reason": "Pin optional sibling-skill links and label them external; mark bundled code as project-validated references"
+          }
+        }
+      ],
+      "local_only_files": [
+        "LICENSE.upstream",
+        "UPSTREAM.json"
+      ],
+      "missing_upstream_files": [],
+      "unaccounted_modified_files": [],
+      "stale_adaptation_records": [],
+      "unaccounted_local_files": [],
+      "stale_local_only_records": [],
+      "status": "pass"
+    },
+    "godot-particles": {
+      "source": {
+        "repository": "thedivergentai/GD-Agentic-Skills",
+        "commit": "ebffc2b4f39b54dcf343b52dc9845a4ecc451cf2",
+        "path": "skills/godot-particles"
+      },
+      "unchanged_files": [
+        "references/expert-vfx-patterns.md",
+        "scripts/2d_physics_interpolation_fix.gd",
+        "scripts/custom_particle_logic.gdshader",
+        "scripts/dynamic_userdata_modulation.gd",
+        "scripts/local_vs_global_coords.gd",
+        "scripts/massive_swarm_multimesh.gd",
+        "scripts/particle_attractor_opt.gd",
+        "scripts/particle_burst_emitter.gd",
+        "scripts/particle_lod_manager.gd",
+        "scripts/screenspace_weather_heightfield.gd",
+        "scripts/smart_oneshot_recycler.gd",
+        "scripts/sub_emitter_impact.gdshader",
+        "scripts/vfx_pool_manager.gd",
+        "scripts/vfx_shader_manager.gd"
+      ],
+      "modified_files": [
+        {
+          "file": "SKILL.md",
+          "upstream_sha256": "sha256:f591303c0509ff9ade9c613cef94d0f8deb4656d7faeb5db5071a71cb8d3c04f",
+          "current_sha256": "sha256:3d024e626045fabd79febb1e7ef6c024f9392deb7d5ce44c886d5ad5e9d471e1",
+          "adaptation": {
+            "file": "SKILL.md",
+            "kind": "integration-guardrail",
+            "reason": "Pin optional sibling-skill links and label them external; mark bundled code as project-validated references"
+          }
+        }
+      ],
+      "local_only_files": [
+        "LICENSE.upstream",
+        "UPSTREAM.json"
+      ],
+      "missing_upstream_files": [],
+      "unaccounted_modified_files": [],
+      "stale_adaptation_records": [],
+      "unaccounted_local_files": [],
+      "stale_local_only_records": [],
+      "status": "pass"
+    },
+    "godot-performance-optimization": {
+      "source": {
+        "repository": "thedivergentai/GD-Agentic-Skills",
+        "commit": "ebffc2b4f39b54dcf343b52dc9845a4ecc451cf2",
+        "path": "skills/godot-performance-optimization"
+      },
+      "unchanged_files": [
+        "references/profiler-budgets-and-prewarm.md",
+        "scripts/custom_monitor_profiler.gd",
+        "scripts/custom_performance_monitor.gd",
+        "scripts/low_level_physics_query.gd",
+        "scripts/manual_culling_logic.gd",
+        "scripts/multimesh_foliage_manager.gd",
+        "scripts/multimesh_optimizer.gd",
+        "scripts/navigation_agent_optimization.gd",
+        "scripts/object_pool_system.gd",
+        "scripts/rendering_server_direct.gd",
+        "scripts/shared_resource_strategy.gd",
+        "scripts/texture_array_batching.gd",
+        "scripts/worker_thread_pool_manager.gd"
+      ],
+      "modified_files": [
+        {
+          "file": "SKILL.md",
+          "upstream_sha256": "sha256:6cba0793fabaa572d616123cef53f826750a8fd88be3e2dc8c4c6614384aa984",
+          "current_sha256": "sha256:0bde9a4fdef51860ce93862bc1c683b5789d66abb884a46340268b15c62507fa",
+          "adaptation": {
+            "file": "SKILL.md",
+            "kind": "integration-guardrail",
+            "reason": "Pin optional sibling-skill links and label them external; mark bundled code as project-validated references"
+          }
+        }
+      ],
+      "local_only_files": [
+        "LICENSE.upstream",
+        "UPSTREAM.json"
+      ],
+      "missing_upstream_files": [],
+      "unaccounted_modified_files": [],
+      "stale_adaptation_records": [],
+      "unaccounted_local_files": [],
+      "stale_local_only_records": [],
+      "status": "pass"
+    },
+    "motion-design": {
+      "source": {
+        "repository": "lottiefiles/motion-design-skill",
+        "commit": "f9a8a041b85185ee4881b3471d3415e939aac772",
+        "path": "skills/motion-design"
+      },
+      "unchanged_files": [
+        "SKILL.md",
+        "director/choreography.md",
+        "director/context-adaptation.md",
+        "director/core-philosophy.md",
+        "director/decision-framework.md",
+        "director/disney-principles.md",
+        "director/emotion-mapping.md",
+        "director/motion-personality.md",
+        "director/narrative-structure.md",
+        "patterns/ambient-continuous.md",
+        "patterns/entrance-exit.md",
+        "patterns/multi-element.md",
+        "patterns/state-feedback.md",
+        "reference/property-selection.md",
+        "reference/quality-checklist.md",
+        "reference/timing-easing-tables.md",
+        "reference/troubleshooting.md"
+      ],
+      "modified_files": [],
+      "local_only_files": [
+        "LICENSE.upstream",
+        "UPSTREAM.json"
+      ],
+      "missing_upstream_files": [],
+      "unaccounted_modified_files": [],
+      "stale_adaptation_records": [],
+      "unaccounted_local_files": [],
+      "stale_local_only_records": [],
+      "status": "pass"
+    }
+  },
+  "summary": {
+    "packages": 6,
+    "unchanged_files": 68,
+    "modified_files": 4,
+    "local_only_files": 13,
+    "failed_packages": []
+  }
+}

@@ -5,7 +5,7 @@
 ## Repository layout
 
 - `agents/batman.agent.md`: the generic Batman entry agent (routes every project through `generic-entry`)
-- `skills/`: generic skills — `generic-entry`, `shared-memory`, `mnemo-setup`, `batman-understanding`, `byond-projects`, `caveman*`, `visual-explainer`, `grill-me`, Robot Framework helpers, refactoring guides, etc.
+- `skills/`: generic skills — `generic-entry`, `shared-memory`, `mnemo-setup`, `batman-understanding`, `byond-projects`, `gamedev-workflow`, `caveman*`, `visual-explainer`, `grill-me`, Robot Framework helpers, refactoring guides, etc. `gamedev-workflow` selectively composes game design/implementation, 3D, Godot FPS/particles/performance, and UI-motion disciplines with project specialists.
 - `instructions/`: shared code-pattern, review, and visual guidance
 - `prompts/`: reusable task prompts
 - `mnemo/`: the self-hosted shared-memory engine + MCP server (see `mnemo/README.md`)

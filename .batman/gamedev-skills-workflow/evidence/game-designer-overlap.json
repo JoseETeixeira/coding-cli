@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-01",
+  "local": {
+    "path": "skills/game-designer/SKILL.md",
+    "sha256": "fd34cfbe6ec75f29e6d5ea6311008f7938550fc0fcbf91c1220a8424a902a7f7",
+    "normalized_token_count": 877
+  },
+  "excluded_source": {
+    "repository": "majiayu000/claude-skill-registry",
+    "commit": "ef926663574f5f7a0c19b0429b2540373279ed45",
+    "path": "skills/gaming/game-designer/SKILL.md",
+    "sha256": "0a48d86b38632b75b003ac5925c1824d96c19da1d2151d45e4191023b08383eb",
+    "metadata_sha256": "c249dd58d38642ff32faabaae4348fb9a0db394bd1f53467cb2479ae59787c3a",
+    "normalized_token_count": 929,
+    "content_retained_in_repository": false
+  },
+  "method": {
+    "authoring_order": "Local SKILL.md was authored before the excluded snapshot was retrieved during implementation.",
+    "normalization": "Decode UTF-8; normalize CRLF to LF; remove YAML frontmatter; apply Unicode NFKC and casefold; tokenize with [a-z0-9]+ plus internal apostrophes.",
+    "exact_copy_check": "Compare original file bytes and SHA-256 values.",
+    "phrase_check": "Dynamic-programming longest contiguous token-run comparison.",
+    "fail_threshold_words": 12,
+    "manual_review_range_words": [8, 11]
+  },
+  "result": {
+    "exact_copy": false,
+    "maximum_contiguous_match_words": 3,
+    "longest_match_diagnostic": {
+      "local_token_start_zero_based": 251,
+      "excluded_token_start_zero_based": 65,
+      "tokens": "session and long"
+    },
+    "reported_runs_8_to_11": [],
+    "failing_runs_12_or_more": [],
+    "manual_review_needed": false,
+    "status": "pass"
+  }
+}

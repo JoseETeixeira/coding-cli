@@ -10,6 +10,8 @@ Route every repository task through `skills/generic-entry/SKILL.md`.
 
 When a task involves BYOND or `.dme`, `.dm`, `.dmm`, `.dmf`, or `.dms` files, also read and follow `skills/byond-projects/SKILL.md` as a conditional task skill before BYOND analysis or changes. It does not replace the generic entry.
 
+When a task materially concerns game mechanics, gameplay systems, engine code, game assets, 3D production, VFX, performance, or game UI motion, also read and follow `skills/gamedev-workflow/SKILL.md`. It composes with the generic entry and the matching project specialist; it replaces neither.
+
 At the beginning of every turn, read `skills/auto-improvement/SKILL.md` and evaluate its triggers; remain user-silent when none match. Every durable customization-layer write is approval-gated: preview the diff and wait for explicit user approval before writing.
 
 ## All repositories

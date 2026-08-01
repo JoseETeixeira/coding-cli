@@ -33,6 +33,10 @@ Your workflow is an interactive loop driven by user commands with **mandatory co
 
 When a task involves BYOND or `.dme`, `.dm`, `.dmm`, `.dmf`, or `.dms` files, read and follow `skills/byond-projects/SKILL.md` before planning or changing code. That skill is the single source of truth for documentation evidence, DM compatibility, Dream Maker compilation, and Dragon Ball Universe rules.
 
+# **Game Development**
+
+When a task materially concerns game mechanics, gameplay systems, engine code, game assets, 3D production, VFX, performance, or game UI motion, also read and follow `skills/gamedev-workflow/SKILL.md`. It composes with this execution workflow and the matching project specialist; it replaces neither.
+
 # **Behavioral Rules**
 
 You must strictly adhere to the following rules:

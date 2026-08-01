@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-01",
+  "scope": "read-only repository integration; no game project or editor/runtime",
+  "second_install_simulation": {
+    "plan": {
+      "gamedev-workflow": "skip-existing",
+      "game-developer": "skip-existing",
+      "3d-modeling": "skip-existing",
+      "game-designer": "skip-existing",
+      "godot-genre-shooter-fps": "skip-existing",
+      "godot-particles": "skip-existing",
+      "godot-performance-optimization": "skip-existing",
+      "motion-design": "skip-existing"
+    },
+    "before_tree_sha256": {
+      "gamedev-workflow": "71a27b1d65fd03f752f630c12b89a567815b2db2d0ea2bf1e729502cc0a260b8",
+      "game-developer": "52b6d4082447b2b9412970024498c5cd82e43360f43e7fd706137f362e5ddc90",
+      "3d-modeling": "28deb4091bfae6e932d9fd1678e56c8cc184ede78fe7b71e605b7bf03a304a21",
+      "game-designer": "b14bdb522c3e8d5a47486fc472f3d35a9159bbae638df54533e6bb5aa6beae77",
+      "godot-genre-shooter-fps": "e03fa23e96e27712090ee1d94c3e0600e6fac648bd025e224150f74a72596a17",
+      "godot-particles": "aa106340e819fd11492e08498fe1b4a2ac834c9a8633a713b48952bcac7354c1",
+      "godot-performance-optimization": "24fc60d9bf80c96512e3967cef961b8df2eaf34cd58eef507565d6cc16d44882",
+      "motion-design": "69cd44603aaa50d33544aee8ef115f50c3f523b6913924f7c0d43f0fa1b83f06"
+    },
+    "after_tree_sha256": {
+      "gamedev-workflow": "71a27b1d65fd03f752f630c12b89a567815b2db2d0ea2bf1e729502cc0a260b8",
+      "game-developer": "52b6d4082447b2b9412970024498c5cd82e43360f43e7fd706137f362e5ddc90",
+      "3d-modeling": "28deb4091bfae6e932d9fd1678e56c8cc184ede78fe7b71e605b7bf03a304a21",
+      "game-designer": "b14bdb522c3e8d5a47486fc472f3d35a9159bbae638df54533e6bb5aa6beae77",
+      "godot-genre-shooter-fps": "e03fa23e96e27712090ee1d94c3e0600e6fac648bd025e224150f74a72596a17",
+      "godot-particles": "aa106340e819fd11492e08498fe1b4a2ac834c9a8633a713b48952bcac7354c1",
+      "godot-performance-optimization": "24fc60d9bf80c96512e3967cef961b8df2eaf34cd58eef507565d6cc16d44882",
+      "motion-design": "69cd44603aaa50d33544aee8ef115f50c3f523b6913924f7c0d43f0fa1b83f06"
+    },
+    "hashes_unchanged": true,
+    "status": "pass"
+  },
+  "routing_evaluation": {
+    "cases": [
+      {
+        "id": "game-design-core-loop",
+        "route": "game-design",
+        "selected_primary_skills": [
+          "game-designer"
+        ],
+        "expected_primary_skills": [
+          "game-designer"
+        ],
+        "specialist": null,
+        "required_gates": [
+          "player-promise",
+          "constraints",
+          "playtest-question"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "gameplay-implementation",
+        "route": "game-implementation",
+        "selected_primary_skills": [
+          "game-developer"
+        ],
+        "expected_primary_skills": [
+          "game-developer"
+        ],
+        "specialist": "unreal-dev",
+        "required_gates": [
+          "project-architecture-wins",
+          "project-tests"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "asset-3d-export",
+        "route": "3d-modeling",
+        "selected_primary_skills": [
+          "3d-modeling"
+        ],
+        "expected_primary_skills": [
+          "3d-modeling"
+        ],
+        "specialist": null,
+        "required_gates": [
+          "dcc-contract",
+          "engine-import-contract",
+          "asset-validation"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "godot-fps-current",
+        "route": "godot-fps",
+        "selected_primary_skills": [
+          "godot-genre-shooter-fps"
+        ],
+        "expected_primary_skills": [
+          "godot-genre-shooter-fps"
+        ],
+        "specialist": "godot-dev",
+        "required_gates": [
+          "engine-version-check",
+          "project-source-wins",
+          "live-editor-verification"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "godot-particle-budget",
+        "route": "godot-particles",
+        "selected_primary_skills": [
+          "godot-particles"
+        ],
+        "expected_primary_skills": [
+          "godot-particles"
+        ],
+        "specialist": "godot-dev",
+        "required_gates": [
+          "renderer-version-check",
+          "effect-budget",
+          "reduced-effects",
+          "owner-visual-acceptance"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "godot-performance-authored-workload",
+        "route": "godot-performance",
+        "selected_primary_skills": [
+          "godot-performance-optimization"
+        ],
+        "expected_primary_skills": [
+          "godot-performance-optimization"
+        ],
+        "specialist": "godot-dev",
+        "required_gates": [
+          "authored-workload",
+          "measured-baseline",
+          "correct-renderer-build",
+          "regression-evidence"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "ui-motion-accessible",
+        "route": "motion-design",
+        "selected_primary_skills": [
+          "motion-design"
+        ],
+        "expected_primary_skills": [
+          "motion-design"
+        ],
+        "specialist": null,
+        "required_gates": [
+          "reduced-motion",
+          "semantic-state",
+          "owner-onscreen-acceptance"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "byond-mechanics-design",
+        "route": "byond-compose",
+        "selected_primary_skills": [
+          "game-designer"
+        ],
+        "expected_primary_skills": [
+          "game-designer"
+        ],
+        "specialist": "byond-dev",
+        "required_gates": [
+          "byond-rag",
+          "dream-maker",
+          "project-verification"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "cross-discipline-boss-intro",
+        "route": "cross-discipline",
+        "selected_primary_skills": [
+          "game-designer",
+          "godot-particles",
+          "motion-design"
+        ],
+        "expected_primary_skills": [
+          "game-designer",
+          "godot-particles",
+          "motion-design"
+        ],
+        "specialist": "godot-dev",
+        "required_gates": [
+          "minimum-union",
+          "renderer-version-check",
+          "reduced-motion",
+          "owner-visual-acceptance"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "godot-fps-version-conflict",
+        "route": "godot-fps",
+        "selected_primary_skills": [
+          "godot-genre-shooter-fps"
+        ],
+        "expected_primary_skills": [
+          "godot-genre-shooter-fps"
+        ],
+        "specialist": "godot-dev",
+        "required_gates": [
+          "engine-version-check",
+          "project-source-wins",
+          "conceptual-only-on-conflict",
+          "live-editor-verification"
+        ],
+        "status": "pass"
+      }
+    ],
+    "failed_cases": [],
+    "version_conflict_case": {
+      "id": "godot-fps-version-conflict",
+      "route": "godot-fps",
+      "selected_primary_skills": [
+        "godot-genre-shooter-fps"
+      ],
+      "expected_primary_skills": [
+        "godot-genre-shooter-fps"
+      ],
+      "specialist": "godot-dev",
+      "required_gates": [
+        "engine-version-check",
+        "project-source-wins",
+        "conceptual-only-on-conflict",
+        "live-editor-verification"
+      ],
+      "status": "pass"
+    },
+    "status": "pass"
+  },
+  "safety": {
+    "secret_pattern_hits": [],
+    "frontmatter_tool_expansion_hits": [],
+    "unpinned_optional_sibling_links_in_adapted_skill_markdown": 0,
+    "unchanged_upstream_code_comment_main_links": 116,
+    "code_comment_link_disposition": "Unchanged upstream comments retained for source integrity; they are not Markdown dependencies or installed authority.",
+    "reference_auto_execution_guardrail_present": true,
+    "host_same_name_mirrors": [],
+    "active_game_paths_touched": [],
+    "status": "pass"
+  }
+}
