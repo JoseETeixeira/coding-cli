@@ -2,3 +2,18 @@
 command = "C:/Users/josee/AppData/Local/Programs/Python/Python312/python.exe"
 args = ["C:/Users/josee/source/coding-cli/mnemo/run_server.py"]
 env = { QDRANT_URL = "http://127.0.0.1:1337", MNEMO_AGENT_ID = "codex" }
+
+[mcp_servers.gpt-image-2]
+command = "C:/Users/josee/AppData/Local/Programs/Python/Python312/python.exe"
+args = ["C:/Users/josee/source/coding-cli/run_gpt_image_2_server.py"]
+# Forwards the variable by NAME from the parent process. The value never
+# appears in this file.
+env_vars = ["OPENAI_API_KEY"]
+# The server imports openai + Pillow at startup, which is slower than Codex's
+# 10s default on a cold filesystem.
+startup_timeout_sec = 30
+# Load-bearing, not decorative: Codex's default per-tool timeout is 60s, and a
+# high-quality generation is documented to take up to ~2 minutes. This must sit
+# above the server's own 180s operation deadline so the server returns its
+# structured error instead of the host cutting the call off first.
+tool_timeout_sec = 240

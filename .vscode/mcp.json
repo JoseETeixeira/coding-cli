@@ -8,6 +8,11 @@
         "QDRANT_URL": "http://127.0.0.1:1337",
         "MNEMO_AGENT_ID": "copilot"
       }
+    },
+    "gpt-image-2": {
+      "type": "stdio",
+      "command": "C:/Users/josee/AppData/Local/Programs/Python/Python312/python.exe",
+      "args": ["C:/Users/josee/source/coding-cli/run_gpt_image_2_server.py"]
     }
   }
 }

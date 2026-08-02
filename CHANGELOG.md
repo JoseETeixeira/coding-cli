@@ -2,6 +2,68 @@
 
 ## 2026-08-02
 
+- Added the `gpt-image-2` capability: a canonical `skills/gpt-image-2/` workflow plus a
+  standalone stdio MCP server (`gpt_image_2/`, launched by `run_gpt_image_2_server.py`)
+  exposing `generate_image` and `edit_image` against OpenAI's direct Image API. Kept
+  separate from `mnemo` on purpose (ADR 0015): a paid, credential-bearing, large-binary
+  capability must not be able to take the shared-memory preflight down with it.
+- The model is fixed to `gpt-image-2` and no tool argument can override it. Neither tool
+  accepts a model, API key, header, endpoint, URL, file ID, overwrite flag, or
+  `input_fidelity` — the absence is the enforcement, and a test asserts it as a set
+  intersection so a future addition fails loudly.
+- Spend control is explicit: the SDK's own retry is disabled (`max_retries=0`), at most one
+  retry happens and only after an explicit `429`/`5xx` *response*, and a timeout or dropped
+  connection is never retried because that request may already have been billed. One
+  operation gets 180 seconds total, one attempt gets 150.
+- Every locally knowable rule — prompt length, size geometry, quality, count, format and
+  compression pairing, background, edit inputs, mask alpha, output paths — is checked before
+  the credential is even read, so an invalid request costs nothing.
+- Outputs are never overwritten. Images are decoded and validated in memory, written to a
+  temporary file that is `fsync`ed, then published with a create-exclusive `os.link` so a
+  collision becomes `image-2.png` rather than destroying an existing asset. The temporary
+  file is removed in a `finally` on every path.
+- `OPENAI_API_KEY` resolves from the process environment, then from the Windows per-user
+  environment store, and is wrapped in a `Secret` whose `repr`/`str`/`format` all render
+  `<Secret ***>` — so an f-string in a log line or a traceback frame cannot leak it.
+- Registered for Claude Code, Codex, and VS Code / Copilot at both repository and user
+  scope, with no credential value in any of the six files. Codex's registrations set
+  `tool_timeout_sec = 240` because its documented default is 60 s, which would otherwise
+  abort a normal high-quality generation before the server could answer.
+- Known limitation, stated rather than worked around: `gpt-image-2` does not support
+  transparent backgrounds, so `background="transparent"` fails with a clear
+  unsupported-option error instead of quietly returning an opaque image.
+- An adversarial review pass found and fixed thirteen defects in the first cut of this
+  code before it shipped. The ones worth naming:
+  - `GPT_IMAGE_2_LOG_LEVEL` went through `logging.basicConfig`, which sets the **root**
+    logger — so asking this package for DEBUG also switched on DEBUG for `openai`, whose
+    client logs full request options: the user's prompt, and for an edit the raw
+    reference-image and mask bytes, straight to stderr. The level now applies to the
+    `gpt_image_2` logger alone and `openai`/`httpx`/`httpcore` are pinned at `WARNING`
+    regardless. A lowercase or unknown value used to raise `ValueError` at import and
+    kill the server at startup; it now falls back to `WARNING`.
+  - `revised_prompt` was the one provider-controlled string relayed to the caller
+    without redaction or a length bound. It now goes through the same scrubber as every
+    other provider string.
+  - An `output_dir` that named an existing *file* passed validation, so the credential
+    was read and the image was generated and billed before the write failed. Validation
+    now walks to the nearest existing ancestor and rejects it before any spend.
+  - A 68-byte PNG declaring 60000x60000 raised `DecompressionBombError` — which derives
+    from plain `Exception` and escaped the closed error taxonomy as an `internal_error`
+    with a traceback — after forcing a huge allocation during pre-credential validation.
+    Header dimensions are now checked before decoding, and PIL failures are caught
+    broadly.
+  - A publish failure on the second of three images aborted the whole call, orphaning the
+    file already on disk and returning an error that named none of the paths the caller
+    had just paid for. Each publish is now guarded and partial success is reported.
+  - A UNC path such as `//server/share/x.png` was treated as a local file, and
+    `Path.resolve()` made Windows perform a real SMB/DNS lookup — caller-controlled
+    network I/O that stalled a paid operation for seconds. URLs and UNC paths are now
+    refused before the filesystem is touched.
+  - A short provider response (fewer images than `n`) was reported as a clean success.
+    Results now carry `provider_returned` and `complete`.
+  - The decompression-bomb catch was widened on the input path but not on the response
+    path, so a bomb in a provider payload still escaped the closed taxonomy and threw
+    away the valid, already-paid-for images alongside it. Both sides now catch broadly.
 - Fixed `mnemo.engine` resolving its canonical `context_compaction` budgeter only when the
   repository root happened to be on `sys.path`. Only `run_server.py` provided that, so every
   importer embedding mnemo as a library failed: the SessionStart preflight degraded visibly,

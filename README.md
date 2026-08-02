@@ -9,8 +9,9 @@
 - `instructions/`: shared code-pattern, review, and visual guidance
 - `prompts/`: reusable task prompts
 - `mnemo/`: the self-hosted shared-memory engine + MCP server (see `mnemo/README.md`)
+- `gpt_image_2/`: the standalone GPT Image 2 MCP server (`run_gpt_image_2_server.py` launches it)
 - `.claude-plugin/`: Claude Code source discovery manifest
-- `.codex/`, `.vscode/`: repository-scoped `mnemo` MCP configuration
+- `.codex/`, `.vscode/`: repository-scoped `mnemo` and `gpt-image-2` MCP configuration
 
 ## Memory: mnemo shared memory
 
@@ -57,6 +58,81 @@ diagnosis does not widen accepted startup behavior.
 Only Codex `0.145.0` and Claude Code `2.1.220` are currently admitted by the
 experimental adapter. Real user-level activation remains approval-gated; source
 presence is not activation.
+
+## Images: gpt-image-2
+
+A standalone stdio MCP server exposing two tools, `generate_image` and
+`edit_image`, backed by OpenAI's direct Image API with the model fixed to
+`gpt-image-2`. It is deliberately separate from `mnemo` (ADR 0015) so a paid,
+credential-bearing, large-binary capability cannot make the shared-memory
+preflight unavailable.
+
+- Agent-facing workflow: `skills/gpt-image-2/SKILL.md`
+- Server: `gpt_image_2/`, launched by `run_gpt_image_2_server.py`
+- Dependencies: `py -3.12 -m pip install -r gpt_image_2/requirements.txt`
+  (`mcp`, `openai`, `pillow`)
+
+**Cost and latency.** Every call is billed by OpenAI, is subject to OpenAI
+moderation, and can take up to about two minutes. The server allows one
+operation 180 seconds end to end, with a 150-second per-attempt timeout.
+
+**Credentials.** `OPENAI_API_KEY` is read from the server process environment
+first, then — on Windows — from the current user's persistent environment
+(`HKCU\Environment`), which is what makes it work in a host that was started
+before you ran `setx`. The value is never accepted as a tool argument and never
+appears in configuration, logs, results, or errors. Starting the server and
+listing its tools need no credential; only a generation does.
+
+**Output.** Images land in `<working-directory>/generated-images/` unless you
+pass an absolute `output_dir`. The basename is the generic `image` — never
+derived from the prompt — and files are **never overwritten**: a collision
+becomes `image-2.png`, then `image-3.png`. Results always carry every absolute
+path; one image is attached inline when it is at most 5 MiB.
+
+**Controls.** `quality` (default `high`), `size` (default `1024x1024`; `auto` or
+edges that are multiples of 16, max edge 3840, aspect at most 3:1, 655,360 to
+8,294,400 total pixels), `output_format` (`png`/`jpeg`/`webp`),
+`output_compression` (JPEG/WebP only), `n` (1 to 10), `background`
+(`auto`/`opaque`), and `moderation` (`generate_image` only).
+
+**Known limitation:** `gpt-image-2` does not support transparent backgrounds.
+`background="transparent"` fails with a clear unsupported-option error rather
+than silently returning an opaque image. API limits can drift; every constant
+lives in `gpt_image_2/constants.py` so a change is a one-file edit.
+
+**Registration and reload.** Repository adapters are in `.mcp.json`,
+`.codex/config.toml`, and `.vscode/mcp.json`; equivalent user-scope entries
+point at the canonical checkout. A host must reload MCP before the tools appear,
+and user-scope entries only resolve once this work is merged into
+`~/source/coding-cli`.
+
+Host timeouts are not uniform, and the difference matters:
+
+- **Codex** defaults `tool_timeout_sec` to **60 s**, which is below this
+  server's 180 s deadline, so the registrations set `tool_timeout_sec = 240`
+  explicitly. Without it Codex aborts normal high-quality generations.
+- **Claude Code** controls its MCP tool timeout with the client-side
+  `MCP_TOOL_TIMEOUT` environment variable (milliseconds). A `.mcp.json` entry
+  cannot set it — an `env` block there configures the *server* child, not the
+  client. Set `MCP_TOOL_TIMEOUT=240000` in Claude's own environment if you see
+  image calls time out.
+- **VS Code / Copilot** exposes no documented per-server timeout field.
+
+**Troubleshooting.** `GPT_IMAGE_2_LOG_LEVEL` (default `WARNING`) sets the level
+for the `gpt_image_2` logger only, on stderr. It deliberately does **not** touch
+the root logger or raise `openai`/`httpx` verbosity: at DEBUG the OpenAI client
+logs full request options, which for an edit includes the raw reference-image
+and mask bytes, and for any call includes the prompt. Those loggers stay pinned
+at `WARNING` whatever you set here. The value is case-insensitive and an
+unrecognised one falls back to `WARNING` rather than failing the server at
+startup.
+
+**Testing.** `py -3.12 -m pytest tests/gpt_image_2` is fully offline and spends
+nothing — the suite fails loudly if anything tries to build a real client.
+`py -3.12 tests/gpt_image_2/mcp_smoke.py` drives the real stdio server with a
+test-only fake backend. `tests/gpt_image_2/live_smoke.py` is the only script
+that spends money and refuses to run without
+`--i-understand-this-costs-money`.
 
 ## Security and operations
 

@@ -1,0 +1,20 @@
+# Dependencies for the standalone gpt-image-2 MCP server.
+# Kept separate from mnemo/requirements.txt on purpose (ADR 0015): a paid image
+# subsystem must not be able to change what the shared-memory server installs.
+
+# FastMCP stdio server, ToolAnnotations, and the Image content helper.
+# 1.10 is the floor that ships `structured_output=` on FastMCP.tool and the
+# list-flattening `_convert_to_content` this server's return shape relies on.
+mcp>=1.10.0
+
+# Image API client. 1.66 is the floor that ships `output_format`,
+# `output_compression`, and `moderation` on images.generate/edit.
+# Note: the `model` and `size` parameters are typed as closed Literals that
+# predate gpt-image-2; they are hints only and the SDK forwards both strings
+# verbatim, so this floor does not need to move for the model to work.
+openai>=1.66.0
+
+# Local image validation, mask alpha inspection, and output verification.
+# 10.0 is the floor for the modern `Image.getchannel` / `getextrema` behaviour
+# used by the mask rules.
+pillow>=10.0.0
