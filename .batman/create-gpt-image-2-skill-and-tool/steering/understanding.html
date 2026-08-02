@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPT Image 2 Skill + Tool — Phase 1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #edf4f7;
+      --surface: #f8fbfc;
+      --surface2: #e4eef2;
+      --ink: #12242d;
+      --dim: #536b76;
+      --line: rgba(16, 54, 70, .18);
+      --blue: #075985;
+      --blue-soft: rgba(7, 89, 133, .10);
+      --teal: #0f766e;
+      --teal-soft: rgba(15, 118, 110, .10);
+      --amber: #b45309;
+      --amber-soft: rgba(180, 83, 9, .10);
+      --red: #b42318;
+      --red-soft: rgba(180, 35, 24, .08);
+      --shadow: 0 18px 48px rgba(23, 54, 68, .10);
+      --font-body: "IBM Plex Sans", Segoe UI, sans-serif;
+      --font-mono: "IBM Plex Mono", Consolas, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #08171e;
+        --surface: #0d212a;
+        --surface2: #122b35;
+        --ink: #e7f3f6;
+        --dim: #9bb1ba;
+        --line: rgba(205, 231, 240, .15);
+        --blue: #63b3d8;
+        --blue-soft: rgba(99, 179, 216, .12);
+        --teal: #5ee0cd;
+        --teal-soft: rgba(94, 224, 205, .11);
+        --amber: #f4b860;
+        --amber-soft: rgba(244, 184, 96, .12);
+        --red: #ff8d83;
+        --red-soft: rgba(255, 141, 131, .10);
+        --shadow: 0 20px 64px rgba(0, 0, 0, .28);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      padding: 36px 40px 80px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      background-color: var(--bg);
+      background-image:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px);
+      background-size: 32px 32px;
+      line-height: 1.55;
+    }
+    .wrap {
+      width: min(1380px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr);
+      gap: 0 42px;
+    }
+    .main { min-width: 0; }
+    .toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      grid-row: 1 / -1;
+      padding: 14px 0;
+      max-height: calc(100dvh - 48px);
+      overflow-y: auto;
+    }
+    .toc-title {
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+      font: 600 10px/1.4 var(--font-mono);
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+    .toc a {
+      display: block;
+      margin: 2px 0;
+      padding: 6px 9px;
+      border-left: 2px solid transparent;
+      border-radius: 4px;
+      color: var(--dim);
+      font-size: 12px;
+      text-decoration: none;
+      transition: .15s ease;
+    }
+    .toc a:hover, .toc a.active {
+      color: var(--ink);
+      background: var(--blue-soft);
+      border-left-color: var(--blue);
+    }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(36px, 6vw, 72px);
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--surface) 94%, var(--blue) 6%);
+      box-shadow: var(--shadow);
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      right: -110px;
+      top: -100px;
+      border: 1px solid var(--blue);
+      border-radius: 50%;
+      opacity: .28;
+    }
+    .eyebrow, .section-label {
+      font: 600 11px/1.4 var(--font-mono);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--blue);
+    }
+    h1 {
+      max-width: 780px;
+      margin: 16px 0 18px;
+      font-size: clamp(42px, 7vw, 78px);
+      line-height: .98;
+      letter-spacing: -.045em;
+      text-wrap: balance;
+    }
+    .lead {
+      max-width: 760px;
+      margin: 0;
+      color: var(--dim);
+      font-size: clamp(17px, 1.7vw, 22px);
+    }
+    .badges { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 28px; }
+    .badge {
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      font: 500 11px/1 var(--font-mono);
+      color: var(--dim);
+    }
+    section { margin-top: 54px; scroll-margin-top: 20px; }
+    .section-head {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 20px;
+    }
+    .section-num {
+      font: 600 34px/1 var(--font-mono);
+      color: var(--blue);
+    }
+    h2 { margin: 2px 0 0; font-size: clamp(25px, 3vw, 36px); letter-spacing: -.025em; }
+    .architecture {
+      display: grid;
+      grid-template-columns: 1fr auto 1.2fr auto 1.2fr auto 1fr auto 1fr;
+      gap: 10px;
+      align-items: stretch;
+    }
+    .flow-card, .card {
+      min-width: 0;
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .flow-card { padding: 20px; }
+    .flow-card strong { display: block; margin-bottom: 7px; font-size: 15px; }
+    .flow-card code, code { font-family: var(--font-mono); color: var(--teal); overflow-wrap: anywhere; }
+    .flow-card p { margin: 0; color: var(--dim); font-size: 13px; }
+    .arrow { align-self: center; color: var(--blue); font: 600 22px/1 var(--font-mono); }
+    .gap-card { border-top: 3px solid var(--red); background: var(--red-soft); }
+    .new-card { border-top: 3px solid var(--teal); background: var(--teal-soft); }
+    .external-card { border-top: 3px solid var(--amber); background: var(--amber-soft); }
+    .grid-3 { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 16px; }
+    .grid-2 { display: grid; grid-template-columns: 1.15fr .85fr; gap: 16px; }
+    .card { padding: 24px; }
+    .card h3 { margin: 0 0 10px; font-size: 18px; }
+    .card p { margin: 0; color: var(--dim); }
+    .card ul { margin: 14px 0 0; padding-left: 19px; color: var(--dim); }
+    .card li + li { margin-top: 7px; }
+    .signal {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 8px;
+      border-radius: 50%;
+      background: var(--teal);
+    }
+    .signal.warn { background: var(--amber); }
+    .signal.block { background: var(--red); }
+    .callout {
+      padding: 18px 20px;
+      border-left: 4px solid var(--amber);
+      background: var(--amber-soft);
+      color: var(--dim);
+    }
+    .callout strong { color: var(--ink); }
+    .file-list { display: grid; gap: 8px; margin-top: 14px; }
+    .file {
+      padding: 11px 13px;
+      border-left: 3px solid var(--blue);
+      background: var(--surface2);
+      color: var(--dim);
+      font-size: 13px;
+    }
+    .file code { display: block; margin-bottom: 3px; color: var(--ink); }
+    .decision {
+      padding: 26px;
+      border: 1px solid color-mix(in srgb, var(--amber) 55%, transparent);
+      background: var(--amber-soft);
+    }
+    .decision h3 { margin: 0 0 10px; font-size: 21px; }
+    footer {
+      margin-top: 58px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      color: var(--dim);
+      font: 400 11px/1.6 var(--font-mono);
+    }
+    @media (max-width: 1120px) {
+      .architecture { grid-template-columns: 1fr; }
+      .arrow { transform: rotate(90deg); justify-self: center; }
+      .grid-3, .grid-2 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 900px) {
+      body { padding: 0 24px 64px; }
+      .wrap { grid-template-columns: 1fr; }
+      .toc {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        max-height: none;
+        margin: 0 -24px;
+        padding: 10px 24px;
+        border-bottom: 1px solid var(--line);
+        background: var(--bg);
+      }
+      .toc-title { display: none; }
+      .toc a { flex: 0 0 auto; border-left: 0; border-bottom: 2px solid transparent; }
+      .toc a:hover, .toc a.active { border-left: 0; border-bottom-color: var(--blue); }
+      .hero { margin-top: 18px; }
+      section { scroll-margin-top: 62px; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="toc" id="toc" aria-label="Page sections">
+      <div class="toc-title">Phase 1 map</div>
+      <a href="#gap" class="active">Current gap</a>
+      <a href="#boundary">System boundary</a>
+      <a href="#contract">API contract</a>
+      <a href="#surface">Change surface</a>
+      <a href="#decision">Decision</a>
+    </nav>
+
+    <main class="main">
+      <header class="hero">
+        <div class="eyebrow">Batman Phase 1 · Understanding</div>
+        <h1>One image workflow. Two layers.</h1>
+        <p class="lead">Agents need reusable judgment in a skill and authenticated execution in a local MCP tool. Current repository has neither for GPT Image 2.</p>
+        <div class="badges">
+          <span class="badge">model: gpt-image-2</span>
+          <span class="badge">generate + edit</span>
+          <span class="badge">Windows user key present</span>
+          <span class="badge">architecture change required</span>
+        </div>
+      </header>
+
+      <section id="gap">
+        <div class="section-head"><div class="section-num">01</div><div><div class="section-label">Current state</div><h2>Skill inventory has a missing capability</h2></div></div>
+        <div class="grid-3">
+          <article class="card gap-card"><h3><span class="signal block"></span>No shared image skill</h3><p>No canonical <code>gpt-image-2</code> or <code>imagegen</code> folder exists. Existing mentions describe optional host behavior, not a reusable workflow.</p></article>
+          <article class="card"><h3><span class="signal"></span>Working MCP precedent</h3><p><code>mnemo</code> proves one Python stdio server can be registered through native Claude, Codex, and Copilot adapters.</p></article>
+          <article class="card"><h3><span class="signal"></span>Credential ready</h3><p><code>OPENAI_API_KEY</code> exists in process and Windows user scope. Presence was checked without reading it into output.</p></article>
+        </div>
+      </section>
+
+      <section id="boundary">
+        <div class="section-head"><div class="section-num">02</div><div><div class="section-label">Execution map</div><h2>Reasoning stays separate from paid action</h2></div></div>
+        <div class="architecture" aria-label="Proposed system boundary, pending design approval">
+          <article class="flow-card"><strong>Agent request</strong><p>Generate, edit, mask, or iterate on an image.</p></article>
+          <div class="arrow" aria-hidden="true">→</div>
+          <article class="flow-card new-card"><strong>Skill layer</strong><p><code>skills/gpt-image-2</code><br>Prompt craft, tool choice, constraints, inspection.</p></article>
+          <div class="arrow" aria-hidden="true">→</div>
+          <article class="flow-card new-card"><strong>MCP layer</strong><p><code>generate_image</code><br><code>edit_image</code><br>Validate, authenticate, call, save, return.</p></article>
+          <div class="arrow" aria-hidden="true">→</div>
+          <article class="flow-card external-card"><strong>OpenAI Image API</strong><p><code>/images/generations</code><br><code>/images/edits</code></p></article>
+          <div class="arrow" aria-hidden="true">→</div>
+          <article class="flow-card"><strong>Local result</strong><p>File metadata plus image content when message limits allow.</p></article>
+        </div>
+      </section>
+
+      <section id="contract">
+        <div class="section-head"><div class="section-num">03</div><div><div class="section-label">Verified API facts</div><h2>GPT Image 2 has sharp boundaries</h2></div></div>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Supported</h3>
+            <ul>
+              <li>Direct generation and one-or-many-image editing.</li>
+              <li><code>png</code>, <code>jpeg</code>, and <code>webp</code> base64 outputs.</li>
+              <li><code>low</code>, <code>medium</code>, <code>high</code>, and <code>auto</code> quality.</li>
+              <li>Flexible sizes up to 3840 px per edge within pixel and aspect constraints.</li>
+              <li>Optional masks, moderation setting, compression, and multiple outputs.</li>
+            </ul>
+          </article>
+          <article class="card gap-card">
+            <h3>Must fail clearly</h3>
+            <ul>
+              <li>Transparent background requests.</li>
+              <li>Invalid size multiples, pixel count, or aspect ratio.</li>
+              <li>Bad or oversized edit inputs and mask mismatch.</li>
+              <li>Missing key or organization verification.</li>
+              <li>Moderation-blocked user errors; no blind retry.</li>
+            </ul>
+          </article>
+        </div>
+        <div class="callout" style="margin-top:16px"><strong>Operational constraint:</strong> complex prompts may take up to two minutes. Host tool timeouts must be intentionally larger than the current 60-second default.</div>
+      </section>
+
+      <section id="surface">
+        <div class="section-head"><div class="section-num">04</div><div><div class="section-label">Likely touchpoints</div><h2>Small core, several adapters</h2></div></div>
+        <div class="grid-2">
+          <article class="card">
+            <h3>New core</h3>
+            <div class="file-list">
+              <div class="file"><code>skills/gpt-image-2/</code>Trigger, workflow, metadata, tool dependency.</div>
+              <div class="file"><code>new MCP package</code>Focused API client, validators, server, entrypoint.</div>
+              <div class="file"><code>focused tests</code>Fake transport, schema, files, errors, redaction, stdio.</div>
+            </div>
+          </article>
+          <article class="card">
+            <h3>Distribution surfaces</h3>
+            <div class="file-list">
+              <div class="file"><code>.mcp.json</code>Claude-compatible registration or plugin bundle.</div>
+              <div class="file"><code>.codex/config.toml</code>Codex project adapter.</div>
+              <div class="file"><code>.vscode/mcp.json</code>Copilot adapter.</div>
+              <div class="file"><code>plugin metadata</code>Optional installable bundle boundary.</div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="decision">
+        <div class="section-head"><div class="section-num">05</div><div><div class="section-label">Grill-me checkpoint</div><h2>What does “other agents” include?</h2></div></div>
+        <div class="decision">
+          <h3>Recommended boundary</h3>
+          <p>Build a standalone local MCP server plus canonical skill, then wire the three current host adapters. Add installable Codex/ChatGPT plugin metadata only if Design proves a relocatable launcher can preserve the single canonical implementation.</p>
+          <div class="badges">
+            <span class="badge">local Claude Code</span>
+            <span class="badge">local Codex</span>
+            <span class="badge">local Copilot</span>
+            <span class="badge">plugin packaging: conditional</span>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        Source: current coding-cli checkout + OpenAI Image API, MCP, Codex image-generation, and plugin-architecture documentation fetched 2026-08-02. Canonical text artifact: understanding.md in this directory.
+      </footer>
+    </main>
+  </div>
+  <script>
+    (() => {
+      const links = [...document.querySelectorAll('.toc a')];
+      const entries = links.map(link => ({ link, target: document.querySelector(link.getAttribute('href')) })).filter(x => x.target);
+      const observer = new IntersectionObserver(events => {
+        const visible = events.find(event => event.isIntersecting);
+        if (!visible) return;
+        links.forEach(link => link.classList.remove('active'));
+        const entry = entries.find(item => item.target === visible.target);
+        if (entry) entry.link.classList.add('active');
+      }, { rootMargin: '-15% 0px -75% 0px' });
+      entries.forEach(entry => observer.observe(entry.target));
+    })();
+  </script>
+</body>
+</html>

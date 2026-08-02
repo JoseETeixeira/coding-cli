@@ -9,6 +9,12 @@
         "MNEMO_AGENT_ID": "claude-code"
       },
       "description": "mnemo: self-hosted shared agent memory (Qdrant on port 1337, OpenAI embeddings)"
+    },
+    "gpt-image-2": {
+      "type": "stdio",
+      "command": "C:/Users/josee/AppData/Local/Programs/Python/Python312/python.exe",
+      "args": ["C:/Users/josee/source/coding-cli/run_gpt_image_2_server.py"],
+      "description": "gpt-image-2: generate and edit raster images via OpenAI's Image API (paid, writes files). Reads OPENAI_API_KEY from the inherited environment; no env block, because the value must never appear in configuration."
     }
   }
 }
