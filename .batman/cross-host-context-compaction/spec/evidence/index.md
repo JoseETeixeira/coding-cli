@@ -12,13 +12,14 @@ Date: 2026-08-01
 
 | Gate | Command/evidence | Result | Label |
 |---|---|---|---|
-| Core, repository, lifecycle, adapters, contract, activation | `py -3.12 -m pytest -q tests/context_compaction mnemo/tests/test_task_context_characterization.py mnemo/tests/test_task_context_preview.py` | 183 passed in 61.69s | focused/mock |
+| Core, repository, lifecycle, adapters, contract, activation | `py -3.12 -m pytest -q tests/context_compaction mnemo/tests/test_task_context_characterization.py mnemo/tests/test_task_context_preview.py` | 186 passed in 51.22s (was 183 before the 2026-08-02 regression row below) | focused/mock |
 | Refresh 3 registry guard, activation, security, storage, docs, and workflow | focused guard/activation suite; selected security/docs gate; Ruff | 32 passed in 2.17s; 28 passed in 10.03s; Ruff clean | focused/mock |
 | Refresh 4 content-free registry diagnosis | deterministic gates plus one exact approved Claude 2.1.220 cell | 150 full-suite tests green; live guard rejected `feature_state` at 1.051s before trust/counter; exact child stop, registry preservation, two-target disable, and two-event purge passed | focused/mock plus real diagnostic; lifecycle red |
 | Frozen preservation harness | `python -m pytest -q tests/context_compaction/test_benchmark.py` | 8 passed in 34.86s; P01-P14, 12 Git objects, 28 spans, P13 zero matches; active `educode` clean | benchmark/focused |
 | Workflow/security/fault aggregate | `python -m pytest -q tests/context_compaction/test_workflow_regressions.py tests/context_compaction/test_security_faults.py tests/context_compaction/test_gates.py` | 9 passed in 3.04s | focused/mock |
 | Pre-commit safety review | focused regressions plus Ruff | 117 passed in 17.55s; Ruff clean | focused/mock; no host launch |
 | Real-Qdrant mnemo suite | `py -3.12 -m pytest -q mnemo/tests` | 48 passed in 30.83s | real service/fake embedder plus focused API |
+| mnemo library-import regression (2026-08-02) | `py -3.12 -m pytest -q tests/context_compaction`; the same `mnemo/tests` run from a neutral cwd against absolute paths; stdio smoke | 170 passed; 48 passed (was 3 collection errors); smoke PASS | focused/mock plus real integration |
 | Stdio MCP | `py -3.12 mnemo/tests/mcp_smoke.py` | write/search/task_context/get/forget passed through real stdio, OpenAI embedding, and Qdrant | real integration |
 | Local gate report | `python -m context_compaction.gates --source-root . --manifest benchmarks/context_compaction/educode-probes.v1.json --educode-repo C:\Users\josee\source\educode` | 64 cells encoded; 30 samples for each of 8 states; worst p95 0.3790 ms; no ten-turn recompact; proxy reduction 70%; manifest `cad1b4497d781010294a060552c8ae67093378ca4ccce52cf7a99a9e1f39a06f` | focused + qualified proxy |
 
@@ -41,7 +42,16 @@ latency claim.
 
 - Primary `.codex/config.toml`, `.claude/settings.json`, `hooks/hooks.json`, phase
   checkpoint hook, handoff checkpoint hook, and pointer-first handoff skill match
-  their pre-implementation SHA-256 hashes.
+  their pre-implementation SHA-256 hashes. Those hashes are now taken over
+  newline-normalized text: the repository has no `.gitattributes` and this machine uses
+  `core.autocrlf=true`, so a byte gate measured the checkout rather than the asset and
+  was already red in the main checkout on three files with identical content.
+- R12.1 (checkpoint/handoff preservation) was **not** actually held by the Task 9 gate.
+  `mnemo/mnemo/engine.py`'s bare `context_compaction` import broke every library
+  importer, silently disarming both Batman checkpoint hooks and visibly disabling the
+  SessionStart preflight. Root cause, blast radius, corruption path, and the fix are in
+  `mnemo-library-import-regression.md`. The gate excluded the defect by construction
+  (`build_context(target, None)` never reached `find_prior()`); real coverage was added.
 - Native behavior with `enabled=false` is non-blocking.
 - Partial activation/permission failure removes only newly created files/directories;
   atomic state replacement retains the last good record.
@@ -75,6 +85,16 @@ latency claim.
   and exactly two guard events were purged. Any retry or compatibility exception
   requires a superseding Design/ADR decision and approval.
   `task-10-activation-attempt.md` records all live outcomes.
+  **2026-08-02:** the field family is now identified read-only, without launching a host —
+  four `cached*` keys re-stamped by one updater writing `Date.now()` on every start whose
+  GrowthBook fetch succeeds. The guard is correct; R7.7 is unsatisfiable while that fetch
+  works. See `task-10-feature-state-identification.md`. Per owner decision, the next step is
+  the read-only `python -m context_compaction.registry_census`, not a launch: it reuses the
+  guard's own helpers, writes nothing, and its result selects between the `DISABLE_GROWTHBOOK`
+  lever and Codex-only acceptance. A fresh non-mutating Codex plan
+  `ca7082e54d7a9b50979f52810ba0ca1dffb84a5d714f5c6a8d2d27a1b44abb2f` exists and replaces the
+  consumed previews; it embeds the current worktree as `source_root` and must be regenerated
+  against `main` before any cell.
 - Task 11 Codex/Claude manual/automatic/mid-turn real-host matrix: unmeasured.
 - Credible host token/body telemetry: unmeasured; only the named 70% character proxy
   exists.

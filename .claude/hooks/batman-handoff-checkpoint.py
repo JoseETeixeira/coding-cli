@@ -32,6 +32,42 @@ WATCHED_TOOLS = ("Write", "Edit", "MultiEdit", "NotebookEdit")
 # .batman/<slug>/handoffs/<stem>.md  -- stem is the unique discriminator, e.g.
 # "task-3.gather" or "task-3.exec". Convention lives in shared-memory ->
 # Delegation handoffs; the hook only needs the stem as a tag facet.
+def repository_name(root):
+    """Repository name for `root`, following a linked worktree to its main checkout.
+
+    The directory name alone is wrong in a worktree: `coding-cli.worktrees/some-branch`
+    yielded `repo:some-branch`, orphaning every handoff from the `repo:coding-cli`
+    corpus the next session reads. Handoffs are per repository, not per worktree.
+
+    Deliberately pure file I/O -- a `git rev-parse` here would reintroduce the
+    stdin-inheritance hang that cost mnemo 31s per call. `<root>/.git` is a directory
+    in a main checkout and a file reading `gitdir: <main>/.git/worktrees/<name>` in a
+    linked worktree, which resolves both without a subprocess.
+
+    Fails soft to the directory name, which is already correct for a main checkout.
+    """
+    fallback = PurePosixPath(root.replace("\\", "/")).name
+    try:
+        dot_git = os.path.join(root, ".git")
+        if not os.path.isfile(dot_git):
+            return fallback  # directory (main checkout) or absent (not a repo)
+        with open(dot_git, encoding="utf-8") as handle:
+            head = handle.read(4096).strip()
+        if not head.startswith("gitdir:"):
+            return fallback
+        gitdir = head[len("gitdir:"):].strip()
+        if not os.path.isabs(gitdir):
+            gitdir = os.path.join(root, gitdir)
+        # <main>/.git/worktrees/<name> -> <main>/.git -> <main>
+        common = os.path.abspath(os.path.join(gitdir, os.pardir, os.pardir))
+        if os.path.basename(common).lower() != ".git":
+            return fallback
+        name = PurePosixPath(os.path.dirname(common).replace("\\", "/")).name
+        return name or fallback
+    except Exception:
+        return fallback
+
+
 ARTIFACT_RE = re.compile(
     r"(?:^|/)\.batman/(?P<slug>[^/]+)/handoffs/(?P<stem>[^/]+)\.md$",
     re.IGNORECASE,
@@ -57,7 +93,7 @@ def resolve_target(payload):
     idx = posix.lower().rfind("/.batman/")
     if idx <= 0:
         return None
-    repo = PurePosixPath(posix[:idx]).name
+    repo = repository_name(posix[:idx])
     if not repo:
         return None
 
