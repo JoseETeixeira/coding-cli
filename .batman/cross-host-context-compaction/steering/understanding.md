@@ -151,3 +151,276 @@ Reduce stale conversation context so agents use fewer tokens and answer more coh
 - Verify activation separately from repository changes: inspect effective Codex and Claude settings/hooks, trust state, tested versions, and an observable compact event.
 - Exercise an off switch and rollback without deleting source, memories, artifacts, transcripts, or user configuration.
 - Treat focused tests as functional evidence only; require a real-session pilot and user review before any wider enablement.
+
+---
+
+## Refresh 5 Draft: Version-Agnostic, Default-On Activation
+
+Status: Draft Phase 1 revalidation on 2026-08-02. This section preserves the
+previously approved understanding and records the new user direction that
+supersedes its version-admission and activation-default assumptions. Requirements,
+Design/ADR, Task Planning, implementation, and real host activation remain
+unapproved until their separate workflow gates complete.
+
+### User Goal
+
+Admit every reported Codex and Claude Code version instead of only Codex
+`0.145.0` and Claude Code `2.1.220`, and make the compaction integration wired
+and enabled in the hosts' effective configuration by default rather than present
+only as disabled source plus an explicitly enabled pilot profile or overlay.
+
+### Current Behavior
+
+#### Workflow Summary
+
+- Version admission is an exact identity check, not a capability check. The
+  adapter constant admits one version per host; activation planning refuses any
+  other reported version; lifecycle handling repeats the configured-version
+  rejection after a hook reaches the core.
+- The adapter still requires a verifiable executable/version string, trusted
+  hooks, a complete observable-tool inventory, an existing Python/hook entry,
+  repository identity, and owned-target integrity. These checks are distinct
+  from the exact-version tuple and would remain separate decision surfaces if
+  exact version admission is removed.
+- Activation is opt-in. `context-pilot enable` requires the hash of a prior
+  read-only plan, and the activation manager writes only two pilot-owned targets
+  per host. Codex uses a standalone `context-pilot.config.toml` selected by
+  `--profile context-pilot`; Claude uses an AppData settings overlay selected by
+  `--settings` plus process-local arguments and environment.
+- Primary/effective host configurations are deliberately not wired today. The
+  repository `.codex/config.toml` registers mnemo only, repository
+  `.claude/settings.json` is empty, and Claude activation tests prove the user's
+  existing `settings.json` remains byte-identical.
+- Generated host content is already enabled inside the isolated layer: Codex
+  enables hooks plus compact thresholds/output limits, and Claude writes
+  `autoCompactEnabled=true` plus five lifecycle/tool hooks. The missing behavior
+  is default discovery/use of those layers, not generation of enabled values.
+- Current documentation and executable tests actively assert the opposite
+  contract: disabled by default, exact-version refusal, no primary-config edit,
+  and no rollout-completion claim.
+
+#### Why This Evidence Answers The Question
+
+- `SUPPORTED_HOST_VERSIONS`, activation planning, hook parsing, and lifecycle
+  admission are the executable sources of truth for which versions can run.
+- `ActivationManager._targets`, its host-config generators, and the CLI's
+  plan/enable path are the executable sources of truth for what gets written,
+  where it is written, and which approval currently gates the write.
+- Repository `.codex/config.toml` and `.claude/settings.json` answer whether a
+  normal host invocation from this checkout discovers the integration by
+  default; they currently do not.
+- Activation and documentation tests answer which safety and rollout claims are
+  intentional contracts rather than incidental prose.
+
+#### Process Distinctions And Terminology
+
+- **Version-agnostic admission vs capability validation**: accepting any version
+  string removes an identity allowlist; it does not by itself prove that the host
+  still exposes compatible hooks, settings, launch flags, or event payloads.
+- **Generated enabled layer vs effective default activation**: both generated
+  isolated layers already contain enabled settings, but a normal host launch does
+  not consume them without `--profile` or `--settings` wiring.
+- **Repository config vs user config**: `.codex/config.toml` and
+  `.claude/settings.json` are tracked checkout configuration; user-level
+  `~/.codex/config.toml` and `~/.claude/settings.json` affect every matching host
+  launch. Writing either scope changes activation reach and rollback ownership.
+- **Source default vs live activation**: changing constructors, templates, or
+  tracked config makes new/default behavior possible; editing the current user's
+  effective config and observing a real host launch is a separate external-state
+  action and acceptance claim.
+
+#### Components Likely To Change And Why They Exist
+
+- `context_compaction/adapters.py` — `SUPPORTED_HOST_VERSIONS` and
+  `parse_host_event`: normalize documented host events and currently reject
+  non-baseline versions before parsing.
+- `context_compaction/activation.py` — `ActivationManager.plan`, `enable`,
+  `_targets`, `_codex_profile_content`, and `_claude_overlay_content`: inventory
+  capabilities, calculate exact owned writes, enforce approved plan identity,
+  create isolated host layers, and protect rollback.
+- `context_compaction/cli.py` — `build_parser` and `_core_from_allowlist`: expose
+  the opt-in plan/enable/run workflow and reconstruct exact baseline tuples for
+  hook execution.
+- `context_compaction/lifecycle.py` — `LifecycleCore._activation_reason`: performs
+  runtime host enablement, version, and repository checks after event parsing.
+- `.codex/config.toml` and `.claude/settings.json`: current tracked host config
+  entry points; neither activates compaction integration today.
+- `tests/context_compaction/test_activation.py`, `test_lifecycle.py`,
+  `test_adapters.py`, and `test_documentation.py`: encode exact-version refusal,
+  isolated config ownership, runtime admission, and rollout wording.
+- Approved Requirements, Design, Tasks, PRD, ADRs 0010/0013/0014, operator docs,
+  compatibility matrix, rollback guide, evidence index, README, and CHANGELOG:
+  preserve the rationale/history but must show which old decisions are
+  superseded before implementation can truthfully claim default activation.
+
+#### Execution Locations
+
+- Version discovery and the first identity refusal execute in the operator
+  process during `ActivationManager.plan`.
+- Hook-payload version refusal executes in the short-lived hook adapter process;
+  lifecycle admission repeats it inside the shared semantic core.
+- Codex default discovery reads Codex configuration; the current generated pilot
+  layer is used only when the launcher adds `--profile context-pilot`.
+- Claude default discovery reads Claude settings; the current generated pilot
+  layer is used only when the launcher adds `--settings <overlay>`.
+- Real user-level config mutation and subsequent host startup execute outside the
+  repository/test sandbox and therefore require exact target, merge, rollback,
+  and observed-host evidence even if the new product default is approved.
+
+### Likely Change Surface
+
+#### Files And Symbols
+
+- `context_compaction/adapters.py` — `SUPPORTED_HOST_VERSIONS`,
+  `parse_host_event`.
+- `context_compaction/activation.py` — `ActivationManager.plan`, `enable`,
+  `_targets`, `_codex_profile_content`, `_claude_overlay_content`,
+  `_allowlist_content`.
+- `context_compaction/cli.py` — `build_parser`, `_core_from_allowlist`,
+  `_build_plan`.
+- `context_compaction/models.py` — `HostPilotConfig.supported_versions` and
+  `PilotConfig.enabled` data contract.
+- `context_compaction/lifecycle.py` — `LifecycleCore._activation_reason`.
+- `.codex/config.toml`, `.claude/settings.json`, and any installer/update path
+  selected in Design for effective default wiring.
+
+#### Tests
+
+- Replace exact unsupported-version refusal cases with arbitrary-version
+  admission plus capability/trust/config failure cases.
+- Add normal-launch/default-discovery coverage for both host configuration
+  scopes selected in Design.
+- Preserve merge/no-clobber, ownership drift, rollback, repository allowlist,
+  untrusted-hook, uncovered-tool, malformed-event, and Claude registry-guard
+  coverage.
+- Keep reported host version bound into allowlist/event evidence so default-on
+  operation remains diagnosable across unqualified versions.
+
+#### Configuration And Infrastructure
+
+- No service or database change is implied.
+- Configuration ownership changes are required: current standalone files are not
+  effective by default. Design must choose whether tracked repository config,
+  current user-level config, an installer-managed include/merge, or a combination
+  becomes the default activation surface for each host.
+- Claude host-owned `~/.claude.json` remains distinct from settings and remains a
+  protected host registry unless a later approved ADR explicitly supersedes that
+  ownership boundary.
+
+#### Documentation
+
+- Update all opt-in/exact-version statements only after revised Requirements and
+  Design settle the new safety claims.
+- Preserve old real-host evidence as baseline-specific historical evidence; it
+  cannot qualify arbitrary future versions or prove default-on activation.
+
+### Evidence
+
+- `context_compaction/adapters.py:15-19,149-169`: exact host tuples are public
+  adapter defaults and non-members fail before hook parsing.
+- `context_compaction/activation.py:135-225`: planning verifies executable
+  identity, rejects versions outside the tuple, inventories tool coverage, and
+  generates host-specific isolated launch layers.
+- `context_compaction/activation.py:230-326`: activation is ready only after
+  checks pass; `enable` requires the matching approved plan hash and writes only
+  planned owned targets.
+- `context_compaction/activation.py:735-869`: Codex and Claude each own two
+  standalone activation targets; generated content enables compaction/hooks but
+  requires explicit profile/overlay launch selection.
+- `context_compaction/cli.py:43-105,232-299`: CLI exposes opt-in plan/enable/run;
+  hook cores reconstruct fixed baseline tuples and globally enable only the one
+  allowlisted host.
+- `context_compaction/models.py:105-124` and
+  `context_compaction/lifecycle.py:627-641`: model defaults are globally disabled,
+  host configs carry exact tuples, and runtime repeats version admission.
+- `.codex/config.toml:1-4`, `.claude/settings.json:1`, and
+  `hooks/hooks.json:1-15`: tracked config contains mnemo plus Stop-time
+  auto-improvement only; no default compaction activation is wired.
+- `tests/context_compaction/test_activation.py:286-319,412-431`: Claude's primary
+  settings are preserved by the isolated overlay, while arbitrary Codex/Claude
+  versions are explicitly expected to remain inactive.
+- `tests/context_compaction/test_documentation.py:9-45`: tests require disabled
+  defaults, real-user activation wording, source-not-activation wording, and open
+  owner acceptance.
+- `.batman/cross-host-context-compaction/spec/evidence/index.md:69-91`: Task 10
+  remains open after repeat protected Claude startup drift; any compatibility
+  exception required superseding Design/ADR approval.
+- `docs/architecture/adr/0013-semantic-guard-for-claude-host-registry.md:73-102`
+  and ADR 0014 lines 54-71: historical live starts remain rejected evidence, and
+  diagnostics do not authorize compatibility or another live run.
+- Git history: commit `195456b` introduced the pilot as one atomic architecture
+  change; current `origin/main` includes it via merge commit `9394462`.
+- Mnemo preflight, 2026-08-02: backend healthy; scoped `repo:coding-cli` recall
+  returned the approved Phase 1-4 checkpoints plus Task 10/Refresh 4 blocker
+  evidence. Memory was treated as optional data and revalidated against current
+  source and accepted artifacts.
+- Discovery queries: `rg` for the quoted README text, baseline versions,
+  `SUPPORTED_HOST_VERSIONS`, `supported_versions`, activation/config wording,
+  `feature_state`, and Task 10; focused reads of adapter, activation, CLI,
+  lifecycle, models, tests, tracked config, Requirements, Design, Tasks, ADRs,
+  operator docs, evidence index, and commit history.
+
+### Visual Recap
+
+- Path: `C:\Users\josee\.agent\diagrams\cross-host-context-compaction-understanding.html`
+- Notes: Refresh 5 recap contrasts current exact-version, opt-in isolated flow
+  with requested any-version, effective-default flow; highlights retained safety
+  gates, config ownership ambiguity, superseding decisions, and test/doc impact.
+
+### Open Question
+
+- Which concrete configuration scope must become default-on: only tracked/newly
+  generated repository configuration, or also existing global user-level Codex
+  and Claude settings during install/update? Recommended scope: installer-managed
+  merge into effective user settings plus tracked repository defaults, preserving
+  unrelated entries and keeping an owned, reversible removal record.
+
+### Risks And Constraints
+
+- Accepting every version removes evidence-backed compatibility admission.
+  Capability and payload-shape validation must carry the safety burden; version
+  labels remain evidence, not authorization.
+- Default activation broadens blast radius from one named launch to normal host
+  launches. A malformed hook or incompatible future payload can affect every
+  session using the configured scope.
+- Directly editing primary JSON/TOML creates merge, comments/format preservation,
+  concurrent-edit, ownership, downgrade, and rollback problems absent from the
+  current standalone targets.
+- The Claude `feature_state` blocker is independent of version admission.
+  Default-on wiring cannot truthfully call Claude active while ADR 0013 rejects
+  its observed startup rewrite; Design must supersede or preserve that outcome.
+- Historical baseline tests and real-host observations do not qualify unknown
+  versions. Acceptance must distinguish arbitrary-version source behavior,
+  observed current-host activation, and untested future-host compatibility.
+- Existing unrelated settings, hooks, tool permissions, credentials, trust
+  boundaries, primary registry data, and dirty work remain protected.
+
+### Architecture Change Assessment
+
+- Status: `required`
+- Reason: Request reverses two accepted architecture decisions: exact
+  evidence-bound host admission and opt-in isolated activation that never edits
+  primary config. It also changes configuration ownership, rollout blast radius,
+  failure semantics, and rollback.
+- Areas affected: adapter/lifecycle contracts, activation CLI and owned-target
+  model, Codex/Claude config discovery, installer/update behavior, Claude registry
+  compatibility decision, security tests, documentation, evidence, and real-host
+  acceptance.
+
+### Initial Verification Ideas
+
+- Parameterize arbitrary syntactically valid version strings across adapter,
+  plan, hook, and lifecycle tests; prove no exact tuple remains an admission gate.
+- Add contract probes that reject missing/incompatible required capabilities and
+  malformed payloads without using version labels as proxies.
+- In temporary homes, install/merge default config for each host, launch without
+  `--profile`/`--settings`, observe one lifecycle hook, then remove only owned
+  changes and byte/semantic-verify unrelated settings.
+- Exercise upgrades, downgrades, concurrent config changes, duplicate hook
+  registration, repeated install, repeated uninstall, partial writes, and owned
+  drift.
+- Re-run full deterministic/mnemo suites plus focused arbitrary-version and
+  default-discovery cases; label them source/mock evidence only.
+- Require separate real Codex and Claude current-host observations before calling
+  current user-level activation green; do not extrapolate those observations to
+  every future version.
