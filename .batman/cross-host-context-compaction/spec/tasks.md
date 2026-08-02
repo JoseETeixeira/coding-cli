@@ -148,6 +148,19 @@ These fourteen probes and their critical labels are fixed before any uncompacted
   - Prove the 8,000-character/2,000-estimated-token re-entry bound, 4,000-character memory-text bound, 8,000-character memory-envelope bound, newest-200 retention, and at-or-below-two-second local assembly p95.
   - Verify fresh-session handoff, Batman phase checkpoints, delegation handoffs, mnemo writes/search/get/forget, and native compaction when disabled remain available and semantically unchanged.
   - Update root/mnemo README, CHANGELOG, operator runbook, compatibility table, troubleshooting, evidence index, and rollback instructions; label focused, mocked, qualified, unmeasured, real-host, benchmark, and owner gates separately.
+  - **2026-08-02 correction — the R12.1 half of this task was not actually verified.**
+    `mnemo/mnemo/engine.py`'s bare `from context_compaction.budget import ...` (Task 2)
+    resolves only with the repository root on `sys.path`, which only `run_server.py`
+    injects. Every *library* importer therefore raised `ModuleNotFoundError`: the
+    SessionStart mnemo preflight (visibly degraded) and both Batman checkpoint hooks
+    (silently — they swallowed the ImportError, reported "No prior checkpoint exists ...
+    this is the first write", and dropped the paired `memory_forget`, leaving two live
+    `active` items per slug+phase). The gate that owned R12.1 called
+    `build_context(target, None)` and so never reached `find_prior()`, the only function
+    holding the import; its sibling gate hashed raw bytes and was already red in the main
+    checkout on CRLF alone. Fixed, red-first, with real coverage:
+    `evidence/mnemo-library-import-regression.md`. Deterministic suite 167 -> 170;
+    `mnemo/tests` from a neutral cwd 3 collection errors -> 48 passed; stdio smoke PASS.
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 6.4, 6.5, 8.1, 8.2, 8.3, 8.4, 8.5, 9.1, 9.2, 9.3, 9.4, 9.5, 11.3, 11.5, 12.1, 12.2, 12.3, 12.4, 12.5_
 
 - [ ] 10. Preview and approval-gate real user-level pilot activation.
@@ -162,6 +175,33 @@ These fourteen probes and their critical labels are fixed before any uncompacted
   - **Current Refresh 3 evidence:** the semantic guard rejected a real Claude protected-state rewrite before trust or `numStartups + 1`, then an explicitly approved unchanged retry rejected the same way at 1.054 seconds. Both attempts stopped only the exact child, preserved `.claude.json`, and completed exact disable/purge. Task 10 remains red/open.
   - **Refresh 4 evidence:** ADR 0014 diagnostics are implemented, review-clean, and deterministic-test green (150 full-suite tests). One exact owner-approved live cell rejected at 1.051 seconds with only `feature_state`, before trust or counter increment. Per-field fingerprints remained process-private; exact-child termination, registry preservation, two-target disable, and separate state purge passed. Task 10 remains red/open. Any retry, exception, or isolated-config strategy requires a superseding Design/ADR and separate approval.
   - **Post-Refresh-4 source review:** generator `0.1.1` adds per-event fail-open identity, distinct uncorrelated lifecycle sequences, repository/version-bound activation evidence, deactivation markers, strict ACL/config parsing, safe recovery-tool classification, and orphan-lock cleanup. Current deterministic suite: 183 passed; mnemo suite: 48 passed; stdio smoke: PASS; Ruff: clean. No host launch occurred, so prior `0.1.0` previews remain historical/consumed and Task 10 remains red/open.
+  - **2026-08-02 blocker identified (read-only, no host launch).** The protected field
+    family behind all three `feature_state` rejections is four `cached*` keys written by a
+    single updater that re-stamps `cachedGrowthBookFeaturesAt: Date.now()` on every start
+    whose GrowthBook fetch succeeds. A monotonic timestamp in a protected top-level field
+    cannot satisfy R7.7's "canonically semantically identical", so the guard is behaving as
+    approved and the Claude cell is unsatisfiable while that fetch works. The binary carries
+    a `DISABLE_GROWTHBOOK` env gate, but it is **not** proven to gate that path, and
+    `changelogLastFetched`, `closedIssuesLastChecked`, `routineFiredWatermark`, and
+    `firstStartTime` sit in `protected_top_level` with their own timestamped writers.
+    Full analysis: `evidence/task-10-feature-state-identification.md`.
+  - **Owner decision 2026-08-02: read-only census before any launch.** Implemented as
+    `python -m context_compaction.registry_census` — reuses the guard's own helpers, writes
+    nothing, launches nothing, owner drives the host. Runbook in the same evidence file.
+    Its outcome selects between the env-lever path and Codex-only acceptance. No exemption,
+    activation change, or live cell is authorized by this step.
+  - **Fresh Codex plan (read-only, 2026-08-02).** Prior previews are consumed and baked a
+    deleted worktree path. New plan `ca7082e54d7a9b50979f52810ba0ca1dffb84a5d714f5c6a8d2d27a1b44abb2f`
+    against pinned Codex 0.145.0 (`83751f15...eb6c`, verified), isolated
+    `educode.context-pilot` at `0db30624dd32d814b937aa88b5ec84e18d4b130d`, task slug
+    `agentic-development-workbench`, 15 observable tools, exactly two create mutations,
+    `state=inactive`, `degraded_reasons=["inactive_or_untrusted_hook"]` (normal until the
+    interactive `/hooks` trust flow). Verified non-mutating: all four activation targets
+    absent, state directory empty, primary `config.toml` still `7f0ee467...8178` and
+    `settings.json` still `fc4451db...fdaa`.
+    **This plan embeds `source_root` = the current worktree.** Land the 2026-08-02 fixes on
+    `main` and re-plan with `--source-root C:/Users/josee/source/coding-cli` before any
+    cell, or it goes stale the same way the previous previews did.
   - _Requirements: 3.2, 3.3, 3.4, 3.5, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 8.4, 8.5, 8.6, 9.1, 9.2, 9.3, 9.4, 9.5, 12.4, 12.5_
 
 - [ ] 11. Execute and qualify the real-host compaction matrix.

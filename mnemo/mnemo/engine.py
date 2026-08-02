@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 import time
 import uuid
 from datetime import datetime, timezone
@@ -25,10 +26,24 @@ from typing import Any, Iterable
 from qdrant_client import QdrantClient
 from qdrant_client import models as qm
 
-from context_compaction.budget import truncate_text
-
 from .config import Config
 from .embedders import Embedder, make_embedder
+
+# `context_compaction` is the one canonical budgeter (ADR 0012) and lives at the
+# repository root, a level above this package. `run_server.py` puts that root on the
+# path for the MCP server, but importers that embed mnemo as a *library* -- the
+# SessionStart preflight and both Batman checkpoint hooks -- add only `<repo>/mnemo`,
+# so they raised ModuleNotFoundError and silently lost their checkpoint provenance.
+# Resolve it from this file instead, so any entrypoint works from any directory.
+#
+# Appended, never inserted at 0: entrypoints own their process and may shadow, a
+# library may not. The repository root also holds `tests/`, `hooks/`, and `docs/`,
+# and this module gets imported into host hook processes we do not own.
+_REPOSITORY_ROOT = str(Path(__file__).resolve().parents[2])
+if _REPOSITORY_ROOT not in sys.path:
+    sys.path.append(_REPOSITORY_ROOT)
+
+from context_compaction.budget import truncate_text  # noqa: E402
 
 NO_EXPIRY_TS = 4102444800.0  # 2100-01-01, sentinel for "never expires"
 TRUST_CLASSES = ("observed", "inferred", "summarized", "imagined")

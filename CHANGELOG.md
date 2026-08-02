@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-08-02
+
+- Fixed `mnemo.engine` resolving its canonical `context_compaction` budgeter only when the
+  repository root happened to be on `sys.path`. Only `run_server.py` provided that, so every
+  importer embedding mnemo as a library failed: the SessionStart preflight degraded visibly,
+  and both Batman checkpoint hooks failed silently — they swallowed the `ImportError`, then
+  claimed no prior checkpoint existed and dropped the paired `memory_forget`, leaving two live
+  `active` items per slug and phase. The root is now resolved from `__file__`, and appended
+  rather than inserted, so a library never shadows a host process's own modules.
+- Added the regression that reproduces the hooks' real resolution environment (subprocess
+  under `-P`, only `<repo>/mnemo` on the path) plus coverage for the supersede branch the
+  swallowed error skipped. The protected-asset gate now hashes newline-normalized text, so it
+  measures the asset instead of the checkout's line endings.
+- Fixed both Batman checkpoint hooks deriving their mnemo namespace from the directory
+  name, so any linked worktree wrote to `repo:<branch-dir>` and orphaned its checkpoints
+  from the repository corpus the next session reads back. They now follow `.git` to the
+  main checkout with pure file I/O, preserving the deliberate no-subprocess constraint,
+  and fail soft to the directory name. The pilot's byte-identity gate for these assets is
+  re-baselined with the reason recorded inline.
+- Added `python -m context_compaction.registry_census`: a read-only drift census that
+  reuses the ADR 0013 guard's own fingerprint helpers to report which protected registry
+  fields move during a natively started Claude session. It writes nothing, launches
+  nothing, and activates nothing.
+- Identified the Claude 2.1.220 startup rewrite behind three `feature_state` rejections,
+  read-only and without launching a host: one updater re-stamps four `cached*` GrowthBook and
+  experiment fields with `Date.now()` on every successful remote flag fetch. The guard is
+  behaving as approved. No exemption, env lever, or activation change was made — Task 10
+  stays red/open pending an owner decision.
+
 ## 2026-08-01
 
 - Added a disabled-by-default, cross-host native context-compaction pilot for

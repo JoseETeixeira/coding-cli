@@ -33,6 +33,12 @@ Change the default `task_context` serialization contract to version 2:
 - Phase checkpoints and handoffs remain discoverable by ID/path, matching their existing artifact-plus-pointer design.
 - No Qdrant collection or event-log migration is required; only server serialization, configuration, guidance, and tests change.
 - Operators can tune budgets by validated configuration, but acceptance is against the approved defaults.
+- Sharing one canonical budgeter makes `mnemo.engine` depend on `context_compaction`,
+  which lives a level above it at the repository root. `mnemo` must therefore resolve
+  that root itself rather than relying on an entrypoint to inject it: it is embedded as
+  a **library** by the SessionStart preflight and both Batman checkpoint hooks, not only
+  by `run_server.py`. Regression evidence and the appended-not-inserted path rule are in
+  `.batman/cross-host-context-compaction/spec/evidence/mnemo-library-import-regression.md`.
 
 ## Rollout and rollback
 
