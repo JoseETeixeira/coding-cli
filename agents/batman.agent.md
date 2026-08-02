@@ -8,6 +8,8 @@ tools: [read, search, execute, edit, agent]
 
 Route every repository task through `skills/generic-entry/SKILL.md`.
 
+After a native compact-sourced continuation, load `skills/context-compaction/SKILL.md` before material work.
+
 When a task involves BYOND or `.dme`, `.dm`, `.dmm`, `.dmf`, or `.dms` files, also read and follow `skills/byond-projects/SKILL.md` as a conditional task skill before BYOND analysis or changes. It does not replace the generic entry.
 
 When a task materially concerns game mechanics, gameplay systems, engine code, game assets, 3D production, VFX, performance, or game UI motion, also read and follow `skills/gamedev-workflow/SKILL.md`. It composes with the generic entry and the matching project specialist; it replaces neither.

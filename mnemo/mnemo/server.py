@@ -230,9 +230,11 @@ def memory_search(
 
 @mcp.tool()
 async def task_context(task: str, query: str = "", namespace: str = "", top_k: int = 8, ctx: Context = None) -> dict:
-    """Scoped, compact memory recall for a task — the shared-memory preflight before
-    analysis, planning, implementation, or review. Continue safely from current
-    source evidence when nothing relevant is returned.
+    """Scoped, bounded memory previews for the shared-memory preflight.
+
+    Ranked text is capped before serialization. Use memory_get(memory_id) for an
+    exact authorized record when a preview reports memory_get_required=true.
+    Continue safely from current source evidence when nothing relevant is returned.
 
     Also kicks off a background refresh of this repository's code index, so
     `code_search` is warm by the time you need it."""
@@ -248,9 +250,9 @@ async def task_context(task: str, query: str = "", namespace: str = "", top_k: i
 
 @mcp.tool()
 def memory_get(memory_id: str) -> dict:
-    """Fetch a single memory item by id."""
-    item = engine().get(memory_id)
-    return item or {"error": f"memory_id '{memory_id}' not found"}
+    """Fetch one full authorized, live memory item by id."""
+    item = engine().get(memory_id, reader=cfg.agent_id)
+    return item or {"error": "memory_not_found"}
 
 
 @mcp.tool()

@@ -1,0 +1,8 @@
+{
+  "session_id": "claude-session-redacted",
+  "transcript_path": null,
+  "cwd": "__REPO__",
+  "hook_event_name": "PreCompact",
+  "permission_mode": "default",
+  "trigger": "auto"
+}

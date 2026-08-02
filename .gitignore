@@ -1,6 +1,8 @@
 dist/
 Lib/site-packages/
 
+# Python bytecode caches are local build artifacts.
+**/__pycache__/
+
 # mnemo shared-memory: local event log (data dir is ~/.mnemo, outside the repo)
-mnemo/**/__pycache__/
 mnemo/.venv/

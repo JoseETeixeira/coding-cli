@@ -1,0 +1,12 @@
+{
+  "session_id": "codex-session-redacted",
+  "transcript_path": null,
+  "cwd": "__REPO__",
+  "hook_event_name": "PreToolUse",
+  "model": "gpt-5.6",
+  "turn_id": "turn-19",
+  "permission_mode": "default",
+  "tool_name": "mcp__filesystem__read_file",
+  "tool_use_id": "tool-read-1",
+  "tool_input": {"path": "src/current.py"}
+}

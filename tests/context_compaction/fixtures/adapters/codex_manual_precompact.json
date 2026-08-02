@@ -1,0 +1,9 @@
+{
+  "session_id": "codex-session-redacted",
+  "transcript_path": "Z:/must-not-open/codex-rollout.jsonl",
+  "cwd": "__REPO__",
+  "hook_event_name": "PreCompact",
+  "model": "gpt-5.6",
+  "turn_id": "turn-17",
+  "trigger": "manual"
+}

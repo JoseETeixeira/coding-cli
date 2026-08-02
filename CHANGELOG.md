@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-08-01
+
+- Added a disabled-by-default, cross-host native context-compaction pilot for
+  Codex and Claude Code with one canonical policy, bounded source-backed
+  re-entry, metadata-only action recovery, exact-version activation refusal,
+  isolated profile/overlay generation, pilot-local disablement of hosted Codex
+  surfaces outside hook coverage, and owned rollback.
+- Changed mnemo `task_context` to a versioned, bounded preview envelope while
+  retaining its legacy top-level field and adding ACL-aware `memory_get` for
+  exact authorized retrieval and ACL-safe revocation.
+- Added the frozen `educode` P01–P14 preservation manifest, disposable-worktree
+  dirty-state fixture, qualified savings and anti-thrashing harness, security
+  fault injection, and content-free deterministic gate reporting.
+- Added ADR 0013's Claude host-registry guard: content-free semantic manifests,
+  exact-child monitoring, allowlisted working directory, `host_registry_drift`,
+  and no pilot write/revert of `.claude.json`.
+- Added ADR 0014's content-free Claude registry diagnostics: per-protected-field
+  fingerprints stay inside the live guard process, while rejected events/status
+  expose only sorted closed field-family categories. An exact owner-approved
+  live cell localized the protected startup rewrite to `feature_state`, stopped
+  the exact child, preserved the registry, and completed exact disable/purge; no
+  registry exception was added.
+- Recorded a real Claude 2.1.220 guarded-startup rejection: bootstrap changed
+  protected semantics before trust/counter increment, the exact child
+  stopped, the registry was preserved, and owned activation/state rolled back.
+- No real user Codex or Claude Code configuration is enabled by these source
+  changes. Activation, real-host measurements, wider rollout, and owner
+  acceptance remain separate explicit gates.
+- Hardened the source-only pilot after final review: per-event hook commands
+  guarantee PreCompact failure stays fail-open, uncorrelated Claude lifecycle
+  invocations remain distinct, activation evidence is repository/version-bound,
+  disable records a non-destructive deactivation marker, ACL defaults fail
+  closed, and orphaned process locks are purged. Generator version is `0.1.1`;
+  prior historical activation previews remain consumed evidence, not reusable
+  launch approval.
+
 ## 2026-07-14
 
 - Added shared `byond-projects` guidance plus thin Codex, Claude, and execution-prompt pointers, requiring BYOND documentation evidence, DM compatibility, Dream Maker compilation, and Dragon Ball Universe safeguards (user directive 2026-07-14).
