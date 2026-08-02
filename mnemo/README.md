@@ -56,6 +56,9 @@ env = { QDRANT_URL = "http://127.0.0.1:1337", MNEMO_AGENT_ID = "codex", MNEMO_DA
 | `MNEMO_AGENT_ID` | `unknown-agent` | writer/reader identity |
 | `MNEMO_DEFAULT_NAMESPACE` | `global` | namespace when none passed |
 | `MNEMO_REDACT` | `1` | redact emails/keys/tokens on write |
+| `MNEMO_TASK_CONTEXT_MAX_TEXT_CHARS` | `4000` | aggregate preview-text budget |
+| `MNEMO_TASK_CONTEXT_ITEM_PREVIEW_CHARS` | `500` | per-record preview budget |
+| `MNEMO_TASK_CONTEXT_RESPONSE_MAX_CHARS` | `8000` | hard pretty-serialized response envelope |
 | `OPENAI_API_KEY` | — | required |
 
 ## MCP tools
@@ -63,13 +66,22 @@ env = { QDRANT_URL = "http://127.0.0.1:1337", MNEMO_AGENT_ID = "codex", MNEMO_DA
 | tool | purpose |
 |---|---|
 | `memory_status` | backend health + config + count (preflight) |
-| `task_context` | scoped, compact recall for a task (preflight before analysis/planning/impl/review) |
+| `task_context` | ranked bounded previews for a task; reports budgets, omissions, and truncation |
 | `memory_write` | write a durable, shared memory item |
 | `memory_search` | semantic search (excludes revoked/expired, respects ACLs) |
-| `memory_get` | fetch one item by id |
+| `memory_get` | fetch one full authorized live item by id when exact text is needed |
 | `memory_list` | recent items in a namespace |
 | `memory_forget` | soft-revoke (append revocation event; never hard-delete) |
 | `memory_stats` | counts overall or per namespace |
+
+`task_context` contract version 2 intentionally returns ranked previews rather
+than every selected full body. The legacy top-level `memory` field remains, but
+its `text` values are bounded previews. Use the returned `memory_id` with
+`memory_get` for one exact authorized live record. Reader ACL, namespace,
+revocation, expiry, and redaction checks run before either preview or exact
+retrieval. Unauthorized exact retrieval and revocation both return the same
+content-free not-found result. This bounded response supports the opt-in native-compaction pilot but
+does not enable it, change memory authority, or replace source revalidation.
 
 ## Tests
 

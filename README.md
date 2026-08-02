@@ -30,6 +30,34 @@ Every task begins with the canonical entry agent (`agents/batman.agent.md`), whi
 - Codex (`~/.codex/AGENTS.md` + `~/.codex/config.toml`)
 - VS Code / Copilot (User `prompts/` + `mcp.json`)
 
+## Opt-in context compaction pilot
+
+The repository now contains a disabled-by-default Codex + Claude Code pilot that
+lets each host keep ownership of native compaction while rebuilding a bounded,
+source-backed continuation envelope. It does not delete transcripts or memory,
+does not replace fresh-session handoff, and does not edit either host's primary
+configuration.
+
+Claude's host-owned `.claude.json` is never a pilot write or rollback target.
+During the approved first-trust cycle, a content-free semantic guard permits only
+the normal startup counter increment and exact allowlisted project trust entry;
+all unrelated semantic drift stops the exact Claude child without reverting the
+file. Rejected protected drift is compared with process-private field
+fingerprints; persisted diagnostics contain only sorted categories from a closed
+seven-value vocabulary, never raw names, values, or per-field hashes. This
+diagnosis does not widen accepted startup behavior.
+
+- Canonical policy: `skills/context-compaction/SKILL.md` and
+  `prompts/context-compaction.prompt.md`
+- Operator commands: `py -3.12 -m context_compaction --help`
+- Runbook and rollback: `docs/context-compaction/README.md`
+- Compatibility and evidence: `docs/context-compaction/compatibility.md` and
+  `.batman/cross-host-context-compaction/spec/evidence/index.md`
+
+Only Codex `0.145.0` and Claude Code `2.1.220` are currently admitted by the
+experimental adapter. Real user-level activation remains approval-gated; source
+presence is not activation.
+
 ## Security and operations
 
 - Do not store secrets/tokens in memory; a redactor runs on every write.

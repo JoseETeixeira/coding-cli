@@ -7,7 +7,10 @@ root to sys.path so it runs from any working directory.
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+MNEMO_ROOT = os.path.dirname(os.path.abspath(__file__))
+REPOSITORY_ROOT = os.path.dirname(MNEMO_ROOT)
+sys.path.insert(0, REPOSITORY_ROOT)
+sys.path.insert(0, MNEMO_ROOT)
 
 from mnemo.server import main  # noqa: E402
 

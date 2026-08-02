@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "workload": {
+    "name": "educode-agentic-development-workbench",
+    "frozen_commit": "0db30624dd32d814b937aa88b5ec84e18d4b130d"
+  },
+  "probes": [
+    {
+      "id": "P01",
+      "critical": true,
+      "question": "Which implementation phase is the Agentic Development Workbench in, and which verification or acceptance work remains open?",
+      "expected_answer": "Phase 5 implementation is in progress. Performance Task 20.5, full-suite Task 23.1, and owner-acceptance Task 23.6 remain unchecked; focused compile or test evidence does not close those gates.",
+      "required_concepts": [["phase 5"], ["implementation is in progress", "implementation in progress"], ["20.5"], ["23.1"], ["23.6"], ["remain unchecked", "remain open"], ["focused"], ["does not close"]],
+      "allowed_exact_codes": [],
+      "contradiction_terms": ["phase 5 is complete", "all release gates are green", "owner acceptance passed"],
+      "authorities": [
+        {"path": ".batman/agentic-development-workbench/spec/tasks.md", "blob_oid": "83c94b7d4517dbb54c61536bdf223e314e875717", "start_line": 3, "end_line": 3, "anchors": ["Phase 5 implementation in progress"]},
+        {"path": ".batman/agentic-development-workbench/spec/tasks.md", "blob_oid": "83c94b7d4517dbb54c61536bdf223e314e875717", "start_line": 245, "end_line": 245, "anchors": ["owner acceptance remain open"]},
+        {"path": ".batman/agentic-development-workbench/spec/tasks.md", "blob_oid": "83c94b7d4517dbb54c61536bdf223e314e875717", "start_line": 254, "end_line": 254, "anchors": ["20.5 Meet the design's queue-render"]},
+        {"path": ".batman/agentic-development-workbench/spec/tasks.md", "blob_oid": "83c94b7d4517dbb54c61536bdf223e314e875717", "start_line": 284, "end_line": 284, "anchors": ["23.1 Run all focused unit"]},
+        {"path": ".batman/agentic-development-workbench/spec/tasks.md", "blob_oid": "83c94b7d4517dbb54c61536bdf223e314e875717", "start_line": 289, "end_line": 289, "anchors": ["23.6 Obtain owner acceptance"]}
+      ],
+      "negative_assertion": null
+    },
+    {
+      "id": "P02",
+      "critical": true,
+      "question": "May a newly discovered change to an authority boundary, credential location, write path, relay payload, dependency direction, or user-visible contract proceed immediately?",
+      "expected_answer": "No. It requires a superseding ADR and renewed approval before implementation continues.",
+      "required_concepts": [["no"], ["superseding adr"], ["renewed approval"]],
+      "allowed_exact_codes": [],
+      "contradiction_terms": ["proceed immediately", "no approval required"],
+      "authorities": [
+        {"path": ".batman/agentic-development-workbench/spec/tasks.md", "blob_oid": "83c94b7d4517dbb54c61536bdf223e314e875717", "start_line": 300, "end_line": 300, "anchors": ["requires a superseding ADR and renewed approval"]}
+      ],
+      "negative_assertion": null
+    },
+    {
+      "id": "P03",
+      "critical": true,
+      "question": "What identifies an AgentExecutionTarget, and what happens when its source, account, capability, model, or mode is stale?",
+      "expected_answer": "The closed target carries provider, session type, provider mode, usage source, account, model selection, and capability revision. Resolution returns explicit unresolved or blocked error codes rather than silently substituting a target.",
+      "required_concepts": [["provider"], ["session type"], ["provider mode"], ["usage source"], ["account"], ["model"], ["capability revision"], ["unresolved"], ["blocked"], ["error code"], ["rather than silently substituting", "no silent substitution"]],
+      "allowed_exact_codes": ["TARGET_SOURCE_REMOVED", "TARGET_SESSION_TYPE_MISMATCH", "TARGET_ACCOUNT_MISMATCH", "TARGET_CAPABILITY_STALE", "TARGET_MODEL_REMOVED", "TARGET_MODE_UNSUPPORTED", "TARGET_SIGNED_OUT", "TARGET_QUOTA_LIMITED", "TARGET_RATE_LIMITED", "TARGET_NOT_ENTITLED", "TARGET_PROVIDER_ERROR", "TARGET_SWITCHING", "TARGET_UNAVAILABLE", "TARGET_UNATTENDED_UNSUPPORTED"],
+      "contradiction_terms": ["silently falls back", "silently substitutes"],
+      "authorities": [
+        {"path": "src/vs/platform/agenticRuntime/common/executionTarget.ts", "blob_oid": "407bddf7e7c5c3007161a76335f18fe176add10c", "start_line": 148, "end_line": 188, "anchors": ["export interface AgentExecutionTarget", "readonly capabilityRevision: string"]},
+        {"path": "src/vs/platform/agenticRuntime/common/executionTarget.ts", "blob_oid": "407bddf7e7c5c3007161a76335f18fe176add10c", "start_line": 207, "end_line": 281, "anchors": ["export type ExecutionTargetErrorCode", "return { state: 'unresolved'", "return { state: 'blocked'"]}
+      ],
+      "negative_assertion": null
+    },
+    {
+      "id": "P04",
+      "critical": true,
+      "question": "What binds a provider request, tool call, broker apply, or external effect to runtime authority?",
+      "expected_answer": "An opaque capability binds runtime instance and boot epoch, Agent Host authority, participant, attempt, exact target digest, credential revision, request kind and request identity, sequence, issuance, and expiry. Dispatch retains the target snapshot and credential revision.",
+      "required_concepts": [["runtime instance"], ["boot epoch"], ["agent host authority"], ["participant"], ["attempt"], ["target digest"], ["credential revision"], ["request kind"], ["request identity"], ["sequence"], ["issued", "issuance"], ["expiry", "expires"], ["target snapshot"]],
+      "allowed_exact_codes": [],
+      "contradiction_terms": ["unbound capability", "current target is substituted"],
+      "authorities": [
+        {"path": "src/vs/platform/agenticRuntime/common/executionTarget.ts", "blob_oid": "407bddf7e7c5c3007161a76335f18fe176add10c", "start_line": 365, "end_line": 391, "anchors": ["export interface AgentExecutionCapabilityBinding", "readonly targetSnapshot: AgentExecutionTarget", "readonly credentialRevision: string"]}
+      ],
+      "negative_assertion": null
+    },
+    {
+      "id": "P05",
+      "critical": false,
+      "question": "How do exact duplicate task intents differ from potential overlaps?",
+      "expected_answer": "An exact duplicate returns the existing intent with created=false. A potential overlap creates proposed state, or unattended needsInput state, and permits only Join Existing, Start Separately, or Cancel resolution.",
+      "required_concepts": [["exact duplicate"], ["created=false", "created false"], ["potential overlap"], ["proposed"], ["needsinput", "needs input"], ["join existing"], ["start separately"], ["cancel"]],
+      "allowed_exact_codes": [],
+      "contradiction_terms": ["automatically merges overlaps", "always creates a duplicate"],
+      "authorities": [
+        {"path": "src/vs/platform/agenticRuntime/node/taskIntentCoordinator.ts", "blob_oid": "67c756acb05e1abe69ef9d47e43206828b47a0b2", "start_line": 88, "end_line": 178, "anchors": ["classification.kind === 'exactDuplicate'", "created: false as const", "action: 'startSeparately' | 'joinExisting' | 'cancel'"]}
+      ],
+      "negative_assertion": null
+    },
+    {
+      "id": "P06",
+      "critical": true,
+      "question": "How is canonical write eligibility ordered, and how is a stale claimant rejected?",
+      "expected_answer": "Requests receive a repository-local enqueue sequence. Eligible non-conflicting requests are granted in that order, each grant receives a new fencing epoch and lease nonce, and stale state raises WRITE_CLAIM_STALE_FENCE.",
+      "required_concepts": [["repository-local", "repository local"], ["enqueue sequence"], ["eligible"], ["non-conflicting", "nonconflicting"], ["fencing epoch", "fence"], ["lease nonce"], ["WRITE_CLAIM_STALE_FENCE"]],
+      "allowed_exact_codes": ["WRITE_CLAIM_REQUEST_ID_CONFLICT", "WRITE_CLAIM_STALE_FENCE", "WRITE_CLAIM_NOT_FOUND"],
+      "contradiction_terms": ["last writer wins", "no fencing"],
+      "authorities": [
+        {"path": "src/vs/platform/agenticRuntime/node/writeClaimCoordinator.ts", "blob_oid": "7b4c50f65503215287bf82decbafb3e21f0f773b", "start_line": 45, "end_line": 61, "anchors": ["const enqueueSequence", "this.grantEligible"]},
+        {"path": "src/vs/platform/agenticRuntime/node/writeClaimCoordinator.ts", "blob_oid": "7b4c50f65503215287bf82decbafb3e21f0f773b", "start_line": 192, "end_line": 219, "anchors": ["sort((left, right) => left.enqueueSequence", "fencingEpoch: fence", "leaseNonce:"]},
+        {"path": "src/vs/platform/agenticRuntime/node/writeClaimCoordinator.ts", "blob_oid": "7b4c50f65503215287bf82decbafb3e21f0f773b", "start_line": 286, "end_line": 290, "anchors": ["WRITE_CLAIM_STALE_FENCE"]}
+      ],
+      "negative_assertion": null
+    },
+    {
+      "id": "P07",
+      "critical": true,
+      "question": "Can a Write Broker capability be reused, and what does crash recovery do to prepared or applying journals?",
+      "expected_answer": "No. Capabilities are one-use and bound to plan digest, fence, nonce, and claim. Replay raises WRITE_BROKER_CAPABILITY_INVALID_OR_REPLAYED. Recovery rolls prepared or applying work back, and rollback failure quarantines the journal.",
+      "required_concepts": [["one-use", "one use"], ["plan digest"], ["fence", "fencing"], ["nonce"], ["WRITE_BROKER_CAPABILITY_INVALID_OR_REPLAYED"], ["prepared"], ["applying"], ["rolls", "rollback", "rolled back"], ["quarantine"]],
+      "allowed_exact_codes": ["WRITE_BROKER_PLAN_OUTSIDE_CLAIM", "WRITE_BROKER_CAPABILITY_INVALID_OR_REPLAYED", "WRITE_BROKER_CAPABILITY_EXPIRED", "WRITE_BROKER_SOURCE_DIGEST_STALE", "WRITE_BROKER_CRASH_RECOVERY", "WRITE_BROKER_ROLLBACK_QUARANTINED"],
+      "contradiction_terms": ["capability may be reused", "blindly reapplies"],
+      "authorities": [
+        {"path": "src/vs/platform/agenticRuntime/node/writeBroker.ts", "blob_oid": "252232873b44ab9f4d454e3804e86c71a8555157", "start_line": 59, "end_line": 95, "anchors": ["consumed: false", "WRITE_BROKER_CAPABILITY_INVALID_OR_REPLAYED", "record.consumed = true"]},
+        {"path": "src/vs/platform/agenticRuntime/node/writeBroker.ts", "blob_oid": "252232873b44ab9f4d454e3804e86c71a8555157", "start_line": 141, "end_line": 195, "anchors": ["journal.state === 'applying'", "journal.state === 'prepared'", "this.rollback"]},
+        {"path": "src/vs/platform/agenticRuntime/node/writeBroker.ts", "blob_oid": "252232873b44ab9f4d454e3804e86c71a8555157", "start_line": 243, "end_line": 265, "anchors": ["journal.state = 'quarantined'", "WRITE_BROKER_ROLLBACK_QUARANTINED"]}
+      ],
+      "negative_assertion": null
+    },
+    {
+      "id": "P08",
+      "critical": true,
+      "question": "What exact code and message appear when a runtime idempotency key is reused with another digest, and what do committed repeats or accepted crash markers do?",
+      "expected_answer": "The exact code is RUNTIME_COMMAND_DIGEST_CONFLICT and the exact message is Runtime idempotency key was reused with another digest. A committed repeat returns the stored receipt; an accepted crash marker is incomplete and raises RUNTIME_COMMAND_INCOMPLETE.",
+      "required_concepts": [["RUNTIME_COMMAND_DIGEST_CONFLICT"], ["Runtime idempotency key was reused with another digest"], ["committed repeat"], ["stored receipt"], ["accepted crash marker"], ["incomplete"], ["RUNTIME_COMMAND_INCOMPLETE"]],
+      "allowed_exact_codes": ["RUNTIME_COMMAND_DIGEST_CONFLICT", "RUNTIME_COMMAND_INCOMPLETE", "RUNTIME_DATABASE_CORRUPT", "RUNTIME_COMMAND_FAILED"],
+      "contradiction_terms": ["silently accepts another digest", "automatically retries an incomplete marker"],
+      "authorities": [
+        {"path": "src/vs/platform/agenticRuntime/node/runtimeDatabase.ts", "blob_oid": "3b4e343e009f25ffdce033e681dedf5607a4c6eb", "start_line": 1291, "end_line": 1382, "anchors": ["RUNTIME_COMMAND_DIGEST_CONFLICT", "Runtime idempotency key was reused with another digest", "RUNTIME_COMMAND_INCOMPLETE", "return result"]}
+      ],
+      "negative_assertion": null
+    },
+    {
+      "id": "P09",
+      "critical": true,
+      "question": "Where do reusable credentials live, and what does secure-storage failure permit?",
+      "expected_answer": "Plaintext is opened only in memory, stored through the credential broker under an alias, and buffers are zeroed. SQLite retains alias and account digests rather than tokens. Degraded secure storage disables durable secret persistence and IDE-closed execution.",
+      "required_concepts": [["plaintext"], ["only in memory"], ["credential broker"], ["alias"], ["zeroed", "fill(0)"], ["digest"], ["rather than tokens", "not tokens"], ["durable secret persistence"], ["ide-closed execution", "ide closed execution"], ["disabled", "disables", "false"]],
+      "allowed_exact_codes": [],
+      "contradiction_terms": ["sqlite stores plaintext tokens", "ide-closed execution remains enabled"],
+      "authorities": [
+        {"path": "src/vs/platform/agenticRuntime/node/credentialInstallService.ts", "blob_oid": "6fbdca7bf15a96756d4c2e63c66063ab911692db", "start_line": 82, "end_line": 110, "anchors": ["keyring_alias_digest: sha256(alias)", "provider_account_digest: null"]},
+        {"path": "src/vs/platform/agenticRuntime/node/credentialInstallService.ts", "blob_oid": "6fbdca7bf15a96756d4c2e63c66063ab911692db", "start_line": 137, "end_line": 212, "anchors": ["openOAuthBundle", "credentialBroker.store", "keyringPayload.fill(0)", "plaintext.fill(0)"]},
+        {"path": "src/vs/platform/agenticRuntime/node/credentialInstallService.ts", "blob_oid": "6fbdca7bf15a96756d4c2e63c66063ab911692db", "start_line": 262, "end_line": 277, "anchors": ["durableSecretPersistence: false", "ideClosedExecution: false"]}
+      ],
+      "negative_assertion": null
+    },
+    {
+      "id": "P10",
+      "critical": false,
+      "question": "Does route lookup or JSON-derived routing occur before Relay provider verification?",
+      "expected_answer": "No. Body bounds and provider verification occur before route resolution, and only verified evidence is admitted.",
+      "required_concepts": [["no"], ["body bound", "body size"], ["provider verification", "verification"], ["before route", "precedes route"], ["verified evidence"]],
+      "allowed_exact_codes": ["RELAY_BODY_SIZE_INVALID", "RELAY_EVENT_AGE_INVALID", "RELAY_ROUTE_NOT_FOUND"],
+      "contradiction_terms": ["route lookup happens first", "json routing precedes verification"],
+      "authorities": [
+        {"path": "src/vs/agenticRelay/node/relayIngressService.ts", "blob_oid": "09c04f9311a5f87c6b7d00ad990e861cd5befc66", "start_line": 49, "end_line": 84, "anchors": ["Verification intentionally precedes route lookup", "this.verifier.verify", "this.routes.resolve"]}
+      ],
+      "negative_assertion": null
+    },
+    {
+      "id": "P11",
+      "critical": false,
+      "question": "How does a projected Work Queue item reach a live agent session?",
+      "expected_answer": "The runtime projection joins source items, task intents, participants and runs, reviews, and terminal history. The UI resolves the stored session ID against current sessions, opens its resource when found, and returns false when absent.",
+      "required_concepts": [["source items"], ["task intents"], ["participants"], ["runs"], ["reviews"], ["terminal history"], ["stored session id", "session id"], ["current sessions"], ["opens", "open"], ["returns false", "false when absent"]],
+      "allowed_exact_codes": [],
+      "contradiction_terms": ["creates a replacement session", "returns true when absent"],
+      "authorities": [
+        {"path": "src/vs/platform/agenticRuntime/node/runtimeWorkQueueHandlers.ts", "blob_oid": "0b2dbc4e10fafde117164b56e17c4798ce7247fb", "start_line": 121, "end_line": 210, "anchors": ["createRuntimeWorkQueueProjection", "const taskIntents", "const sessions"]},
+        {"path": "src/vs/platform/agenticRuntime/node/runtimeWorkQueueHandlers.ts", "blob_oid": "0b2dbc4e10fafde117164b56e17c4798ce7247fb", "start_line": 225, "end_line": 348, "anchors": ["const reviews", "const history", "return { sources, taskIntents, sessions, reviews, history"]},
+        {"path": "src/vs/sessions/contrib/workQueue/common/workQueueSessionNavigation.ts", "blob_oid": "333e527e3a599f3c5e45ae2f47a34035ae7e4ed7", "start_line": 17, "end_line": 27, "anchors": ["findWorkQueueSessionById", "return false", "openSession(session.resource)"]}
+      ],
+      "negative_assertion": null
+    },
+    {
+      "id": "P12",
+      "critical": true,
+      "question": "What happens after an ambiguous or recovered non-idempotent publish or merge dispatch?",
+      "expected_answer": "A committed outbox worker reconciles provider state before any repeat. Unknown stops; found completes without resend; absent may resend. Transport and timeout-like failures become ambiguous rather than blind retries.",
+      "required_concepts": [["committed outbox"], ["reconcile", "reconciles"], ["unknown"], ["stops"], ["found"], ["without resend"], ["absent"], ["resend"], ["transport"], ["timeout", "408", "429", "500"], ["ambiguous"], ["rather than blind", "never blindly"]],
+      "allowed_exact_codes": ["REVIEW_EFFECT_RETRY_EXHAUSTED", "REVIEW_EFFECT_PROVIDER_ID_MISSING", "REVIEW_EFFECT_TRANSPORT_AMBIGUOUS"],
+      "contradiction_terms": ["blindly retries", "always resends", "retries before reconciliation"],
+      "authorities": [
+        {"path": "src/vs/platform/agenticRuntime/node/runtimeReviewEffectDispatchCoordinator.ts", "blob_oid": "b72a97b367da54a041a62e7e39686c248ab52dcf", "start_line": 270, "end_line": 274, "anchors": ["committed outbox", "reconciles first", "never blindly"]},
+        {"path": "src/vs/platform/agenticRuntime/node/runtimeReviewEffectDispatchCoordinator.ts", "blob_oid": "b72a97b367da54a041a62e7e39686c248ab52dcf", "start_line": 324, "end_line": 425, "anchors": ["reconciliation.outcome === 'unknown'", "reconciliation.outcome === 'absent'", "REVIEW_EFFECT_TRANSPORT_AMBIGUOUS"]},
+        {"path": "src/vs/platform/agenticRuntime/node/runtimeReviewEffectDispatchCoordinator.ts", "blob_oid": "b72a97b367da54a041a62e7e39686c248ab52dcf", "start_line": 428, "end_line": 483, "anchors": ["outcome: 'found' | 'absent' | 'unknown'", "return { outcome: 'unknown' }"]}
+      ],
+      "negative_assertion": null
+    },
+    {
+      "id": "P13",
+      "critical": false,
+      "question": "Do the platform authority modules import vs/sessions?",
+      "expected_answer": "No. The frozen source has no vs/sessions or sessions/ imports under agenticRuntime, agenticRelay, or oauthExchangeBroker; vs/sessions consumes platform authority, not the reverse.",
+      "required_concepts": [["no"], ["no vs/sessions", "no matches"], ["agenticruntime"], ["agenticrelay"], ["oauthexchangebroker"], ["consumes platform authority"], ["not the reverse"]],
+      "allowed_exact_codes": [],
+      "contradiction_terms": ["platform authority imports vs/sessions", "bidirectional dependency"],
+      "authorities": [],
+      "negative_assertion": {
+        "pattern": "vs/sessions|sessions/",
+        "paths": ["src/vs/platform/agenticRuntime", "src/vs/agenticRelay", "src/vs/oauthExchangeBroker"],
+        "expected_match_count": 0
+      }
+    },
+    {
+      "id": "P14",
+      "critical": true,
+      "question": "Which repository paths are dirty in the isolated benchmark, and what are their states?",
+      "expected_answer": "CONTEXT.md is modified and context-pilot-dirty/queued-change.ts is untracked. These are relative isolated-worktree paths; no full diff, file body, or active-checkout absolute path is needed.",
+      "required_concepts": [["context.md"], ["modified"], ["context-pilot-dirty/queued-change.ts"], ["untracked"], ["relative"], ["isolated"]],
+      "allowed_exact_codes": [],
+      "contradiction_terms": ["active checkout is dirty", "full diff follows"],
+      "authorities": [
+        {"path": "CONTEXT.md", "blob_oid": "e66a2e8be9981ff3afd9e7465d68756007ce7e8d", "start_line": 1, "end_line": 12, "anchors": ["# Agentic Development Workbench", "Domain language", "**Work Queue**"]}
+      ],
+      "negative_assertion": null
+    }
+  ]
+}

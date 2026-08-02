@@ -1,0 +1,17 @@
+[
+  {"name":"Bash","write_capable":true,"hook_observable":true},
+  {"name":"apply_patch","write_capable":true,"hook_observable":true},
+  {"name":"request_user_input","write_capable":false,"hook_observable":true},
+  {"name":"update_plan","write_capable":false,"hook_observable":true},
+  {"name":"mcp__mnemo__code_index_status","write_capable":false,"hook_observable":true},
+  {"name":"mcp__mnemo__code_reindex","write_capable":true,"hook_observable":true},
+  {"name":"mcp__mnemo__code_search","write_capable":false,"hook_observable":true},
+  {"name":"mcp__mnemo__memory_forget","write_capable":true,"hook_observable":true},
+  {"name":"mcp__mnemo__memory_get","write_capable":false,"hook_observable":true},
+  {"name":"mcp__mnemo__memory_list","write_capable":false,"hook_observable":true},
+  {"name":"mcp__mnemo__memory_search","write_capable":false,"hook_observable":true},
+  {"name":"mcp__mnemo__memory_stats","write_capable":false,"hook_observable":true},
+  {"name":"mcp__mnemo__memory_status","write_capable":false,"hook_observable":true},
+  {"name":"mcp__mnemo__memory_write","write_capable":true,"hook_observable":true},
+  {"name":"mcp__mnemo__task_context","write_capable":false,"hook_observable":true}
+]

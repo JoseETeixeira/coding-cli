@@ -1,0 +1,10 @@
+{
+  "session_id": "claude-session-redacted",
+  "transcript_path": null,
+  "cwd": "__REPO__",
+  "hook_event_name": "PreToolUse",
+  "permission_mode": "default",
+  "tool_name": "Read",
+  "tool_use_id": "tool-read-1",
+  "tool_input": {"file_path": "src/current.py"}
+}

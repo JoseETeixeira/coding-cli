@@ -1,0 +1,9 @@
+{
+  "session_id": "codex-session-redacted",
+  "transcript_path": "Z:/must-not-open/codex-rollout.jsonl",
+  "cwd": "__REPO__",
+  "hook_event_name": "SessionStart",
+  "model": "gpt-5.6",
+  "permission_mode": "default",
+  "source": "compact"
+}

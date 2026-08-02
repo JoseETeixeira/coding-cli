@@ -33,6 +33,17 @@ def _bool(name: str, default: bool = False) -> bool:
     return raw.strip().lower() in ("1", "true", "yes", "on")
 
 
+def _positive_int(name: str, default: int, *, minimum: int = 1, maximum: int = 100_000) -> int:
+    raw = os.environ.get(name)
+    try:
+        value = int(raw) if raw is not None else default
+    except ValueError as exc:
+        raise ValueError(f"{name} must be an integer") from exc
+    if value < minimum or value > maximum:
+        raise ValueError(f"{name} must be between {minimum} and {maximum}")
+    return value
+
+
 @dataclass
 class Config:
     qdrant_url: str = field(default_factory=lambda: _env("MNEMO_QDRANT_URL", "QDRANT_URL", default="http://127.0.0.1:1337"))
@@ -46,6 +57,18 @@ class Config:
     default_namespace: str = field(default_factory=lambda: _env("MNEMO_DEFAULT_NAMESPACE", default="global"))
     agent_id: str = field(default_factory=lambda: _env("MNEMO_AGENT_ID", "MNEMO_WRITER", default="unknown-agent"))
     redact: bool = field(default_factory=lambda: _bool("MNEMO_REDACT", default=True))
+
+    # Bounded default task-context ingress. Exact records remain available via
+    # memory_get after the same reader/revocation/expiry checks.
+    task_context_max_text_chars: int = field(
+        default_factory=lambda: _positive_int("MNEMO_TASK_CONTEXT_MAX_TEXT_CHARS", 4000, maximum=50_000)
+    )
+    task_context_item_preview_chars: int = field(
+        default_factory=lambda: _positive_int("MNEMO_TASK_CONTEXT_ITEM_PREVIEW_CHARS", 500, maximum=50_000)
+    )
+    task_context_response_max_chars: int = field(
+        default_factory=lambda: _positive_int("MNEMO_TASK_CONTEXT_RESPONSE_MAX_CHARS", 8000, minimum=1024)
+    )
 
     # ---- code index -------------------------------------------------------
     # The code index is a rebuildable cache in its own collection; it never
@@ -65,6 +88,10 @@ class Config:
     code_include_untracked: bool = field(default_factory=lambda: _bool("MNEMO_CODE_INCLUDE_UNTRACKED", default=False))
 
     def __post_init__(self) -> None:
+        if self.task_context_item_preview_chars > self.task_context_max_text_chars:
+            raise ValueError("task_context item preview budget cannot exceed aggregate text budget")
+        if self.task_context_max_text_chars >= self.task_context_response_max_chars:
+            raise ValueError("task_context text budget must be smaller than response envelope")
         # Some MCP hosts (e.g. Codex) do not pass the parent environment through
         # to stdio servers, so OPENAI_API_KEY may be missing even when it is set
         # in the user's shell. Fall back to a local key file the user controls.

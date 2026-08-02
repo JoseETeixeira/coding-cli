@@ -1,0 +1,8 @@
+{
+  "session_id": "claude-session-redacted",
+  "transcript_path": "Z:/must-not-open/claude-transcript.jsonl",
+  "cwd": "__REPO__",
+  "hook_event_name": "SessionStart",
+  "permission_mode": "default",
+  "source": "compact"
+}

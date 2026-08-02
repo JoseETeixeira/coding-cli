@@ -1,0 +1,9 @@
+{
+  "session_id": "claude-session-redacted",
+  "transcript_path": "Z:/must-not-open/claude-transcript.jsonl",
+  "cwd": "__REPO__",
+  "hook_event_name": "PreCompact",
+  "permission_mode": "default",
+  "trigger": "manual",
+  "custom_instructions": "Preserve the active task pointer"
+}
