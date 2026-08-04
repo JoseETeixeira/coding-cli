@@ -14,7 +14,17 @@
       "type": "stdio",
       "command": "C:/Users/josee/AppData/Local/Programs/Python/Python312/python.exe",
       "args": ["C:/Users/josee/source/coding-cli/run_gpt_image_2_server.py"],
-      "description": "gpt-image-2: generate and edit raster images via OpenAI's Image API (paid, writes files). Reads OPENAI_API_KEY from the inherited environment; no env block, because the value must never appear in configuration."
+      "timeout": 600000,
+      "description": "gpt-image-2: generate and edit raster images via OpenAI's Image API (paid, writes files). Reads OPENAI_API_KEY from the inherited environment; no env block, because the value must never appear in configuration. `timeout` is the per-server tool wall clock in ms (Claude Code v2.1.203+), set above the server's own 540s deadline and scoped to this server so it cannot shorten any other server's ceiling."
+    },
+    "optical-compression": {
+      "type": "stdio",
+      "command": "C:/Users/josee/AppData/Local/Programs/Python/Python312/python.exe",
+      "args": ["C:/Users/josee/source/coding-cli/run_optical_compression_server.py"],
+      "env": {
+        "CLAUDECODE": "1"
+      },
+      "description": "optical-compression: render large text payloads as token-cheap images (~2.9x fewer tokens at the default density) and retrieve the exact original by digest. Fully offline: no network or credentials; the env block only identifies the host. LOSSY for exact values by design - the image is gist, optical_retrieve is the source of truth. Needs Pillow."
     }
   }
 }

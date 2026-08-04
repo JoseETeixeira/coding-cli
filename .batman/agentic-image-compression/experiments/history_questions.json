@@ -1,0 +1,7 @@
+{
+  "7": "DECISION: segment cache key = sha256(segment_text)[:16]; never include mtime.",
+  "23": "OBSERVED: pytest tests/context_compaction -q -> 738 passed in 12.4s",
+  "41": "DECISION: Pillow is NOT yet a dependency; adding it requires a new extras group.",
+  "58": "OBSERVED: .mcp.json registers servers under the top-level 'mcpServers' key.",
+  "72": "DECISION: retrieval must return EXACT text; the image is only for gist."
+}

@@ -1,6 +1,6 @@
 # 0015 — Isolate GPT Image 2 in a standalone local MCP server
 
-Status: accepted · 2026-08-02
+Status: accepted · 2026-08-02 · amended 2026-08-04
 
 ## Context
 
@@ -45,3 +45,15 @@ Two details were sharpened while implementing, neither changing the decision:
 
 - **Preview reporting.** The bound is unchanged — one inline image, at most 5 MiB decoded. The reported reason vocabulary became `null` / `too_large` / `first_of_n`. When several images are produced the first is still attached, so `first_of_n` describes what happened more honestly than a flat "omitted" would.
 - **Codex tool timeout is load-bearing.** The documented Codex default `tool_timeout_sec` is **60 s**, well below this server's 180 s operation deadline. Without the explicit `tool_timeout_sec = 240` in the Codex registrations, the host would abort a normal high-quality generation before the server could return either an image or its structured error. Claude Code's equivalent is the client-side `MCP_TOOL_TIMEOUT` environment variable, which a `.mcp.json` entry cannot set, so it is documented for the operator rather than claimed in configuration. VS Code exposes no timeout field and is covered by a runtime gate instead.
+
+## Amendment (2026-08-04, latency budgets raised)
+
+The decision stands; its numbers moved and one of its claims turned out to be wrong.
+
+Generations were failing often enough for the operator to notice. The cause was the server's own per-attempt bound, not a host: a `quality=high` call that runs past 150 s raises `APITimeoutError`, which this design deliberately never retries because the request may already have been billed. A too-short attempt timeout therefore does not merely fail, it fails after paying. The per-attempt timeout is now **480 s** and the operation deadline **540 s**, with Codex's `tool_timeout_sec` raised to **600 s** to stay above them. Read the "remaining 180-second operation budget" in the Decision and the `tool_timeout_sec = 240` in the implementation notes as the values accepted on 2026-08-02, superseded by these.
+
+`RETRY_MIN_REMAINING_S` rose from 20 s to 240 s in the same pass. It reads like an admission gate but is really the floor on the second attempt's timeout — `_call_with_retry` admits the retry and then clamps it to `min(API_ATTEMPT_TIMEOUT_S, remaining)`. At 20 s it could admit a retry with a 20-second ceiling against a multi-minute generation, so that retry could only end in `api_timeout`: a second billed request with no chance of finishing, which also destroyed the actionable `service_error` it replaced.
+
+**Correction to the 2026-08-02 implementation note.** That note stated Claude Code's tool timeout can only be set through the client-side `MCP_TOOL_TIMEOUT` environment variable and that "a `.mcp.json` entry cannot set it". That is no longer true, and the variable was the wrong instrument anyway. Claude Code v2.1.203+ accepts a per-server `timeout` in milliseconds on the registry entry itself, which overrides the variable for that server alone; `.mcp.json` and the user-scope `~/.claude.json` now both carry `"timeout": 600000`. It also becomes that server's effective idle window, which is harmless here — 600 s of silence still exceeds the 540 s the server is permitted to take, and an image generation is silent for its whole duration. `MCP_TOOL_TIMEOUT` was rejected deliberately: it is global and defaults to roughly 28 hours, so setting it to 600000 for this server's benefit would have *shortened* every other MCP server's ceiling to ten minutes — a regression bought to fix a problem Claude Code never had. Codex's 60 s default is real and its explicit `tool_timeout_sec` remains load-bearing.
+
+The trade-off is unchanged in kind: a longer budget means a stuck paid call holds a host tool slot longer, which is why the deadline stays finite. The ordering the design depends on is also unchanged — attempt timeout < operation deadline < host tool timeout — and `tests/gpt_image_2/test_contract_gates.py` still enforces the Codex half of it.

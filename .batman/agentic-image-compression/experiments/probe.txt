@@ -1,0 +1,45 @@
+[turn 001] TOOL Bash(cmd='git status --short') -> exit=0
+ M .codex/config.toml
+ M .mcp.json
+ M CHANGELOG.md
+ M README.md
+[turn 002] TOOL Grep(pattern='estimate_tokens', glob='**/*.py') -> 7 matches
+context_compaction/budget.py:30:def estimate_tokens(text: str) -> int:
+context_compaction/contracts.py:10:from .budget import estimate_tokens
+[turn 003] TOOL Read(context_compaction/budget.py, limit=60) -> 60 lines
+"""Deterministic context budgeting with no tokenizer or network dependency."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from math import ceil
+from typing import Iterable
+
+DEFAULT_REENTRY_CHARS = 8_000
+DEFAULT_REENTRY_TOKENS = 2_000
+DEFAULT_MEMORY_TEXT_CHARS = 4_000
+DEFAULT_MEMORY_ITEM_CHARS = 500
+DEFAULT_MEMORY_ENVELOPE_CHARS = 8_000
+
+_FORBIDDEN_CATEGORY_PARTS = (
+    "secret",
+    "credential",
+    "token_value",
+    "raw_tool",
+    "tool_output",
+    "transcript",
+    "compact_summary",
+    "source_body",
+    "full_source",
+    "full_diff",
+    "binary",
+)
+
+
+def estimate_tokens(text: str) -> int:
+    """Estimate conservatively: each ASCII run costs ceil(chars/4), non-ASCII 1."""
+
+    tokens = 0
+    ascii_run = 0
+    for char in text:
+        if 

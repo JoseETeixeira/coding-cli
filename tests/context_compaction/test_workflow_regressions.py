@@ -16,9 +16,15 @@ ROOT = Path(__file__).parents[2]
 # therefore reported drift on three of these files in the main checkout while
 # their content was identical -- it measured the checkout, not the asset.
 PROTECTED_HASHES = {
-    ".codex/config.toml": "f171dae065a6da74e1e3b1b4f09204d1051f539fbcbb1a96109b0d4d6d810389",
+    # Rebaselined 2026-08-04, deliberately and outside the pilot, after the
+    # owner-approved gpt-image-2 timeout correction and optical-compression
+    # registration. The latter remains a normal MCP server; it does not enable
+    # context-pilot or alter native compaction.
+    ".codex/config.toml": "f7e46fdf85af5a30025c7493b650be5c60a58e4716756ce43b7055faf4dd135e",
     ".claude/settings.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
-    "hooks/hooks.json": "fb236803f07317b72d5ec34a9de84fdf9b0f653031291027072013ca46530017",
+    # Rebaselined in the same owner-approved change: this is a guarded Claude
+    # Read-result transform, not a PreCompact/PostCompact lifecycle hook.
+    "hooks/hooks.json": "e0e1b009926c2ca4253d192906345a821ff184706fee86cb276ae0b5e93b708a",
     # Rebaselined 2026-08-02, deliberately and outside the pilot: both hooks derived
     # their mnemo namespace from the directory name, so any linked worktree wrote to
     # `repo:<branch-dir>` and orphaned its checkpoints from the repository corpus. The

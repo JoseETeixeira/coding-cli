@@ -1,0 +1,4 @@
+[turn 042] TOOL Bash(cmd='pytest -q tests/context_compaction') -> exit=0
+738 passed, 0 failed, 0 xfailed in 12.4s
+[turn 043] TOOL Grep(pattern='estimate_tokens') -> 7 matches in 3 files
+[turn 044] DECISION: reuse estimate_tokens; do not add tiktoken (offline determinism)

@@ -13,6 +13,11 @@
       "type": "stdio",
       "command": "C:/Users/josee/AppData/Local/Programs/Python/Python312/python.exe",
       "args": ["C:/Users/josee/source/coding-cli/run_gpt_image_2_server.py"]
+    },
+    "optical-compression": {
+      "type": "stdio",
+      "command": "C:/Users/josee/AppData/Local/Programs/Python/Python312/python.exe",
+      "args": ["C:/Users/josee/source/coding-cli/run_optical_compression_server.py"]
     }
   }
 }

@@ -10,8 +10,9 @@
 - `prompts/`: reusable task prompts
 - `mnemo/`: the self-hosted shared-memory engine + MCP server (see `mnemo/README.md`)
 - `gpt_image_2/`: the standalone GPT Image 2 MCP server (`run_gpt_image_2_server.py` launches it)
+- `optical_compression/`: the offline optical-gist MCP server and Claude Code hook
 - `.claude-plugin/`: Claude Code source discovery manifest
-- `.codex/`, `.vscode/`: repository-scoped `mnemo` and `gpt-image-2` MCP configuration
+- `.codex/`, `.vscode/`: repository-scoped MCP configuration for all three local servers
 
 ## Memory: mnemo shared memory
 
@@ -59,6 +60,62 @@ Only Codex `0.145.0` and Claude Code `2.1.220` are currently admitted by the
 experimental adapter. Real user-level activation remains approval-gated; source
 presence is not activation.
 
+## Token cost: optical-compression
+
+A standalone stdio MCP server that renders large read-mostly text payloads as
+images, which cost fewer tokens than the text they replace, and stores the exact
+original for retrieval by digest. Fully offline: no network, no credentials.
+
+- Agent-facing workflow: `skills/optical-compression/SKILL.md`
+- Server: `optical_compression/`, launched by `run_optical_compression_server.py`
+- Hook (Claude Code only): `run_optical_compression_hook.py`
+- Installation and agent usage: `docs/optical-compression-installation.md`
+- Replication: `docs/optical-compression-replication.md`
+- Decisions: ADR 0016 (lossy gist + exact retrieval), ADR 0017 (host asymmetry)
+- Dependencies: `py -3.12 -m pip install -r optical_compression/requirements.txt`
+  (`mcp`, `pillow`)
+
+Measured on this repository's own source: `context_compaction/activation.py`,
+46,637 characters, 11,660 text tokens to 4,329 image tokens — **2.69x, a 62.9%
+reduction** — with a byte-identical retrieval roundtrip.
+
+**This is lossy for exact values by design.** Read the image for gist, then call
+`optical_retrieve` before relying on any hash, UUID, key, path, or numeric
+literal. At the aggressive density, trials scored 99.4% character accuracy while
+losing 25% of identifiers: it flipped a digit in a UUID and mangled an
+access-key. A guard refuses identifier-bearing payloads for automatic
+compression, and payloads under 8,000 characters are declined outright because
+rendering them would cost more than the text.
+
+**Host asymmetry.** The MCP tools work on Claude Code and Codex alike. Automatic
+hook interception is Claude-Code-only and cannot be added to Codex, which
+rejects `updatedMCPToolOutput` upstream (PR #20703 closed unmerged). Call
+`optical_stats` to see which profile is active. Kill switch:
+`OPTICAL_COMPRESSION_HOOK=0`.
+
+**Store and activation.** Both production launchers default to the same stable
+user-scoped store, `~/.optical-compression`, so a digest created by Claude's
+hook remains retrievable through the MCP server even when the host starts them
+from different working directories. `OPTICAL_COMPRESSION_DIR` overrides it.
+Repository adapters live in `.mcp.json`, `.codex/config.toml`, and
+`.vscode/mcp.json`; user-scope adapters point at this canonical checkout so the
+tools work from other repositories after host reload. Claude Code can activate
+the `Read` hook through either `hooks/hooks.json` as an installed plugin or one
+thin user-settings pointer—never both.
+
+The canonical `generic-entry` workflow routes large read-mostly payloads to
+`skills/optical-compression/SKILL.md`. Host skill copies remain thin pointers;
+the skill body is never duplicated into host configuration.
+
+Colour-encoding text as pixels does **not** work and the benchmark proves it
+every run: additive mixing collapses 256 letter-pairs into 27 colours, and
+vision encoders patchify at 28x28px so exact RGB never reaches the model.
+
+**Testing.** `py -3.12 -m pytest tests/optical_compression` is fully offline.
+`py -3.12 tests/optical_compression/mcp_smoke.py` drives the real stdio server;
+`py -3.12 -m optical_compression benchmark --suite all` reproduces every
+published performance and fidelity claim.
+
 ## Images: gpt-image-2
 
 A standalone stdio MCP server exposing two tools, `generate_image` and
@@ -73,8 +130,12 @@ preflight unavailable.
   (`mcp`, `openai`, `pillow`)
 
 **Cost and latency.** Every call is billed by OpenAI, is subject to OpenAI
-moderation, and can take up to about two minutes. The server allows one
-operation 180 seconds end to end, with a 150-second per-attempt timeout.
+moderation, and is slow: a high-quality generation commonly runs for several
+minutes. The server allows one operation 540 seconds end to end, with a
+480-second per-attempt timeout. Those bounds were 180 and 150 until 2026-08-04,
+which turned out to be under the real latency — and the resulting `api_timeout`
+is never retried, because the request may already have been billed. Budget for
+minutes, not seconds.
 
 **Credentials.** `OPENAI_API_KEY` is read from the server process environment
 first, then — on Windows — from the current user's persistent environment
@@ -109,14 +170,24 @@ and user-scope entries only resolve once this work is merged into
 Host timeouts are not uniform, and the difference matters:
 
 - **Codex** defaults `tool_timeout_sec` to **60 s**, which is below this
-  server's 180 s deadline, so the registrations set `tool_timeout_sec = 240`
+  server's 540 s deadline, so the registrations set `tool_timeout_sec = 600`
   explicitly. Without it Codex aborts normal high-quality generations.
-- **Claude Code** controls its MCP tool timeout with the client-side
-  `MCP_TOOL_TIMEOUT` environment variable (milliseconds). A `.mcp.json` entry
-  cannot set it — an `env` block there configures the *server* child, not the
-  client. Set `MCP_TOOL_TIMEOUT=240000` in Claude's own environment if you see
-  image calls time out.
+- **Claude Code** takes a per-server `timeout` in milliseconds on the server's
+  registry entry (`.mcp.json` and the user-scope `~/.claude.json`), so both are
+  set to `600000`. Do not reach for the `MCP_TOOL_TIMEOUT` environment variable
+  instead: it is global, and its default is roughly 28 hours, so setting it to
+  600000 to help this server would *shorten* every other server's ceiling to
+  ten minutes. The per-server field is scoped and overrides the variable for
+  this server only. It also becomes this server's effective idle window, which
+  is fine here: 600 s of silence is still more than the 540 s the server is
+  allowed to take. Note the `env` block in a registry entry configures the
+  *server child process*, not the client, and cannot set either. Requires
+  Claude Code v2.1.203 or later.
 - **VS Code / Copilot** exposes no documented per-server timeout field.
+
+A tool call still running after two minutes is not stuck. Claude Code moves a
+long MCP call to a background task at that point and delivers the result as a
+notification; the wall-clock limit above still applies while it runs there.
 
 **Troubleshooting.** `GPT_IMAGE_2_LOG_LEVEL` (default `WARNING`) sets the level
 for the `gpt_image_2` logger only, on stderr. It deliberately does **not** touch

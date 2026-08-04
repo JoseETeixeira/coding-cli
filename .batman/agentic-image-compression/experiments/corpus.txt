@@ -1,0 +1,138 @@
+[turn 001] TOOL Bash(cmd='git status --short') -> exit=0
+ M .codex/config.toml
+ M .mcp.json
+ M CHANGELOG.md
+ M README.md
+[turn 002] TOOL Grep(pattern='estimate_tokens', glob='**/*.py') -> 7 matches
+context_compaction/budget.py:30:def estimate_tokens(text: str) -> int:
+context_compaction/contracts.py:10:from .budget import estimate_tokens
+[turn 003] TOOL Read(context_compaction/budget.py, limit=60) -> 60 lines
+"""Deterministic context budgeting with no tokenizer or network dependency."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from math import ceil
+from typing import Iterable
+
+DEFAULT_REENTRY_CHARS = 8_000
+DEFAULT_REENTRY_TOKENS = 2_000
+DEFAULT_MEMORY_TEXT_CHARS = 4_000
+DEFAULT_MEMORY_ITEM_CHARS = 500
+DEFAULT_MEMORY_ENVELOPE_CHARS = 8_000
+
+_FORBIDDEN_CATEGORY_PARTS = (
+    "secret",
+    "credential",
+    "token_value",
+    "raw_tool",
+    "tool_output",
+    "transcript",
+    "compact_summary",
+    "source_body",
+    "full_source",
+    "full_diff",
+    "binary",
+)
+
+
+def estimate_tokens(text: str) -> int:
+    """Estimate conservatively: each ASCII run costs ceil(chars/4), non-ASCII 1."""
+
+    tokens = 0
+    ascii_run = 0
+    for char in text:
+        if ord(char) < 128:
+            ascii_run += 1
+            continue
+        if ascii_run:
+            tokens += ceil(ascii_run / 4)
+            ascii_run = 0
+        tokens += 1
+    if ascii_run:
+        tokens += ceil(ascii_run / 4)
+    return tokens
+
+
+def fits_budget(text: str, *, max_chars: int, max_tokens: int) -> bool:
+    _validate_limits(max_chars, max_tokens)
+    return len(text) <= max_chars and estimate_tokens(text) <= max_tokens
+
+
+def truncate_text(text: str, *, max_chars: int, max_tokens: int) -> str:
+    """Return the longest Unicode prefix fitting both deterministic limits."""
+
+    _validate_limits(max_chars, max_tokens, allow_zero=True)
+    if not text or max_chars == 0 or max_tokens == 0:
+        return ""
+    if fits_budget(text, max_chars=max_chars, max_tokens=max_tokens):
+        return text
+
+    low = 0
+    high = min(len(text), max_chars)
+    while low < high:
+        middle = (low + high + 1) // 2
+        candidate = text[:middle]
+        if estimate_tokens(candidate) <= max_toke
+[turn 004] REASONING: budget.estimate_tokens is deterministic and tokenizer-free.
+It over-counts vs the real BPE tokenizer but never under-counts, so it is a safe ceiling.
+[turn 005] TOOL Read(context_compaction/contracts.py) -> 137 lines
+"""Validation and host-neutral loading for canonical compaction assets."""
+
+from __future__ import annotations
+
+import hashlib
+import re
+from dataclasses import dataclass
+from pathlib import Path
+
+from .budget import DEFAULT_REENTRY_CHARS, DEFAULT_REENTRY_TOKENS, estimate_tokens
+from .models import Host
+
+PROMPT_RELATIVE_PATH = "prompts/context-compaction.prompt.md"
+SKILL_RELATIVE_PATH = "skills/context-compaction/SKILL.md"
+_MAX_ASSET_BYTES = 64 * 1024
+_SECRET_ASSIGNMENT = re.compile(
+    r"(?im)^\s*(?:api[_-]?key|access[_-]?token|password|secret|bearer)\s*[:=]\s*\S+"
+)
+_POINTERS = {
+    "skills/generic-entry/SKILL.md": "`context-compaction`",
+    "skills/shared-memory/SKILL.md": "`context-compaction`",
+    "agents/batman.agent.md": "`skills/context-compaction/SKILL.md`",
+}
+
+
+class ContractAssetError(ValueError):
+    pass
+
+
+@dataclass(frozen=True)
+class ContractAssets:
+    prompt_relative_path: str
+    skill_relative_path: str
+    prompt_text: str
+    prompt_chars: int
+    prompt_estimated_tokens: int
+    prompt_sha256: str
+    skill_sha256: str
+
+
+@dataclass(frozen=True)
+class HostCompactContract:
+    host: Host
+    relative_path: str
+    text: str
+    sha256: str
+
+
+def validate_contract_assets(repository_root: str | Path) -> ContractAssets:
+    root = Path(repository_root).resolve(strict=True)
+    if not root.is_dir():
+        raise ContractAssetError("contract root is not a directory")
+
+    prompt_path = _safe_asset(root, PROMPT_RELATIVE_PATH)
+    skill_path = _safe_asset(ro
+[turn 006] TOOL Bash(cmd='python -m pytest tests/context_compaction -q') -> exit=0
+738 passed, 0 failed, 0 xfailed in 12.4s
+[turn 007] DECISION: reuse estimate_tokens for the compaction budget ceiling;
+do not add tiktoken as a dependency (offline determinism requirement).

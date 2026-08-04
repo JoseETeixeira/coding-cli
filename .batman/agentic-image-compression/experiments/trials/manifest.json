@@ -1,0 +1,119 @@
+{
+  "code_fs8": {
+    "path": "trials\\code_fs8.png",
+    "ratio": 1.529,
+    "chars": 428,
+    "text_tokens": 107,
+    "img_tokens": 70,
+    "w": 1536,
+    "h": 34
+  },
+  "code_fs10": {
+    "path": "trials\\code_fs10.png",
+    "ratio": 1.372,
+    "chars": 428,
+    "text_tokens": 107,
+    "img_tokens": 78,
+    "w": 1534,
+    "h": 38
+  },
+  "code_fs12": {
+    "path": "trials\\code_fs12.png",
+    "ratio": 0.947,
+    "chars": 428,
+    "text_tokens": 107,
+    "img_tokens": 113,
+    "w": 1535,
+    "h": 55
+  },
+  "idents_fs8": {
+    "path": "trials\\idents_fs8.png",
+    "ratio": 1.806,
+    "chars": 260,
+    "text_tokens": 65,
+    "img_tokens": 36,
+    "w": 1080,
+    "h": 25
+  },
+  "idents_fs10": {
+    "path": "trials\\idents_fs10.png",
+    "ratio": 0.833,
+    "chars": 260,
+    "text_tokens": 65,
+    "img_tokens": 78,
+    "w": 1534,
+    "h": 38
+  },
+  "idents_fs12": {
+    "path": "trials\\idents_fs12.png",
+    "ratio": 0.756,
+    "chars": 260,
+    "text_tokens": 65,
+    "img_tokens": 86,
+    "w": 1535,
+    "h": 42
+  },
+  "logs_fs8": {
+    "path": "trials\\logs_fs8.png",
+    "ratio": 1.789,
+    "chars": 271,
+    "text_tokens": 68,
+    "img_tokens": 38,
+    "w": 1124,
+    "h": 25
+  },
+  "logs_fs10": {
+    "path": "trials\\logs_fs10.png",
+    "ratio": 0.872,
+    "chars": 271,
+    "text_tokens": 68,
+    "img_tokens": 78,
+    "w": 1534,
+    "h": 38
+  },
+  "logs_fs12": {
+    "path": "trials\\logs_fs12.png",
+    "ratio": 0.791,
+    "chars": 271,
+    "text_tokens": 68,
+    "img_tokens": 86,
+    "w": 1535,
+    "h": 42
+  },
+  "prose_fs8": {
+    "path": "trials\\prose_fs8.png",
+    "ratio": 1.795,
+    "chars": 315,
+    "text_tokens": 79,
+    "img_tokens": 44,
+    "w": 1300,
+    "h": 25
+  },
+  "prose_fs10": {
+    "path": "trials\\prose_fs10.png",
+    "ratio": 1.013,
+    "chars": 315,
+    "text_tokens": 79,
+    "img_tokens": 78,
+    "w": 1534,
+    "h": 38
+  },
+  "prose_fs12": {
+    "path": "trials\\prose_fs12.png",
+    "ratio": 0.919,
+    "chars": 315,
+    "text_tokens": 79,
+    "img_tokens": 86,
+    "w": 1535,
+    "h": 42
+  },
+  "cipher_channelpack": {
+    "path": "trials\\cipher_channelpack.png",
+    "ground_truth": "turn 042 tool bashcmd=pytest -q tests/context_compaction - exit=0738 passed, 0 failed, 0 xfailed in 12.4sturn 043 tool g",
+    "size": [
+      480,
+      120
+    ],
+    "note": "R channel = symbol1 index*5, G channel = symbol2 index*5 (injective, lossless)"
+  }
+}

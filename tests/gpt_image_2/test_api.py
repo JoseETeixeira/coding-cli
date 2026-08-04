@@ -470,7 +470,7 @@ def test_build_client_disables_sdk_retries_and_bounds_one_attempt(
     assert isinstance(client, _RecordingClient)
     assert seen["max_retries"] == 0
     assert seen["timeout"] == constants.API_ATTEMPT_TIMEOUT_S
-    assert seen["timeout"] == 150.0
+    assert seen["timeout"] == 480.0
     assert seen["api_key"] == secret.reveal() == CANARY_SECRET
     assert set(seen) == {"api_key", "max_retries", "timeout"}
 
@@ -511,6 +511,17 @@ def test_retryable_status_is_retried_exactly_once_then_succeeds(
     assert result.attempts == 2
     assert result.request_id == "req_after_retry"
     assert sleeper.delays == [constants.RETRY_BASE_DELAY_S]
+
+    # The retried attempt carries a real timeout, not an unbounded one: the
+    # gate admits the retry and `min(API_ATTEMPT_TIMEOUT_S, remaining)` clamps
+    # it. This pins the structural coupling only — that the second attempt is
+    # bounded at all, and never above one attempt's worth. It cannot pin the
+    # *value* of RETRY_MIN_REMAINING_S, because the relation holds for any
+    # value; `test_retry_floor_is_a_usable_fraction_of_an_attempt` in
+    # `test_contract_gates.py` guards that.
+    retried_timeout = factory.client.calls[1].kwargs["timeout"]
+    assert retried_timeout >= constants.RETRY_MIN_REMAINING_S
+    assert retried_timeout <= constants.API_ATTEMPT_TIMEOUT_S
 
 
 @pytest.mark.parametrize(

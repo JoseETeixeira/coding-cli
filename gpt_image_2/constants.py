@@ -164,11 +164,18 @@ WINDOWS_RESERVED_NAMES: frozenset[str] = frozenset(
 # Timing, retry, and transport bounds
 # ---------------------------------------------------------------------------
 
-#: Constitution "Performance": each API attempt gets 150s.
-API_ATTEMPT_TIMEOUT_S = 150.0
+#: Constitution "Performance" set this at 150s. Raised to 480s on 2026-08-04
+#: (ADR 0015 amendment): real high-quality generations ran past 150s, and the
+#: result was `api_timeout` — the one failure this subsystem deliberately never
+#: retries, because the request may already have been billed. A too-short
+#: attempt timeout therefore does not just fail, it fails expensively.
+API_ATTEMPT_TIMEOUT_S = 480.0
 
-#: Constitution "Performance": the whole operation gets 180s.
-OPERATION_DEADLINE_S = 180.0
+#: Constitution "Performance" set this at 180s; raised to 540s in the same pass.
+#: Must stay strictly above API_ATTEMPT_TIMEOUT_S, so one attempt can never
+#: consume the whole budget and the server always has room left to build and
+#: return its structured error instead of being cut off mid-answer.
+OPERATION_DEADLINE_S = 540.0
 
 #: ADR 0015: one retry maximum, so two attempts total.
 MAX_API_ATTEMPTS = 2
@@ -177,7 +184,16 @@ RETRY_BASE_DELAY_S = 2.0
 RETRY_MAX_JITTER_S = 1.0
 
 #: Do not burn the remaining budget on a retry that cannot plausibly finish.
-RETRY_MIN_REMAINING_S = 20.0
+#:
+#: This is the effective floor on the *second* attempt's timeout, not merely an
+#: admission gate: `_call_with_retry` admits the retry, and then
+#: `min(API_ATTEMPT_TIMEOUT_S, remaining)` clamps it to whatever is left. At the
+#: old 20s a retry could be admitted with a 20-second ceiling against a
+#: multi-minute generation, so it could only ever produce `api_timeout` — a
+#: second billed request with no chance of finishing, which also converted an
+#: actionable `service_error` into a useless timeout. Half an attempt is the
+#: floor at which a retry is worth paying for.
+RETRY_MIN_REMAINING_S = 240.0
 
 #: Upper bound on an honoured `Retry-After`, so a hostile or broken header
 #: cannot park the operation for the entire deadline.

@@ -21,6 +21,7 @@ boundary unreachable, exactly as `conftest._block_real_network` does in-process.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import re
@@ -162,7 +163,13 @@ def test_mcp_smoke_spawns_the_real_launcher() -> None:
     to being byte-compiled and never executed by any gate — and every host
     registration points at exactly that file.
     """
-    import mcp_smoke  # noqa: PLC0415 - imported here so a broken smoke fails one test
+    # Load by path under a capability-specific module name. A bare
+    # `import mcp_smoke` resolves whichever sibling test directory pytest put
+    # first on sys.path once more than one MCP server ships a smoke script.
+    spec = importlib.util.spec_from_file_location("gpt_image_2_mcp_smoke", SMOKE_SCRIPT)
+    assert spec is not None and spec.loader is not None
+    mcp_smoke = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mcp_smoke)
 
     assert mcp_smoke.LAUNCHER == LAUNCHER
     assert LAUNCHER_FILENAME in mcp_smoke.BOOTSTRAP, (
@@ -261,6 +268,11 @@ _WORD_NUMBERS = {"no": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
 #: is a promise the tool must actually keep.
 SKILL_CLAIMS: tuple[Claim, ...] = (
     Claim("MODEL", r"(gpt-image-\d+)", constants.MODEL),
+    Claim(
+        "OPERATION_DEADLINE_S",
+        r"(\d+) seconds end to end",
+        constants.OPERATION_DEADLINE_S,
+    ),
     Claim("MAX_PROMPT_CHARS", rf"under ({_NUM}) characters", constants.MAX_PROMPT_CHARS),
     Claim("SIZE_EDGE_MULTIPLE", r"multiples? of (\d+)", constants.SIZE_EDGE_MULTIPLE),
     Claim("MAX_EDGE_PX", rf"max edge ({_NUM})", constants.MAX_EDGE_PX),
@@ -320,7 +332,8 @@ SKILL_CLAIMS: tuple[Claim, ...] = (
 )
 
 #: The README's gpt-image-2 section is the operator-facing half of the same
-#: contract, including the timing and preview bounds the skill does not state.
+#: contract, including the per-attempt and preview bounds the skill does not
+#: state. The operation deadline is stated in both and is pinned in both.
 README_CLAIMS: tuple[Claim, ...] = (
     Claim("MODEL", r"`(gpt-image-\d+)`", constants.MODEL),
     Claim("SIZE_EDGE_MULTIPLE", r"multiples? of (\d+)", constants.SIZE_EDGE_MULTIPLE),
@@ -449,8 +462,9 @@ def test_readme_gpt_image_section_agrees_with_constants(claim: Claim) -> None:
     """IMG-AC-013 for the `## Images: gpt-image-2` section of `README.md`.
 
     Catches: the same constant drift as the skill test, plus the operator-facing
-    numbers the skill does not state — the 180 s operation deadline, the 150 s
-    per-attempt timeout, and the 5 MiB inline-preview ceiling.
+    numbers the skill does not state — the 480 s per-attempt timeout and the
+    5 MiB inline-preview ceiling. The 540 s operation deadline is stated in
+    both documents, so both pin it.
     """
     _assert_claims(_readme_section(), [claim], "README.md (gpt-image-2 section)")
 
@@ -704,7 +718,7 @@ def test_codex_registrations_keep_the_host_timeout_above_the_operation_deadline(
     """Codex's 60 s default tool timeout would cut a normal generation off.
 
     Catches: dropping or lowering `tool_timeout_sec` in the Codex adapters. The
-    server owns a 180 s deadline and returns a structured error at the end of
+    server owns a 540 s deadline and returns a structured error at the end of
     it; a host timeout below that replaces our error with the host's, which is
     the failure mode the README specifically documents.
     """
@@ -726,3 +740,82 @@ def test_codex_registrations_keep_the_host_timeout_above_the_operation_deadline(
         )
         checked += 1
     assert checked, "no Codex registration was found to check"
+
+
+def test_retry_floor_is_a_usable_fraction_of_an_attempt() -> None:
+    """A retry admitted below this floor can only time out — after being billed.
+
+    `_call_with_retry` admits the retry on remaining budget and then clamps that
+    attempt to `min(API_ATTEMPT_TIMEOUT_S, remaining)`, so
+    `RETRY_MIN_REMAINING_S` is not merely an admission threshold: it is the
+    floor on the *second* attempt's timeout. At its original 20 s it admitted
+    retries with a 20-second window against a multi-minute generation. That
+    retry could only produce `api_timeout` — the one failure this subsystem
+    never retries because the request may already have been billed — and it
+    destroyed the actionable `service_error` it replaced.
+
+    No unit test can catch this: the relation `retried timeout >= floor` holds
+    for *any* floor, and the fake clock never puts a scripted retry near the
+    boundary. So the value itself is pinned here, from both sides — high enough
+    that an admitted retry can plausibly finish, low enough that the retry path
+    does not become dead code.
+    """
+    assert constants.RETRY_MIN_REMAINING_S >= constants.API_ATTEMPT_TIMEOUT_S / 2, (
+        f"RETRY_MIN_REMAINING_S={constants.RETRY_MIN_REMAINING_S:g} is under half "
+        f"of API_ATTEMPT_TIMEOUT_S={constants.API_ATTEMPT_TIMEOUT_S:g}, so a "
+        f"retry can be admitted with a window too short to finish in"
+    )
+    assert (
+        constants.RETRY_MIN_REMAINING_S
+        < constants.OPERATION_DEADLINE_S - constants.MAX_RETRY_AFTER_S
+    ), (
+        f"RETRY_MIN_REMAINING_S={constants.RETRY_MIN_REMAINING_S:g} leaves no "
+        f"admit window under a {constants.OPERATION_DEADLINE_S:g}s deadline with a "
+        f"{constants.MAX_RETRY_AFTER_S:g}s Retry-After cap: the retry path is dead"
+    )
+
+
+def test_claude_registrations_keep_the_host_timeout_above_the_operation_deadline() -> None:
+    """The Claude half of the same ordering rule, which Codex's gate does not cover.
+
+    Claude Code's `MCP_TOOL_TIMEOUT` default is roughly 28 hours, so before a
+    per-server `timeout` existed this host could not cut a generation off and
+    needed no gate. Setting `"timeout"` (milliseconds) on the registry entry
+    makes it a real ceiling — and therefore a real way to violate
+    `attempt < operation deadline < host tool timeout`.
+
+    Catches: raising `OPERATION_DEADLINE_S` past a Claude registration's
+    `timeout`, which the Codex gate cannot see. The field is optional by
+    design: absent means the ~28-hour default, which is above any plausible
+    deadline, so only a present-but-too-low value is a finding.
+    """
+    checked = 0
+    for registration in (
+        Registration("repo/.mcp.json", REPO_ROOT / ".mcp.json", "json", "mcpServers"),
+        Registration(
+            "user/~/.claude.json", Path.home() / ".claude.json", "json", "mcpServers"
+        ),
+    ):
+        if not registration.path.is_file():
+            continue
+        entry = (
+            _load_json_config(registration.path)
+            .get(registration.servers_key, {})
+            .get(SERVER_KEY)
+        )
+        if entry is None:
+            continue
+        timeout_ms = entry.get("timeout")
+        if timeout_ms is None:
+            continue  # falls through to the ~28h MCP_TOOL_TIMEOUT default
+        assert isinstance(timeout_ms, (int, float)), (
+            f"{registration.label}: 'timeout' must be a number of milliseconds, "
+            f"got {timeout_ms!r}"
+        )
+        assert timeout_ms / 1000 > constants.OPERATION_DEADLINE_S, (
+            f"{registration.label}: timeout={timeout_ms}ms is not above the "
+            f"server's {constants.OPERATION_DEADLINE_S:g}s operation deadline, so "
+            f"Claude Code replaces our structured error with its own"
+        )
+        checked += 1
+    assert checked, "no Claude registration with a per-server timeout was found to check"

@@ -46,7 +46,7 @@ class Budget:
     """A monotonic deadline for one whole operation.
 
     Created at tool entry, so validation, file inspection, the API attempts, and
-    publication all draw on the same 180 seconds. `monotonic` is injected because
+    publication all draw on the same 540 seconds. `monotonic` is injected because
     a wall clock can jump and because tests must not actually wait.
     """
 

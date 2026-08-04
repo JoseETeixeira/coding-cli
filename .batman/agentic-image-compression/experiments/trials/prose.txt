@@ -1,0 +1,4 @@
+The conversation is a disposable hot cache, not a source of truth. Safe compaction
+for large intertwined codebases must keep exact state in current source, tests, Git,
+approved artifacts, and deterministic pointers. Post-compact work must re-read the
+relevant source before making any claim about current behaviour.

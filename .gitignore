@@ -6,3 +6,8 @@ Lib/site-packages/
 
 # mnemo shared-memory: local event log (data dir is ~/.mnemo, outside the repo)
 mnemo/.venv/
+
+# optical-compression: local content-addressed store (originals + segment cache)
+# and benchmark output. Both are regenerable and machine-specific.
+.optical-compression/
+optical-benchmark/

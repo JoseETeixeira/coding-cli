@@ -9,8 +9,9 @@ description: Generate or edit raster images with OpenAI gpt-image-2 through the 
 
 Generate and edit raster images through OpenAI's direct Image API, exposed as
 two local MCP tools: `generate_image` and `edit_image`. Every call is paid,
-moderated, and can take up to about two minutes. Every successful call writes
-real files to disk and returns their absolute paths.
+moderated, and slow — several minutes is normal, and the server allows one
+operation 540 seconds end to end. Every successful call writes real files to
+disk and returns their absolute paths.
 
 ## Before you call: is this actually a raster job?
 
@@ -31,9 +32,13 @@ they can ship, build it in code.
 ## Disclose the cost before you spend it
 
 State plainly, once, before the first call in a session: this calls OpenAI, it
-costs money per image, it is subject to OpenAI's content moderation, and it can
-take roughly two minutes per request. Then proceed — do not ask permission for
-every subsequent image in an approved batch.
+costs money per image, it is subject to OpenAI's content moderation, and it
+commonly takes several minutes per request. Then proceed — do not ask permission
+for every subsequent image in an approved batch.
+
+While a call is in flight, do not conclude it has hung and do not fire a second
+one. Each image is separately billed, and the server already bounds the call at
+540 seconds and will return a structured error if it runs out.
 
 ## Choosing the operation
 

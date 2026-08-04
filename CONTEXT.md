@@ -51,3 +51,23 @@ _Avoid_: Normal scheduled compaction, manual task-boundary compaction
 **Pilot Layer**:
 Isolated Codex profile or Claude settings overlay used to activate host-specific controls without rewriting primary user configuration.
 _Avoid_: Global default, installed policy copy, shared numeric threshold
+
+**Optical Gist**:
+Rendered-image representation of a payload that preserves meaning and navigability while making individual characters only probably correct.
+_Avoid_: Compression, lossless encoding, summary
+
+**Exact Retrieval**:
+Fetching the stored verbatim original by content digest, which is the only authoritative reading of anything an optical gist depicts.
+_Avoid_: Transcription, reading it off the image, OCR
+
+**Critical Token**:
+Substring whose exact characters are load-bearing — hash, UUID, key, path, line number, version pin — where a single wrong character is undetectable and consequential.
+_Avoid_: Word, any identifier, ordinary text
+
+**Density**:
+Glyph size at which a payload is rasterised, trading token cost against decode fidelity; the compression ratio depends on it alone.
+_Avoid_: Resolution, quality, image size
+
+**Segment Optical Cache**:
+Content-addressed store of already-rendered pages that makes re-rendering an append-only history O(N) instead of O(N-squared).
+_Avoid_: Image cache, memoized context, transcript store

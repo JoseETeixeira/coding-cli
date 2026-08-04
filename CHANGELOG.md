@@ -1,5 +1,86 @@
 # Changelog
 
+## 2026-08-04
+
+- Added `optical-compression`: a standalone offline MCP server that renders large
+  read-mostly text payloads as 1-bit PNG pages costing fewer tokens than the text, and
+  returns the exact original on demand by digest. Measured 2.69x (62.9% fewer tokens) on
+  `context_compaction/activation.py`, with a byte-identical retrieval roundtrip. Three
+  tools (`optical_compress`, `optical_retrieve`, `optical_stats`), a content-addressed
+  segment cache, a CLI, a focused offline test suite, a six-suite replication benchmark,
+  and a 16-gate stdio smoke test.
+- Completed canonical and host wiring: `generic-entry` routes qualifying payloads to the
+  skill; Claude Code, Codex, and VS Code/Copilot have repo and user-scope MCP adapters;
+  Claude has one thin user-scope `Read` hook pointer; both launchers share the stable
+  `~/.optical-compression` store; and a dedicated requirements file plus contract gates
+  keep those promises from drifting. Installed skill bodies remain canonical pointers.
+- Framed the feature as lossy optical gist with mandatory exact retrieval rather than as
+  compression (ADR 0016). The reason is measured: at the aggressive density a
+  transcription scored 99.4% character accuracy while corrupting 25% of the identifiers
+  in the sample, flipping a hex digit in a UUID and mangling an access-key-shaped string.
+  A character-accuracy headline hides exactly the errors that matter, so a guard refuses
+  identifier-bearing payloads for automatic compression and the aggressive density
+  auto-downgrades when identifiers are present.
+- Declined payloads under 8,000 characters outright. Page padding does not amortise below
+  that: a 428-character sample measured 0.95x, i.e. the image cost more than the text.
+- Shipped automatic hook interception on Claude Code only, and made the gap visible
+  through `optical_stats` rather than silent (ADR 0017). Codex parses
+  `updatedMCPToolOutput` and then rejects it in `output_parser.rs`, and upstream PR
+  #20703 was closed unmerged; there is no image-capable hook channel there at all. The
+  hook targets `Read`, not `Bash`, because `Bash` declares a 30,000-character result
+  ceiling that a full rendered page exceeds.
+- Set `structured_output=False` on every optical-compression tool and pinned it with a
+  test. Codex checks `structuredContent` before content blocks, so a populated value
+  silently discards the image and the agent receives text with no error at all
+  (openai/codex issue #10334, still open).
+- Sized rendered pages to the token budget (1092px on the standard tier) rather than the
+  1568px edge limit. Rendering to the edge costs 3,136 patches against a 1,568 ceiling,
+  which forces a downscale that shrinks the glyphs and degrades decode accuracy precisely
+  where it is tightest.
+- Recorded the negative result on colour-encoding text as pixels as an executable
+  benchmark suite. Additive mixing collapses 256 letter-pairs into 27 distinct colours
+  with white alone the image of 46 pairs, so it is undecodable in principle; and vision
+  encoders patchify at 28x28px, so exact per-pixel RGB never reaches the language model
+  regardless. Even a repaired injective encoding would be a ~5x expansion, not a
+  compression.
+
+- Raised the `gpt-image-2` latency budgets: an attempt now gets 480 seconds and an
+  operation 540, up from 150 and 180. Real high-quality generations were running past
+  the old per-attempt bound, and the resulting `APITimeoutError` is the one failure this
+  subsystem deliberately never retries — because the request may already have been
+  billed. So the old numbers did not merely fail, they failed after paying.
+- Raised `RETRY_MIN_REMAINING_S` from 20 to 240 seconds. It reads like an admission gate
+  but is really the floor on the second attempt's timeout: `_call_with_retry` admits the
+  retry, then clamps it to `min(API_ATTEMPT_TIMEOUT_S, remaining)`. At 20 it could admit
+  a retry with a 20-second ceiling against a multi-minute generation — a second billed
+  request that could only time out, replacing an actionable `service_error` with a
+  useless one.
+- Codex `tool_timeout_sec` 240 to 600 in both the repository and user `config.toml`, so
+  the host still outlives the server's deadline. `tests/gpt_image_2/test_contract_gates.py`
+  enforces this ordering and would have failed loudly otherwise.
+- Claude Code now sets a per-server `"timeout": 600000` on the `gpt-image-2` registry
+  entry in `.mcp.json` and `~/.claude.json`, which v2.1.203+ supports. The global
+  `MCP_TOOL_TIMEOUT` environment variable was rejected on purpose: its default is
+  roughly 28 hours, so setting it to 600000 for this server would have *shortened* every
+  other MCP server's ceiling to ten minutes.
+- Corrected a factual claim in ADR 0015 and `README.md` that a `.mcp.json` entry cannot
+  set Claude Code's tool timeout. It can, per-server, and that is now the mechanism used.
+  Claude Code was never the thing cutting these calls off.
+- Closed three gaps an adversarial review of this very change found, each one a
+  promise the change made without a gate to keep it. `test_contract_gates.py` now
+  pins the Claude-side per-server `timeout` against `OPERATION_DEADLINE_S` (the Codex
+  half was already gated, so one ordering rule had two halves and one guard), pins the
+  operation deadline in `SKILL.md` (the change put a hard `540 seconds` into the one
+  document an agent reads before spending money, where only the README was gated), and
+  pins `RETRY_MIN_REMAINING_S` from both sides. That last one needed a policy gate
+  rather than a unit test: `retried timeout >= floor` holds for *any* floor, so a unit
+  test cannot tell 240 from 20. All three were verified by mutation — each fails when
+  the value it guards is moved, which is the only evidence a new test is worth having.
+- Re-stated the latency everywhere it is read, including the `generate_image` /
+  `edit_image` tool descriptions themselves — the copy a calling model sees before it
+  decides a running call has hung — plus `README.md` and `skills/gpt-image-2/SKILL.md`.
+  ADR 0015 keeps its decision and gains a dated amendment.
+
 ## 2026-08-02
 
 - Added the `gpt-image-2` capability: a canonical `skills/gpt-image-2/` workflow plus a

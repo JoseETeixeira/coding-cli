@@ -75,8 +75,10 @@ mcp = FastMCP(constants.SERVER_NAME)
 
 _PAID_NOTICE = (
     "Calls OpenAI's Image API: this costs money, is subject to OpenAI "
-    "moderation, and can take up to about two minutes. Writes image files to "
-    "disk and never overwrites an existing file."
+    "moderation, and is slow — a high-quality generation commonly runs for "
+    "several minutes, and the server allows one operation 540 seconds end to "
+    "end. A call still running after two minutes is normal, not hung. Writes "
+    "image files to disk and never overwrites an existing file."
 )
 
 _ANNOTATIONS = ToolAnnotations(

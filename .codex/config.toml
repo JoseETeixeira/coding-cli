@@ -13,7 +13,23 @@ env_vars = ["OPENAI_API_KEY"]
 # 10s default on a cold filesystem.
 startup_timeout_sec = 30
 # Load-bearing, not decorative: Codex's default per-tool timeout is 60s, and a
-# high-quality generation is documented to take up to ~2 minutes. This must sit
-# above the server's own 180s operation deadline so the server returns its
-# structured error instead of the host cutting the call off first.
-tool_timeout_sec = 240
+# high-quality generation commonly runs for several minutes. This must sit above
+# the server's own 540s operation deadline so the server returns its structured
+# error instead of the host cutting the call off first.
+tool_timeout_sec = 600
+
+[mcp_servers.optical-compression]
+command = "C:/Users/josee/AppData/Local/Programs/Python/Python312/python.exe"
+args = ["C:/Users/josee/source/coding-cli/run_optical_compression_server.py"]
+# Host marker only; this server remains fully offline and takes no credentials.
+env = { CODEX_SESSION = "1" }
+# Pillow's import is slower than Codex's 10s default on a cold filesystem.
+startup_timeout_sec = 30
+# Rendering a multi-page payload is CPU-bound but bounded; well inside the 60s
+# default, so no tool_timeout_sec override is needed here.
+
+# NOTE FOR CODEX USERS: the MCP tools below work normally, but AUTOMATIC hook
+# interception does NOT exist on this host and cannot be added. Codex parses
+# `updatedMCPToolOutput` and then rejects it outright in
+# codex-rs/hooks/src/engine/output_parser.rs, and upstream PR #20703 to support
+# it was closed unmerged. Call optical_compress explicitly instead.

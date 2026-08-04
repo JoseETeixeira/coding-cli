@@ -1,0 +1,10 @@
+# Dependencies for the standalone optical-compression MCP server and Claude
+# Code hook. Kept separate from mnemo and gpt-image-2 so this offline feature
+# cannot change either subsystem's dependency contract.
+
+# FastMCP stdio server plus structured_output=False, which is load-bearing for
+# preserving image content blocks on Codex.
+mcp>=1.10.0
+
+# 1-bit PNG rendering and deterministic font/image handling.
+pillow>=10.0.0

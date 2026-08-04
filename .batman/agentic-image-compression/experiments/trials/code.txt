@@ -1,0 +1,9 @@
+def allocate_categories(categories, *, max_chars=8000, max_tokens=2000, sep="
+"):
+    _validate_limits(max_chars, max_tokens)
+    indexed = list(enumerate(categories))
+    indexed.sort(key=lambda item: (item[1].priority, item[0]))
+    for _, category in indexed:
+        prefix = sep if parts else ""
+        if fits_budget(current + prefix + category.text, max_chars=max_chars):
+            parts.append(prefix + category.text)
