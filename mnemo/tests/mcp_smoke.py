@@ -7,7 +7,9 @@ Run:  py -3.12 mnemo/tests/mcp_smoke.py
 import asyncio
 import json
 import os
+import shutil
 import sys
+import tempfile
 import uuid
 
 from mcp import ClientSession, StdioServerParameters
@@ -15,7 +17,9 @@ from mcp.client.stdio import stdio_client
 from qdrant_client import QdrantClient
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-RUN_SERVER = os.path.join(os.path.dirname(HERE), "run_server.py")
+MNEMO_ROOT = os.path.dirname(HERE)
+REPO_ROOT = os.path.dirname(MNEMO_ROOT)
+RUN_SERVER = os.path.join(MNEMO_ROOT, "run_server.py")
 
 
 def _content_text(result):
@@ -26,11 +30,17 @@ def _content_text(result):
 
 
 async def main() -> int:
-    collection = f"mnemo_smoke_{uuid.uuid4().hex[:8]}"
+    memory_collection = f"mnemo_smoke_{uuid.uuid4().hex[:8]}"
+    code_collection = f"mnemo_code_smoke_{uuid.uuid4().hex[:8]}"
+    data_dir = tempfile.mkdtemp(prefix="mnemo-smoke-")
     qdrant_url = os.environ.get("MNEMO_QDRANT_URL", "http://127.0.0.1:1337")
     env = {
         **os.environ,
-        "MNEMO_COLLECTION": collection,
+        "MNEMO_COLLECTION": memory_collection,
+        "MNEMO_CODE_COLLECTION": code_collection,
+        "MNEMO_CODE_AUTO_INDEX": "0",
+        "MNEMO_REPO": REPO_ROOT,
+        "MNEMO_DATA_DIR": data_dir,
         "MNEMO_AGENT_ID": "smoke-agent",
         "MNEMO_QDRANT_URL": qdrant_url,
     }
@@ -47,11 +57,24 @@ async def main() -> int:
                 expected = {
                     "memory_status", "memory_write", "memory_search", "task_context",
                     "memory_get", "memory_list", "memory_forget", "memory_stats",
+                    "code_search", "code_index_status", "code_reindex",
                 }
                 assert expected.issubset(set(names)), f"missing tools: {expected - set(names)}"
 
                 status = json.loads(_content_text(await session.call_tool("memory_status", {})))
                 print("STATUS ok:", status.get("ok") is True)
+
+                code_status = json.loads(
+                    _content_text(await session.call_tool("code_index_status", {"repo": REPO_ROOT}))
+                )
+                assert code_status["repo_id"] == code_status["repository_family_id"]
+                assert code_status["code_index_scope"].startswith("wt2_")
+                assert code_status["identity_version"] == 2
+                assert code_status["index_state"] == "unindexed"
+                assert code_status["snapshot_semantics"] == (
+                    "last_completed_index; current source must be verified"
+                )
+                print("CODE_STATUS ok:", True)
 
                 w = await session.call_tool("memory_write", {
                     "text": "mnemo smoke: the shared memory substrate is Qdrant on port 1337",
@@ -102,9 +125,15 @@ async def main() -> int:
                 print("FORGET ok:", True)
     finally:
         try:
-            QdrantClient(url=qdrant_url).delete_collection(collection)
+            client = QdrantClient(url=qdrant_url)
+            for collection in (memory_collection, code_collection):
+                try:
+                    client.delete_collection(collection)
+                except Exception:
+                    pass
         except Exception:
             pass
+        shutil.rmtree(data_dir, ignore_errors=True)
 
     print("\nMCP SMOKE: PASS")
     return 0

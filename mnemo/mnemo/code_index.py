@@ -4,17 +4,17 @@ The code index is a *rebuildable cache*, deliberately separate from memory:
 
   git-tracked files -> line-window chunks -> OpenAI embeddings
       -> Qdrant collection `mnemo_code` (payload is the source of truth)
-      -> per-repo manifest (~/.mnemo/code/<repo_id>/manifest.json) for incrementality
+      -> per-worktree v2 manifest (~/.mnemo/code/v2/<scope>/manifest.json)
 
 It lives inside the mnemo MCP server rather than in a host hook, because that is
 the only surface every agent shares: Claude Code hooks do not exist in Codex.
-Two agents pointed at the same Qdrant therefore share one index — whichever
-indexes first, both query.
+Two agents pointed at the same physical worktree share one scope. Related
+worktrees and clones remain isolated even when they share Git history.
 
 Three constraints here are load-bearing and were established empirically
-(see ADR 0007); changing them silently corrupts the index:
+(see ADR 0018); changing them silently corrupts the index:
 
-  * Chunk point IDs are uuid5(repo_id:path:chunk_idx), never uuid4. Hosts reap
+  * Chunk point IDs are uuid5(scope:path:chunk_idx), never uuid4. Hosts reap
     stdio servers with TerminateProcess and a daemon thread's `finally` never
     runs, so interrupted indexes are ROUTINE. Deterministic IDs make a resumed
     index overwrite; uuid4 would duplicate every chunk on every kill.
@@ -32,13 +32,14 @@ import hashlib
 import json
 import logging
 import os
+import stat
 import subprocess
 import threading
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any, Iterable
 
 from qdrant_client import QdrantClient
 from qdrant_client import models as qm
@@ -50,6 +51,9 @@ from .embedders import Embedder, make_embedder
 log = logging.getLogger("mnemo.code_index")
 
 _CHUNK_NS = uuid.UUID("6f9619ff-8b86-d011-b42d-00cf4fc964ff")
+IDENTITY_VERSION = 2
+MANIFEST_SCHEMA_VERSION = 2
+SNAPSHOT_SEMANTICS = "last_completed_index; current source must be verified"
 
 NOINDEX_MARKER = ".mnemo-noindex"
 
@@ -106,14 +110,40 @@ class GitUnavailable(RepoUnresolved):
     """
 
 
-@dataclass
+class WorktreeIdentityUnavailable(RepoUnresolved):
+    """The repository exists, but a safe per-worktree proof is unavailable."""
+
+
+@dataclass(frozen=True)
+class WorktreeIdentity:
+    version: int
+    canonical_root: Path
+    git_dir: Path
+    git_common_dir: Path
+    proof_digest: str
+    code_index_scope: str
+
+
+@dataclass(frozen=True)
 class RepoInfo:
     root: Path
     repo_id: str
     name: str
+    worktree: WorktreeIdentity
+
+    @property
+    def code_index_scope(self) -> str:
+        return self.worktree.code_index_scope
 
     def as_dict(self) -> dict:
-        return {"repo": self.name, "repo_id": self.repo_id, "root": str(self.root)}
+        return {
+            "repo": self.name,
+            "repo_id": self.repo_id,
+            "repository_family_id": self.repo_id,
+            "root": str(self.root),
+            "code_index_scope": self.code_index_scope,
+            "identity_version": self.worktree.version,
+        }
 
 
 def _run_git(root: Path | str, *args: str, timeout: float = 30.0) -> str | None:
@@ -189,6 +219,94 @@ def compute_repo_id(root: Path) -> str:
     return "p" + hashlib.sha256(norm.encode("utf-8")).hexdigest()[:16]
 
 
+def _canonical_path(path: Path | str) -> Path:
+    try:
+        return Path(path).resolve(strict=True)
+    except OSError as exc:
+        raise WorktreeIdentityUnavailable("worktree identity path is missing or unreadable") from exc
+
+
+def _canonical_git_path(root: Path, value: str) -> Path:
+    candidate = Path(value)
+    if not candidate.is_absolute():
+        candidate = root / candidate
+    return _canonical_path(candidate)
+
+
+def _path_identity(path: Path, label: str, *, require_incarnation_clock: bool) -> list[str]:
+    try:
+        metadata = os.stat(path, follow_symlinks=False)
+    except OSError as exc:
+        raise WorktreeIdentityUnavailable(f"worktree identity {label} is unreadable") from exc
+    device = int(getattr(metadata, "st_dev", 0) or 0)
+    file_id = int(getattr(metadata, "st_ino", 0) or 0)
+    birth_ns = int(getattr(metadata, "st_birthtime_ns", 0) or 0)
+    if not birth_ns:
+        birth = float(getattr(metadata, "st_birthtime", 0.0) or 0.0)
+        birth_ns = int(birth * 1_000_000_000)
+    clock_ns = birth_ns
+    if not clock_ns and require_incarnation_clock:
+        clock_ns = int(getattr(metadata, "st_ctime_ns", 0) or 0)
+    if not device or not file_id or (require_incarnation_clock and not clock_ns):
+        raise WorktreeIdentityUnavailable(f"worktree identity {label} lacks stable filesystem proof")
+    return [label, str(stat.S_IFMT(metadata.st_mode)), str(device), str(file_id), str(clock_ns)]
+
+
+def _hash_identity_parts(parts: Iterable[str]) -> str:
+    digest = hashlib.sha256()
+    for part in parts:
+        raw = part.encode("utf-8", errors="surrogatepass")
+        digest.update(len(raw).to_bytes(8, "big"))
+        digest.update(raw)
+    return digest.hexdigest()
+
+
+def compute_code_index_scope(root: Path) -> WorktreeIdentity:
+    """Derive one opaque, fail-closed identity for this worktree incarnation."""
+    canonical_root = _canonical_path(root)
+    git_dir_raw = _run_git(canonical_root, "rev-parse", "--absolute-git-dir", timeout=5.0)
+    common_dir_raw = _run_git(
+        canonical_root,
+        "rev-parse",
+        "--path-format=absolute",
+        "--git-common-dir",
+        timeout=5.0,
+    )
+    if not git_dir_raw or not git_dir_raw.strip() or not common_dir_raw or not common_dir_raw.strip():
+        raise WorktreeIdentityUnavailable("Git did not provide absolute worktree administrative paths")
+    git_dir = _canonical_git_path(canonical_root, git_dir_raw.strip())
+    git_common_dir = _canonical_git_path(canonical_root, common_dir_raw.strip())
+    linked = os.path.normcase(str(git_dir)) != os.path.normcase(str(git_common_dir))
+    marker = git_dir / "gitdir" if linked else git_common_dir / "config"
+
+    parts = [
+        "mnemo-code-worktree-v2",
+        os.path.normcase(str(canonical_root)),
+        os.path.normcase(str(git_dir)),
+        os.path.normcase(str(git_common_dir)),
+        *_path_identity(git_dir, "git-dir", require_incarnation_clock=False),
+        *_path_identity(marker, "stable-marker", require_incarnation_clock=True),
+    ]
+    if linked:
+        try:
+            marker_bytes = marker.read_bytes()
+        except OSError as exc:
+            raise WorktreeIdentityUnavailable("linked-worktree identity marker is unreadable") from exc
+        if len(marker_bytes) > 4096:
+            raise WorktreeIdentityUnavailable("linked-worktree identity marker is unexpectedly large")
+        parts.extend(("linked-marker-digest", hashlib.sha256(marker_bytes).hexdigest()))
+
+    proof_digest = _hash_identity_parts(parts)
+    return WorktreeIdentity(
+        version=IDENTITY_VERSION,
+        canonical_root=canonical_root,
+        git_dir=git_dir,
+        git_common_dir=git_common_dir,
+        proof_digest=proof_digest,
+        code_index_scope=f"wt2_{proof_digest[:32]}",
+    )
+
+
 def resolve_repo(candidate: str | Path | None, cfg: Config | None = None) -> RepoInfo:
     """Turn a candidate directory into a RepoInfo, or raise RepoUnresolved.
 
@@ -213,7 +331,13 @@ def resolve_repo(candidate: str | Path | None, cfg: Config | None = None) -> Rep
     if (root / NOINDEX_MARKER).exists():
         raise RepoUnresolved(f"'{root}' opts out of indexing via {NOINDEX_MARKER}")
 
-    return RepoInfo(root=root, repo_id=compute_repo_id(root), name=root.name)
+    root = _canonical_path(root)
+    return RepoInfo(
+        root=root,
+        repo_id=compute_repo_id(root),
+        name=root.name,
+        worktree=compute_code_index_scope(root),
+    )
 
 
 def candidates_from_roots(root_uris: Iterable[str]) -> list[Path]:
@@ -281,12 +405,13 @@ def discover_files(root: Path, cfg: Config) -> list[str]:
     """
     out = _run_git(root, "ls-files", "-z")
     if out is None:
-        return []
+        raise RuntimeError("git ls-files failed for repository")
     rels = [p for p in out.split("\0") if p]
     if cfg.code_include_untracked:
         extra = _run_git(root, "ls-files", "-z", "--others", "--exclude-standard")
-        if extra:
-            rels.extend(p for p in extra.split("\0") if p)
+        if extra is None:
+            raise RuntimeError("git ls-files for untracked files failed")
+        rels.extend(p for p in extra.split("\0") if p)
     seen: set[str] = set()
     keep: list[str] = []
     for rel in rels:
@@ -356,8 +481,8 @@ def file_sha(path: Path) -> str | None:
 def read_text(path: Path) -> str | None:
     try:
         raw = path.read_bytes()
-    except OSError:
-        return None
+    except OSError as exc:
+        raise RuntimeError("eligible source file became unreadable") from exc
     if b"\0" in raw[:8192]:
         return None  # binary despite an allowed extension
     return raw.decode("utf-8", errors="replace")
@@ -367,7 +492,7 @@ def read_text(path: Path) -> str | None:
 # manifest
 # ---------------------------------------------------------------------------
 class Manifest:
-    """Per-repo incremental state. A cache — safe to delete; the index rebuilds.
+    """Scope-bound v2 incremental state. Safe to delete; index rebuilds.
 
     Flushed via atomic os.replace so a killed process never leaves a torn file.
     """
@@ -376,7 +501,8 @@ class Manifest:
 
     def __init__(self, path: Path):
         self.path = path
-        self.data: dict[str, Any] = {"files": {}, "repo_id": None, "embed_model": None, "last_index": None}
+        self.data: dict[str, Any] = {"files": {}}
+        self.load_state = "missing"
         self._pending = 0
         self._load()
 
@@ -386,8 +512,64 @@ class Manifest:
                 loaded = json.loads(self.path.read_text(encoding="utf-8"))
                 if isinstance(loaded, dict) and isinstance(loaded.get("files"), dict):
                     self.data = loaded
+                    self.load_state = "loaded"
+                else:
+                    self.load_state = "invalid"
         except (OSError, ValueError) as exc:
-            log.warning("manifest unreadable (%s); rebuilding from scratch", exc)
+            self.load_state = "invalid"
+            log.warning("manifest unreadable (%s); scope requires rebuild", exc)
+
+    def matches(self, repo: RepoInfo, embed_model: str, code_collection: str) -> bool:
+        files = self.data.get("files")
+        if not isinstance(files, dict) or any(
+            not isinstance(rel, str)
+            or not isinstance(entry, dict)
+            or not isinstance(entry.get("sha"), str)
+            or not isinstance(entry.get("chunks"), int)
+            or entry["chunks"] < 0
+            or not isinstance(entry.get("indexed_at"), (int, float))
+            for rel, entry in files.items()
+        ):
+            return False
+        if not isinstance(self.data.get("indexing"), bool):
+            return False
+        if self.data.get("last_index") is not None and not isinstance(
+            self.data["last_index"], (int, float)
+        ):
+            return False
+        if self.data.get("snapshot_head") is not None and not isinstance(
+            self.data["snapshot_head"], str
+        ):
+            return False
+        expected = {
+            "schema_version": MANIFEST_SCHEMA_VERSION,
+            "identity_version": repo.worktree.version,
+            "repository_family_id": repo.repo_id,
+            "code_index_scope": repo.code_index_scope,
+            "proof_digest": repo.worktree.proof_digest,
+            "repo_root": str(repo.root),
+            "embed_model": embed_model,
+            "code_collection": code_collection,
+        }
+        return self.load_state == "loaded" and all(self.data.get(key) == value for key, value in expected.items())
+
+    def bind(self, repo: RepoInfo, embed_model: str, code_collection: str) -> None:
+        self.data = {
+            "schema_version": MANIFEST_SCHEMA_VERSION,
+            "identity_version": repo.worktree.version,
+            "repository_family_id": repo.repo_id,
+            "code_index_scope": repo.code_index_scope,
+            "proof_digest": repo.worktree.proof_digest,
+            "repo_root": str(repo.root),
+            "embed_model": embed_model,
+            "code_collection": code_collection,
+            "snapshot_head": None,
+            "last_index": None,
+            "indexing": False,
+            "files": {},
+        }
+        self.load_state = "loaded"
+        self._pending = 0
 
     @property
     def files(self) -> dict[str, Any]:
@@ -407,6 +589,9 @@ class Manifest:
         entry = self.files.get(rel)
         return bool(entry and entry.get("sha") == sha)
 
+    def chunk_count(self) -> int:
+        return sum(entry["chunks"] for entry in self.files.values())
+
     def flush(self) -> None:
         self._pending = 0
         tmp = self.path.with_suffix(".json.tmp")
@@ -416,6 +601,7 @@ class Manifest:
             os.replace(tmp, self.path)
         except OSError as exc:
             log.warning("could not flush manifest %s: %s", self.path, exc)
+            raise
 
 
 # ---------------------------------------------------------------------------
@@ -426,6 +612,7 @@ class IndexProgress:
     state: str = "idle"  # idle | running | done | error | skipped
     repo: str | None = None
     repo_id: str | None = None
+    code_index_scope: str | None = None
     files_total: int = 0
     files_done: int = 0
     files_indexed: int = 0
@@ -442,17 +629,39 @@ class IndexProgress:
         return out
 
 
+class ProgressRegistry:
+    """Process-local progress shared by foreground and background clients."""
+
+    def __init__(self) -> None:
+        self._items: dict[str, IndexProgress] = {}
+        self._lock = threading.Lock()
+
+    def get(self, code_index_scope: str) -> IndexProgress:
+        with self._lock:
+            item = self._items.get(code_index_scope)
+            return replace(item) if item is not None else IndexProgress(code_index_scope=code_index_scope)
+
+    def set(self, code_index_scope: str, progress: IndexProgress) -> None:
+        with self._lock:
+            self._items[code_index_scope] = replace(progress)
+
+
 class CodeIndex:
     """Owns the `mnemo_code` collection. Never touches mnemo_memory."""
 
-    def __init__(self, cfg: Config, embedder: Embedder | None = None, client: QdrantClient | None = None):
+    def __init__(
+        self,
+        cfg: Config,
+        embedder: Embedder | None = None,
+        client: QdrantClient | None = None,
+        progress_registry: ProgressRegistry | None = None,
+    ):
         self.cfg = cfg
         cfg.ensure_dirs()
         self.embedder = embedder or make_embedder(cfg)
         self.dim = self.embedder.dim
         self.client = client or QdrantClient(url=cfg.qdrant_url, timeout=60)
-        self._progress: dict[str, IndexProgress] = {}
-        self._progress_lock = threading.Lock()
+        self._progress = progress_registry or ProgressRegistry()
         self._ensure_collection()
 
     # ---- setup -----------------------------------------------------------
@@ -466,50 +675,74 @@ class CodeIndex:
                 exists = True
             except Exception:
                 exists = False
-        if exists:
-            return
-        try:
-            self.client.create_collection(
-                collection_name=name,
-                vectors_config=qm.VectorParams(size=self.dim, distance=qm.Distance.COSINE),
-            )
-        except Exception as exc:  # concurrent creation by another agent is fine
-            log.debug("create_collection(%s): %s", name, exc)
+        if not exists:
+            try:
+                self.client.create_collection(
+                    collection_name=name,
+                    vectors_config=qm.VectorParams(size=self.dim, distance=qm.Distance.COSINE),
+                )
+            except Exception as exc:  # concurrent creation by another agent is fine
+                log.debug("create_collection(%s): %s", name, exc)
         # Without these, per-file eviction degrades to a full scan on the hot path.
-        for field_name in ("repo_id", "file_path", "file_hash", "language"):
+        for field_name in (
+            "code_index_scope",
+            "repository_family_id",
+            "repo_id",
+            "file_path",
+            "file_hash",
+            "language",
+        ):
             try:
                 self.client.create_payload_index(name, field_name=field_name, field_schema=qm.PayloadSchemaType.KEYWORD)
             except Exception:
                 pass
 
     # ---- progress --------------------------------------------------------
-    def progress(self, repo_id: str) -> IndexProgress:
-        with self._progress_lock:
-            return self._progress.get(repo_id, IndexProgress())
+    def progress(self, code_index_scope: str) -> IndexProgress:
+        return self._progress.get(code_index_scope)
 
-    def _set_progress(self, repo_id: str, prog: IndexProgress) -> None:
-        with self._progress_lock:
-            self._progress[repo_id] = prog
+    def _set_progress(self, code_index_scope: str, prog: IndexProgress) -> None:
+        self._progress.set(code_index_scope, prog)
 
     # ---- paths -----------------------------------------------------------
-    def _repo_dir(self, repo_id: str) -> Path:
-        return self.cfg.code_dir / repo_id
+    def _repo_dir(self, code_index_scope: str) -> Path:
+        return self.cfg.code_dir / "v2" / code_index_scope
 
-    def _manifest_path(self, repo_id: str) -> Path:
-        return self._repo_dir(repo_id) / "manifest.json"
+    def _manifest_path(self, code_index_scope: str) -> Path:
+        return self._repo_dir(code_index_scope) / "manifest.json"
 
-    def _lock_path(self, repo_id: str) -> Path:
-        return self._repo_dir(repo_id) / "index.lock"
+    def _lock_path(self, code_index_scope: str) -> Path:
+        return self._repo_dir(code_index_scope) / "index.lock"
 
     # ---- qdrant ----------------------------------------------------------
     @staticmethod
-    def _point_id(repo_id: str, rel: str, chunk_idx: int) -> str:
+    def _point_id(code_index_scope: str, rel: str, chunk_idx: int) -> str:
         # Deterministic: a resumed index overwrites instead of duplicating.
-        return str(uuid.uuid5(_CHUNK_NS, f"{repo_id}:{rel}:{chunk_idx}"))
+        return str(uuid.uuid5(_CHUNK_NS, f"v2:{code_index_scope}:{rel}:{chunk_idx}"))
 
-    def _delete_file_points(self, repo_id: str, rel: str, keep_hash: str | None = None) -> None:
+    @staticmethod
+    def _scope_filter(code_index_scope: str) -> qm.Filter:
+        return qm.Filter(
+            must=[qm.FieldCondition(key="code_index_scope", match=qm.MatchValue(value=code_index_scope))]
+        )
+
+    def _delete_scope_points(self, code_index_scope: str) -> None:
+        self.client.delete(
+            collection_name=self.cfg.code_collection,
+            points_selector=qm.FilterSelector(filter=self._scope_filter(code_index_scope)),
+            wait=True,
+        )
+
+    def _count_scope_points(self, code_index_scope: str) -> int:
+        return self.client.count(
+            collection_name=self.cfg.code_collection,
+            count_filter=self._scope_filter(code_index_scope),
+            exact=True,
+        ).count
+
+    def _delete_file_points(self, code_index_scope: str, rel: str, keep_hash: str | None = None) -> None:
         must: list[Any] = [
-            qm.FieldCondition(key="repo_id", match=qm.MatchValue(value=repo_id)),
+            qm.FieldCondition(key="code_index_scope", match=qm.MatchValue(value=code_index_scope)),
             qm.FieldCondition(key="file_path", match=qm.MatchValue(value=rel)),
         ]
         flt = qm.Filter(must=must)
@@ -520,16 +753,13 @@ class CodeIndex:
                 must=must,
                 must_not=[qm.FieldCondition(key="file_hash", match=qm.MatchValue(value=keep_hash))],
             )
-        try:
-            self.client.delete(
-                collection_name=self.cfg.code_collection,
-                # FilterSelector must be explicit — points_selector is overloaded
-                # and a bare list means delete-by-ID.
-                points_selector=qm.FilterSelector(filter=flt),
-                wait=True,
-            )
-        except Exception as exc:
-            log.warning("failed evicting points for %s: %s", rel, exc)
+        self.client.delete(
+            collection_name=self.cfg.code_collection,
+            # FilterSelector must be explicit — points_selector is overloaded
+            # and a bare list means delete-by-ID.
+            points_selector=qm.FilterSelector(filter=flt),
+            wait=True,
+        )
 
     def _upsert(self, points: list[qm.PointStruct]) -> None:
         self.client.upsert(collection_name=self.cfg.code_collection, points=points, wait=True)
@@ -538,33 +768,45 @@ class CodeIndex:
     def index_repo(self, repo: RepoInfo, force: bool = False) -> IndexProgress:
         """Incrementally index a repo. Safe to kill at any point: the next run
         resumes and any duplicated work is idempotent."""
-        prog = IndexProgress(state="running", repo=repo.name, repo_id=repo.repo_id, started_at=time.time())
-        self._set_progress(repo.repo_id, prog)
+        scope = repo.code_index_scope
+        prog = IndexProgress(
+            state="running",
+            repo=repo.name,
+            repo_id=repo.repo_id,
+            code_index_scope=scope,
+            started_at=time.time(),
+        )
+        self._set_progress(scope, prog)
 
-        lock = _acquire_lock(self._lock_path(repo.repo_id))
+        lock = _acquire_lock(self._lock_path(scope))
         if lock is None:
             prog.state = "skipped"
-            prog.detail = "another agent is indexing this repo"
+            prog.detail = "another process is indexing this worktree scope"
             prog.finished_at = time.time()
-            self._set_progress(repo.repo_id, prog)
+            self._set_progress(scope, prog)
             return prog
 
         try:
-            manifest = Manifest(self._manifest_path(repo.repo_id))
-            if force or manifest.data.get("embed_model") not in (None, self.cfg.embed_model):
-                # A different embedder means every stored vector is meaningless.
-                manifest.data["files"] = {}
-            manifest.data["repo_id"] = repo.repo_id
-            manifest.data["repo_root"] = str(repo.root)
-            manifest.data["embed_model"] = self.cfg.embed_model
+            manifest = Manifest(self._manifest_path(scope))
+            bound = manifest.matches(repo, self.cfg.embed_model, self.cfg.code_collection)
+            complete = bound and self._count_scope_points(scope) == manifest.chunk_count()
+            if force or not complete:
+                # Missing/corrupt/legacy/mismatched state cannot authorize orphan
+                # points. Reset only this derived v2 scope, then bind empty first.
+                self._delete_scope_points(scope)
+                manifest.bind(repo, self.cfg.embed_model, self.cfg.code_collection)
+                manifest.flush()
+            manifest.data["indexing"] = True
+            manifest.flush()
 
             files = discover_files(repo.root, self.cfg)
             prog.files_total = len(files)
-            self._set_progress(repo.repo_id, prog)
+            self._set_progress(scope, prog)
+            file_failures = 0
 
             live = set(files)
             for gone in [r for r in list(manifest.files) if r not in live]:
-                self._delete_file_points(repo.repo_id, gone)
+                self._delete_file_points(scope, gone)
                 manifest.drop(gone)
 
             for rel in files:
@@ -572,36 +814,45 @@ class CodeIndex:
                 abs_path = repo.root / rel
                 sha = file_sha(abs_path)
                 if sha is None:
+                    file_failures += 1
                     continue
                 if not force and manifest.unchanged(rel, sha):
                     continue
                 try:
                     written = self._index_file(repo, rel, abs_path, sha, manifest)
                 except Exception as exc:
-                    log.warning("indexing %s failed: %s", rel, exc)
+                    log.warning("indexing %s in scope %s failed: %s", rel, scope[4:12], exc)
+                    file_failures += 1
                     continue
                 if written:
                     prog.files_indexed += 1
                     prog.chunks_written += written
-                self._set_progress(repo.repo_id, prog)
+                self._set_progress(scope, prog)
 
+            if file_failures:
+                raise RuntimeError(f"indexing failed for {file_failures} eligible file(s)")
             manifest.data["last_index"] = time.time()
+            head = _run_git(repo.root, "rev-parse", "HEAD", timeout=5.0)
+            manifest.data["snapshot_head"] = head.strip() if head and head.strip() else None
+            manifest.data["indexing"] = False
             manifest.flush()
             prog.state = "done"
             prog.finished_at = time.time()
         except Exception as exc:
-            log.exception("index_repo failed for %s", repo.name)
+            log.exception("index_repo failed for %s scope %s", repo.name, scope[4:12])
             prog.state = "error"
-            prog.error = str(exc)
+            prog.error = f"{type(exc).__name__}: indexing failed; see mnemo server logs"
             prog.finished_at = time.time()
         finally:
             _release_lock(lock)
-        self._set_progress(repo.repo_id, prog)
+        self._set_progress(scope, prog)
         return prog
 
     def _index_file(self, repo: RepoInfo, rel: str, abs_path: Path, sha: str, manifest: Manifest) -> int:
         text = read_text(abs_path)
         if text is None or not text.strip():
+            self._delete_file_points(repo.code_index_scope, rel)
+            manifest.record(rel, sha, 0)
             return 0
         chunks = chunk_text(text, self.cfg.code_chunk_lines, self.cfg.code_chunk_overlap)
         if not chunks:
@@ -612,10 +863,11 @@ class CodeIndex:
 
         points = [
             qm.PointStruct(
-                id=self._point_id(repo.repo_id, rel, c.index),
+                id=self._point_id(repo.code_index_scope, rel, c.index),
                 vector=vec,
                 payload={
-                    "repo_id": repo.repo_id,
+                    "code_index_scope": repo.code_index_scope,
+                    "repository_family_id": repo.repo_id,
                     "repo": repo.name,
                     "file_path": rel,
                     "file_hash": sha,
@@ -633,7 +885,7 @@ class CodeIndex:
         # Order matters: upsert -> sweep -> record. Reversing it would let a kill
         # leave the manifest claiming a file is indexed when it is not.
         self._upsert(points)
-        self._delete_file_points(repo.repo_id, rel, keep_hash=sha)
+        self._delete_file_points(repo.code_index_scope, rel, keep_hash=sha)
         manifest.record(rel, sha, len(points))
         return len(points)
 
@@ -646,7 +898,12 @@ class CodeIndex:
         language: str | None = None,
         path_contains: str | None = None,
     ) -> list[dict]:
-        must: list[Any] = [qm.FieldCondition(key="repo_id", match=qm.MatchValue(value=repo.repo_id))]
+        manifest = Manifest(self._manifest_path(repo.code_index_scope))
+        if not manifest.matches(repo, self.cfg.embed_model, self.cfg.code_collection):
+            return []
+        must: list[Any] = [
+            qm.FieldCondition(key="code_index_scope", match=qm.MatchValue(value=repo.code_index_scope))
+        ]
         if language:
             must.append(qm.FieldCondition(key="language", match=qm.MatchValue(value=language.lstrip(".").lower())))
         flt = qm.Filter(must=must)
@@ -691,24 +948,50 @@ class CodeIndex:
         return out
 
     def status(self, repo: RepoInfo) -> dict:
-        manifest = Manifest(self._manifest_path(repo.repo_id))
-        try:
-            count = self.client.count(
-                collection_name=self.cfg.code_collection,
-                count_filter=qm.Filter(must=[qm.FieldCondition(key="repo_id", match=qm.MatchValue(value=repo.repo_id))]),
-                exact=True,
-            ).count
-        except Exception as exc:
-            return {**repo.as_dict(), "ok": False, "error": str(exc)}
-        prog = self.progress(repo.repo_id)
+        manifest = Manifest(self._manifest_path(repo.code_index_scope))
+        bound = manifest.matches(repo, self.cfg.embed_model, self.cfg.code_collection)
+        prog = self.progress(repo.code_index_scope)
+        count = 0
+        if bound:
+            try:
+                count = self._count_scope_points(repo.code_index_scope)
+            except Exception:
+                log.exception(
+                    "status count failed for %s scope %s",
+                    repo.name,
+                    repo.code_index_scope[4:12],
+                )
+                return {
+                    **repo.as_dict(),
+                    "ok": False,
+                    "error": "status_failed",
+                    "detail": "code index status failed; check mnemo server logs",
+                }
+        if prog.state == "running":
+            index_state = "building"
+        elif prog.state == "skipped" and prog.detail == "another process is indexing this worktree scope":
+            index_state = "building_elsewhere"
+        elif prog.state == "error":
+            index_state = "error"
+        elif not bound:
+            index_state = "unindexed"
+        elif manifest.data.get("indexing") is True or count != manifest.chunk_count():
+            index_state = "interrupted"
+        elif manifest.data.get("last_index") is not None:
+            index_state = "ready"
+        else:
+            index_state = "interrupted"
         return {
             **repo.as_dict(),
             "ok": True,
+            "index_state": index_state,
             "collection": self.cfg.code_collection,
             "embed_model": self.cfg.embed_model,
-            "files_in_manifest": len(manifest.files),
+            "files_in_manifest": len(manifest.files) if bound else 0,
             "chunks_indexed": count,
-            "last_index": manifest.data.get("last_index"),
+            "last_index": manifest.data.get("last_index") if bound else None,
+            "snapshot_head": manifest.data.get("snapshot_head") if bound else None,
+            "snapshot_semantics": SNAPSHOT_SEMANTICS,
             "auto_index": self.cfg.code_auto_index,
             "progress": prog.as_dict(),
         }
@@ -785,25 +1068,29 @@ class BackgroundIndexer:
         code_reindex wants the debounce off but not necessarily a full rebuild.
         """
         with self._lock:
-            live = self._threads.get(repo.repo_id)
+            scope = repo.code_index_scope
+            live = self._threads.get(scope)
             if live is not None and live.is_alive():
                 return "already-running"
-            last = self._done.get(repo.repo_id)
+            last = self._done.get(scope)
             if min_interval > 0 and last is not None and (time.time() - last) < min_interval:
                 return "recently-indexed"
 
             def run() -> None:
+                completed = False
                 try:
                     # Own clients: sidesteps sharing a QdrantClient/OpenAI client
                     # across the loop thread and this one.
-                    self._factory().index_repo(repo, force=full)
+                    result = self._factory().index_repo(repo, force=full)
+                    completed = result is not None and result.state == "done"
                 except Exception:
-                    log.exception("background index failed for %s", repo.name)
+                    log.exception("background index failed for %s scope %s", repo.name, scope[4:12])
                 finally:
-                    with self._lock:
-                        self._done[repo.repo_id] = time.time()
+                    if completed:
+                        with self._lock:
+                            self._done[scope] = time.time()
 
-            thread = threading.Thread(target=run, name=f"mnemo-index-{repo.name}", daemon=True)
-            self._threads[repo.repo_id] = thread
+            thread = threading.Thread(target=run, name=f"mnemo-index-{repo.name}-{scope[4:12]}", daemon=True)
+            self._threads[scope] = thread
             thread.start()
             return "started"

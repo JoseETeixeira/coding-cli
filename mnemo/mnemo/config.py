@@ -73,7 +73,7 @@ class Config:
     # ---- code index -------------------------------------------------------
     # The code index is a rebuildable cache in its own collection; it never
     # shares mnemo_memory (whose reads apply a `revoked` filter and whose event
-    # log is append-only truth). See ADR 0007.
+    # log is append-only truth). Worktree cache identity is defined by ADR 0018.
     code_collection: str = field(default_factory=lambda: _env("MNEMO_CODE_COLLECTION", default="mnemo_code"))
     code_auto_index: bool = field(default_factory=lambda: _bool("MNEMO_CODE_AUTO_INDEX", default=True))
     # Explicit repo override. Only meaningful for project-scoped registrations —
@@ -112,7 +112,7 @@ class Config:
 
     @property
     def code_dir(self) -> Path:
-        """Per-repo code-index manifests + locks (a cache, not the event log)."""
+        """Versioned, per-worktree manifests + locks (not the event log)."""
         return self.data_dir / "code"
 
     def ensure_dirs(self) -> None:
