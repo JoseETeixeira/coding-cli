@@ -1,6 +1,6 @@
 ---
 name: gamedev-workflow
-description: Route material game-development work across game design, gameplay implementation, 3D production, Godot FPS, Godot particles, Godot performance, and UI motion while preserving project-specific authority and evidence gates. Use for game mechanics, gameplay systems, engine code, assets, VFX, profiling, or game UI motion; compose with generic-entry and the matching project specialist rather than replacing them.
+description: Route material game-development work across game design, gameplay implementation, 3D models, transforms, rigs, skeletons, poses, skinning, deformation, retargeting, visible game animation, Godot FPS, particles, performance, and UI motion while preserving project-specific authority and evidence gates. Use for game mechanics, gameplay systems, engine code, assets, source matching, skeletal or procedural motion, first-person weapon or camera animation, VFX, profiling, or game UI motion; compose with generic-entry and the matching project specialist rather than replacing them.
 ---
 
 # Gamedev Workflow
@@ -9,7 +9,7 @@ Keep `generic-entry` active. Use this skill only to select game-development disc
 
 ## Boundaries
 
-Use this workflow when work materially concerns game mechanics, gameplay code, engine integration, game assets, 3D production, VFX, performance, or UI motion.
+Use this workflow when work materially concerns game mechanics, gameplay code, engine integration, game assets, 3D models/transforms/rigs/poses, visible game animation, VFX, performance, or UI motion.
 
 Do not use it for casual game discussion, non-game UI animation, generic image editing, or a request that merely mentions a game. A matched route does not authorize edits, editor launches, asset copying, or runtime mutation.
 
@@ -33,14 +33,18 @@ State any conflict. Never let a lower layer silently override a higher layer.
 |---|---|---|---|
 | Mechanics, loops, economy, progression, onboarding, GDD, playtests | `game-designer` | `visual-explainer` for complex flows | Define player/audience/constraints and a measurable playtest question |
 | Gameplay architecture/systems, Unity, Unreal | `game-developer` | matching specialist; `safe-refactoring-testing` for risky refactors | Project architecture/platform wins; generic FPS/pooling/LOD targets remain hypotheses |
-| Mesh, topology, UV, baking, LOD, export | `3d-modeling` | matching specialist; optional `imagegen` only for bitmap ideation | Confirm DCC, engine importer, scale, axes, naming, budgets, and validation |
-| Godot FPS controller/weapons | `godot-genre-shooter-fps` | matching Godot specialist; testing guidance | Confirm exact Godot version and project scene/input/physics contracts; require live editor/runtime verification |
-| Godot particles/VFX | `godot-particles` | matching Godot specialist; optional `imagegen` for texture ideation | Confirm renderer/version/budget; preserve reduced-effects mode and owner visual gate |
+| Mesh, topology, UV, baking, LOD, export, 3D model transforms | `3d-modeling` | `verify-3d-animation`; matching specialist; optional `imagegen` only for bitmap ideation | Confirm DCC/import contract plus transform/model/reference evidence where applicable |
+| Rig, skeleton, pose, skinning, deformation, retargeting | `verify-3d-animation` | `3d-modeling` only for mesh/topology work; matching specialist | Verify skeleton/rest/pose, gameplay and diagnostic views, deformation, and source fidelity |
+| Skeletal or procedural visible animation | `verify-3d-animation` | matching domain discipline and specialist | Require multi-frame, critical-frame, per-frame, temporal, and owner evidence |
+| Godot FPS controller/weapons | `godot-genre-shooter-fps` | `verify-3d-animation` for visible hand/weapon/recoil/camera motion; matching Godot specialist; testing guidance | Confirm exact Godot version and project scene/input/physics contracts; require live editor/runtime verification |
+| Godot particles/VFX | `godot-particles` | `verify-3d-animation`; matching Godot specialist; optional `imagegen` for texture ideation | Confirm renderer/version/budget; preserve reduced-effects mode, multi-frame evidence, and owner visual gate |
 | Godot profiling/optimization | `godot-performance-optimization` | matching Godot specialist | Require authored workload, measured baseline, correct build/renderer, and regression evidence |
-| UI motion, transitions, micro-interactions, Lottie | `motion-design` | project UI authority; `visual-explainer` for flows | Provide reduced-motion equivalent; keep semantic state clear without animation; require on-screen acceptance |
-| BYOND-family game work | minimum relevant design skill, if any | `byond-projects` plus BYOND specialist | BYOND-RAG evidence and Dream Maker/project verification stay mandatory |
+| UI motion, transitions, micro-interactions, Lottie | `motion-design` | `verify-3d-animation`; project UI authority; `visual-explainer` for flows | Provide multi-frame evidence and a reduced-motion equivalent; keep semantic state clear; require on-screen acceptance |
+| BYOND-family game work | minimum relevant design skill, if any | `byond-projects` plus BYOND specialist; `verify-3d-animation` for visible animation | BYOND-RAG evidence and Dream Maker/project verification stay mandatory |
 
 For cross-discipline work, load the smallest union of matching rows plus one project specialist. Do not preload every skill.
+
+When `verify-3d-animation` is selected, inspect any provided source, establish comparable gameplay evidence, capture more than one animation frame, verify every scheduled/critical frame and required transition, and keep owner acceptance separate. Keep its detailed sampling, pose/deformation, and evidence procedure in that skill rather than duplicating it here.
 
 ## Workflow
 

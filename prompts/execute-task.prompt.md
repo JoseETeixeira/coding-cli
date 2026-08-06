@@ -35,7 +35,7 @@ When a task involves BYOND or `.dme`, `.dm`, `.dmm`, `.dmf`, or `.dms` files, re
 
 # **Game Development**
 
-When a task materially concerns game mechanics, gameplay systems, engine code, game assets, 3D production, VFX, performance, or game UI motion, also read and follow `skills/gamedev-workflow/SKILL.md`. It composes with this execution workflow and the matching project specialist; it replaces neither.
+When a task materially concerns game mechanics, gameplay systems, engine code, game assets, 3D models/transforms/rigs/poses, visible game animation, VFX, performance, or game UI motion, also read and follow `skills/gamedev-workflow/SKILL.md`. It composes with this execution workflow and the matching project specialist; it replaces neither.
 
 # **Behavioral Rules**
 

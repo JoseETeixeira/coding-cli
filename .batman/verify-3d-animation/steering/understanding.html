@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3D and Animation Verification — Current-State Recap</title>
+  <style>
+    :root {
+      --bg: #eef3f6;
+      --grid: rgba(21, 63, 86, 0.08);
+      --surface: rgba(249, 252, 253, 0.94);
+      --surface-strong: #ffffff;
+      --surface-recessed: #e5edf1;
+      --border: rgba(19, 57, 78, 0.18);
+      --text: #153246;
+      --muted: #526d7d;
+      --blue: #126782;
+      --blue-dim: rgba(18, 103, 130, 0.12);
+      --amber: #a85813;
+      --amber-dim: rgba(168, 88, 19, 0.12);
+      --green: #2c6e49;
+      --green-dim: rgba(44, 110, 73, 0.12);
+      --red: #9b2c2c;
+      --red-dim: rgba(155, 44, 44, 0.11);
+      --shadow: 0 18px 48px rgba(30, 62, 78, 0.12);
+      --sans: "Segoe UI", "Trebuchet MS", sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1d26;
+        --grid: rgba(137, 196, 221, 0.07);
+        --surface: rgba(18, 40, 52, 0.94);
+        --surface-strong: #17303e;
+        --surface-recessed: #102630;
+        --border: rgba(177, 214, 229, 0.16);
+        --text: #e3f0f5;
+        --muted: #9ab5c3;
+        --blue: #73bed7;
+        --blue-dim: rgba(115, 190, 215, 0.13);
+        --amber: #e7a45e;
+        --amber-dim: rgba(231, 164, 94, 0.13);
+        --green: #83c69d;
+        --green-dim: rgba(131, 198, 157, 0.13);
+        --red: #ef9696;
+        --red-dim: rgba(239, 150, 150, 0.12);
+        --shadow: 0 20px 54px rgba(0, 0, 0, 0.28);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: var(--sans);
+      background-color: var(--bg);
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 24px 24px;
+      line-height: 1.55;
+    }
+    .layout {
+      width: min(1180px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 28px 0 70px;
+    }
+    .toc {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      margin: 0 -8px 26px;
+      padding: 10px 8px;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      scrollbar-width: none;
+    }
+    .toc::-webkit-scrollbar { display: none; }
+    .toc a {
+      flex: 0 0 auto;
+      color: var(--muted);
+      text-decoration: none;
+      font: 700 12px/1 var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      padding: 9px 12px;
+      border-radius: 4px;
+    }
+    .toc a:hover, .toc a:focus-visible { color: var(--text); background: var(--blue-dim); }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(260px, .65fr);
+      gap: 36px;
+      padding: 48px;
+      background: var(--surface-strong);
+      border: 1px solid var(--border);
+      border-left: 8px solid var(--blue);
+      box-shadow: var(--shadow);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      right: -120px;
+      top: -150px;
+      border: 1px solid var(--blue);
+      border-radius: 50%;
+      opacity: .18;
+    }
+    .eyebrow, .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      font: 700 12px/1.2 var(--mono);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--blue);
+    }
+    .eyebrow::before, .section-label::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      background: currentColor;
+      border-radius: 50%;
+    }
+    h1 { margin: 16px 0; font-size: clamp(36px, 6vw, 68px); line-height: .98; letter-spacing: -.045em; }
+    .lead { max-width: 720px; margin: 0; color: var(--muted); font-size: 18px; }
+    .hero-note {
+      align-self: end;
+      padding: 22px;
+      background: var(--surface-recessed);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+    .hero-note strong { display: block; color: var(--red); font-size: 18px; margin-bottom: 8px; }
+    section { scroll-margin-top: 70px; margin-top: 54px; }
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
+    h2 { margin: 9px 0 0; font-size: clamp(25px, 3.6vw, 42px); line-height: 1.08; letter-spacing: -.03em; }
+    .section-head p { max-width: 500px; margin: 0; color: var(--muted); }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+    .step, .card {
+      min-width: 0;
+      padding: 22px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    .step { position: relative; }
+    .step:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -13px;
+      top: 50%;
+      z-index: 2;
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      transform: translateY(-50%);
+      color: var(--blue);
+      background: var(--bg);
+      font-family: var(--mono);
+    }
+    .step .num { color: var(--blue); font: 700 12px var(--mono); }
+    .step h3, .card h3 { margin: 12px 0 8px; font-size: 18px; }
+    .step p, .card p, .card li { color: var(--muted); font-size: 14px; }
+    .step code, .card code { overflow-wrap: anywhere; color: var(--text); font-family: var(--mono); font-size: .9em; }
+    .gap { border-color: var(--red); background: linear-gradient(135deg, var(--surface), var(--red-dim)); }
+    .proposed { border-color: var(--green); background: linear-gradient(135deg, var(--surface), var(--green-dim)); }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .card ul { margin: 12px 0 0; padding-left: 20px; }
+    .card li + li { margin-top: 8px; }
+    .status { display: inline-block; padding: 4px 8px; border-radius: 3px; font: 700 11px var(--mono); text-transform: uppercase; }
+    .status.current { color: var(--amber); background: var(--amber-dim); }
+    .status.missing { color: var(--red); background: var(--red-dim); }
+    .status.target { color: var(--green); background: var(--green-dim); }
+    .evidence {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+      gap: 18px;
+      padding: 28px;
+      background: var(--surface-strong);
+      border: 1px solid var(--border);
+      border-top: 7px solid var(--green);
+      box-shadow: var(--shadow);
+    }
+    .gate-list { display: grid; gap: 9px; }
+    .gate {
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px;
+      background: var(--surface-recessed);
+      border: 1px solid var(--border);
+    }
+    .gate b { font-family: var(--mono); color: var(--green); }
+    .gate span { min-width: 0; overflow-wrap: break-word; }
+    .boundary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--border);
+    }
+    .boundary > div { padding: 28px; background: var(--surface); }
+    .boundary h3 { margin-top: 0; }
+    .boundary .no { border-top: 6px solid var(--red); }
+    .boundary .yes { border-top: 6px solid var(--green); }
+    footer { margin-top: 42px; color: var(--muted); font: 12px var(--mono); }
+    @media (max-width: 860px) {
+      .hero, .evidence { grid-template-columns: 1fr; padding: 30px; }
+      .flow { grid-template-columns: 1fr 1fr; }
+      .step:nth-child(2)::after { display: none; }
+      .grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .layout { width: min(100% - 22px, 1180px); padding-top: 10px; }
+      .hero { padding: 24px; }
+      .flow, .boundary { grid-template-columns: 1fr; }
+      .step::after { display: none !important; }
+      .section-head { align-items: start; flex-direction: column; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <main class="layout">
+    <nav class="toc" aria-label="Page sections">
+      <a href="#current">Current chain</a>
+      <a href="#gap">Gap</a>
+      <a href="#target">Target gates</a>
+      <a href="#boundary">Acceptance boundary</a>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <span class="eyebrow">Phase 1 · source-backed recap</span>
+        <h1>One clean frame is not completion.</h1>
+        <p class="lead">Current workflow reaches 3D modeling, but stops before a repeatable source-match and animation-frame gate. New verifier belongs between discipline guidance and any “done” claim.</p>
+      </div>
+      <aside class="hero-note">
+        <strong>Current failure mode</strong>
+        favorable still<br>
+        + unaligned camera<br>
+        + hidden deformation<br>
+        = false confidence
+      </aside>
+    </header>
+
+    <section id="current">
+      <div class="section-head">
+        <div><span class="section-label">01 · Current chain</span><h2>Routing exists; proof stays broad.</h2></div>
+        <p>Thin entry pointers already preserve one canonical router. No host copy or new MCP server is needed.</p>
+      </div>
+      <div class="flow">
+        <article class="step"><span class="num">01</span><h3>Batman entry</h3><p><code>AGENTS.md</code>, agent, execution prompt route material game and 3D work.</p></article>
+        <article class="step"><span class="num">02</span><h3>Gamedev router</h3><p>Selects smallest discipline union and project specialist.</p></article>
+        <article class="step"><span class="num">03</span><h3>3D modeling</h3><p>Checks topology, transforms, import, rig, budgets, and owner acceptance.</p></article>
+        <article class="step gap"><span class="num">04 · missing</span><h3>Visual verifier</h3><p>No mandatory reference alignment, frame schedule, deformation ledger, or fail-closed completion.</p></article>
+      </div>
+    </section>
+
+    <section id="gap">
+      <div class="section-head">
+        <div><span class="section-label">02 · Evidence gap</span><h2>Technical validity can still look wrong.</h2></div>
+        <p>Requested change concerns visible equivalence and continuity, not only valid files or successful imports.</p>
+      </div>
+      <div class="grid">
+        <article class="card"><span class="status current">Covered partly</span><h3>Transform chain</h3><ul><li>Scale, axes, pivot, hierarchy</li><li>Import and applied transforms</li><li>Rig/animation presence</li></ul></article>
+        <article class="card"><span class="status missing">Missing gate</span><h3>Reference match</h3><ul><li>Same camera, FOV, aspect, crop</li><li>Pose, position, silhouette landmarks</li><li>Comparable source/output artifacts</li></ul></article>
+        <article class="card"><span class="status missing">Missing gate</span><h3>Temporal quality</h3><ul><li>More than one sampled frame</li><li>Contacts, extremes, transitions, seam</li><li>Sliding, popping, clipping, joint collapse</li></ul></article>
+      </div>
+    </section>
+
+    <section id="target">
+      <div class="section-head">
+        <div><span class="section-label">03 · Target flow</span><h2>Reference → align → sample → inspect → classify.</h2></div>
+        <p>Each layer produces named evidence. Any failed critical frame keeps overall status pending.</p>
+      </div>
+      <div class="evidence">
+        <div>
+          <span class="status target">Proposed verifier</span>
+          <h3>Skill composes; project remains authority.</h3>
+          <p>New local skill owns generic comparison procedure. DCC, engine version, renderer, gameplay camera, asset spec, and specialist still define concrete commands and acceptance.</p>
+        </div>
+        <div class="gate-list">
+          <div class="gate"><b>01</b><span>Open supplied source; record exact image, clip, frame, and intended view.</span></div>
+          <div class="gate"><b>02</b><span>Align camera/FOV/aspect and name transform spaces before comparison.</span></div>
+          <div class="gate"><b>03</b><span>Capture max(2, ceil(source frames / 30)) distributed frames including endpoints, then add all critical frames.</span></div>
+          <div class="gate"><b>04</b><span>Inspect silhouette, contacts, occlusion, clipping, twist, volume, sliding, drift, and seam.</span></div>
+          <div class="gate"><b>05</b><span>Record every sampled-frame result; keep reference, runtime, and owner gates separate.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="boundary">
+      <div class="section-head">
+        <div><span class="section-label">04 · Acceptance boundary</span><h2>Static integration is necessary, never sufficient.</h2></div>
+      </div>
+      <div class="boundary">
+        <div class="yes"><h3>Repository can prove</h3><p>Skill structure, canonical location, routing fixtures, trigger coverage, links, no host mirror, idempotence, and explicit fail-closed language.</p></div>
+        <div class="no"><h3>Game must prove</h3><p>Actual source match, transform correctness, skeletal deformation, per-frame motion quality, runtime camera visibility, renderer output, and owner acceptance.</p></div>
+      </div>
+    </section>
+
+    <footer>Canonical artifact: .batman/verify-3d-animation/steering/understanding.md · Current source wins over memory.</footer>
+  </main>
+</body>
+</html>

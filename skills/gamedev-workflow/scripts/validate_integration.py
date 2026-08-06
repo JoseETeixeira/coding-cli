@@ -20,9 +20,13 @@ SKILL_NAMES = (
     "godot-particles",
     "godot-performance-optimization",
     "motion-design",
+    "verify-3d-animation",
+)
+LOCAL_SKILL_NAMES = frozenset(
+    {"gamedev-workflow", "game-designer", "verify-3d-animation"}
 )
 VENDORED_NAMES = tuple(
-    name for name in SKILL_NAMES if name not in {"gamedev-workflow", "game-designer"}
+    name for name in SKILL_NAMES if name not in LOCAL_SKILL_NAMES
 )
 EXPECTED_SOURCES = {
     "game-developer": (
@@ -122,13 +126,89 @@ EXPECTED_EXCLUDED_SOURCE = {
 EXPECTED_ROUTES = {
     "game-design": ("game-designer",),
     "game-implementation": ("game-developer",),
-    "3d-modeling": ("3d-modeling",),
+    "3d-modeling": ("3d-modeling", "verify-3d-animation"),
+    "3d-rig-animation": ("verify-3d-animation",),
+    "visible-animation": ("verify-3d-animation",),
     "godot-fps": ("godot-genre-shooter-fps",),
-    "godot-particles": ("godot-particles",),
+    "godot-fps-visible-animation": (
+        "godot-genre-shooter-fps",
+        "verify-3d-animation",
+    ),
+    "godot-particles": ("godot-particles", "verify-3d-animation"),
     "godot-performance": ("godot-performance-optimization",),
-    "motion-design": ("motion-design",),
+    "motion-design": ("motion-design", "verify-3d-animation"),
     "byond-compose": ("game-designer",),
-    "cross-discipline": ("game-designer", "godot-particles", "motion-design"),
+    "byond-visible-animation": ("verify-3d-animation",),
+    "cross-discipline": (
+        "game-designer",
+        "godot-particles",
+        "motion-design",
+        "verify-3d-animation",
+    ),
+    "non-game-animation": (),
+}
+REQUIRED_VERIFICATION_CASE_GATES = {
+    "static-source-driven-3d-match": {
+        "source-inspection",
+        "comparable-capture",
+        "gameplay-view",
+        "transform-spaces",
+        "reference-match",
+    },
+    "source-backed-first-person-pose": {
+        "source-inspection",
+        "comparable-capture",
+        "gameplay-view",
+        "transform-spaces",
+        "skeleton-rest-pose",
+        "first-person-occlusion",
+        "deformation",
+        "fail-closed",
+    },
+    "skeletal-loop-multi-frame": {
+        "full-motion-discovery",
+        "30-fps-schedule",
+        "endpoints",
+        "critical-frames",
+        "per-frame-results",
+        "temporal-continuity",
+        "loop-seam",
+        "fail-closed",
+        "ready-for-owner-review",
+    },
+    "godot-fps-visible-animation": {
+        "engine-version-check",
+        "gameplay-view",
+        "first-person-occlusion",
+        "30-fps-schedule",
+        "per-frame-results",
+        "live-editor-verification",
+        "owner-visual-acceptance",
+    },
+    "godot-particle-budget": {
+        "renderer-version-check",
+        "effect-budget",
+        "reduced-effects",
+        "30-fps-schedule",
+        "per-frame-results",
+        "owner-visual-acceptance",
+    },
+    "ui-motion-accessible": {
+        "reduced-motion",
+        "semantic-state",
+        "30-fps-schedule",
+        "per-frame-results",
+        "owner-onscreen-acceptance",
+    },
+    "byond-visible-animation": {
+        "byond-rag",
+        "dream-maker",
+        "project-verification",
+        "30-fps-schedule",
+        "per-frame-results",
+    },
+    "non-game-animation": {"scope-boundary", "no-implicit-verifier"},
+    "gameplay-implementation": {"non-visual-verifier-omission"},
 }
 POINTER_FILES = (
     "AGENTS.md",
@@ -136,6 +216,41 @@ POINTER_FILES = (
     "prompts/execute-task.prompt.md",
 )
 POINTER_TEXT = "skills/gamedev-workflow/SKILL.md"
+POINTER_TRIGGER_MARKERS = (
+    "3D models/transforms/rigs/poses",
+    "visible game animation",
+)
+README_MARKER = "source-aligned model/animation verification"
+ROUTER_REQUIRED_MARKERS = (
+    "`verify-3d-animation`",
+    "provided source",
+    "comparable gameplay evidence",
+    "more than one animation frame",
+    "every scheduled/critical frame",
+    "owner acceptance",
+)
+VERIFIER_FRONTMATTER_MARKERS = (
+    "3d model",
+    "transform",
+    "rig",
+    "skeleton",
+    "pose",
+    "deformation",
+    "animation",
+)
+VERIFIER_REQUIRED_MARKERS = (
+    "supplied or project-authoritative source material",
+    "comparable capture",
+    "object, local, world, import, skeleton-rest, bone-pose, root-motion, and camera spaces",
+    "elbow and biceps",
+    "skinning and deformation",
+    "max(2, ceil(source_frame_count / 30))",
+    "contact, extreme, passing, transition, blend, loop-seam, and known-risk",
+    "verify every captured frame",
+    "evidence ledger",
+    "ready for owner review",
+    "repository/static, dcc/export, engine import, runtime/windowed, reference-match, per-frame/temporal, accessibility, owner, and release",
+)
 LINK_PATTERN = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 FRONTMATTER_PATTERN = re.compile(r"\A---\r?\n(.*?)\r?\n---(?:\r?\n|\Z)", re.DOTALL)
 NAME_PATTERN = re.compile(r"(?m)^name:\s*['\"]?([^'\"\r\n]+)")
@@ -189,6 +304,84 @@ def frontmatter_name(path: Path, validation: Validation) -> str | None:
     name_match = NAME_PATTERN.search(match.group(1))
     validation.require(name_match is not None, f"{path}: missing frontmatter name")
     return name_match.group(1).strip() if name_match else None
+
+
+def validate_router_content(repo_root: Path, validation: Validation) -> None:
+    path = repo_root / "skills/gamedev-workflow/SKILL.md"
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        validation.errors.append(f"{path}: unreadable: {exc}")
+        return
+    lowered = content.lower()
+    for marker in ROUTER_REQUIRED_MARKERS:
+        validation.require(
+            marker.lower() in lowered,
+            f"{path}: missing verifier routing marker {marker!r}",
+        )
+
+
+def validate_verifier_content(skills_root: Path, validation: Validation) -> None:
+    skill_dir = skills_root / "verify-3d-animation"
+    skill_path = skill_dir / "SKILL.md"
+    metadata_path = skill_dir / "agents/openai.yaml"
+    if not skill_path.is_file():
+        validation.require(False, f"missing verifier skill: {skill_path}")
+        return
+
+    try:
+        content = skill_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        validation.errors.append(f"{skill_path}: unreadable: {exc}")
+        return
+
+    validation.require(
+        len(content.splitlines()) < 500,
+        f"{skill_path}: skill must remain below 500 lines",
+    )
+    frontmatter = FRONTMATTER_PATTERN.match(content)
+    validation.require(frontmatter is not None, f"{skill_path}: invalid frontmatter")
+    frontmatter_text = frontmatter.group(1).lower() if frontmatter else ""
+    for marker in VERIFIER_FRONTMATTER_MARKERS:
+        validation.require(
+            marker in frontmatter_text,
+            f"{skill_path}: frontmatter missing trigger {marker!r}",
+        )
+
+    lowered = content.lower()
+    for marker in VERIFIER_REQUIRED_MARKERS:
+        validation.require(
+            marker.lower() in lowered,
+            f"{skill_path}: missing verification contract marker {marker!r}",
+        )
+
+    validation.require(metadata_path.is_file(), f"missing metadata: {metadata_path}")
+    if metadata_path.is_file():
+        try:
+            metadata = metadata_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            validation.errors.append(f"{metadata_path}: unreadable: {exc}")
+        else:
+            expected_metadata = [
+                "interface:",
+                '  display_name: "Verify 3D Animation"',
+                '  short_description: "Verify source fidelity across animation frames"',
+                '  default_prompt: "Use $verify-3d-animation to compare this game model or animation with its source and verify every required frame before completion."',
+            ]
+            validation.require(
+                metadata.splitlines() == expected_metadata,
+                f"{metadata_path}: interface metadata must match the approved contract",
+            )
+
+    actual_files = {
+        path.relative_to(skill_dir).as_posix()
+        for path in skill_dir.rglob("*")
+        if path.is_file()
+    }
+    validation.require(
+        actual_files == {"SKILL.md", "agents/openai.yaml"},
+        f"{skill_dir}: unexpected skill files {sorted(actual_files)}",
+    )
 
 
 def markdown_files(skills_root: Path) -> list[Path]:
@@ -511,8 +704,8 @@ def validate_routing(repo_root: Path, validation: Validation) -> None:
     validation.require(data.get("schema_version") == 1, f"{path}: schema_version must be 1")
     cases = data.get("cases")
     validation.require(
-        isinstance(cases, list) and len(cases) >= 9,
-        f"{path}: expected at least 9 routing cases",
+        isinstance(cases, list) and len(cases) >= 16,
+        f"{path}: expected at least 16 routing cases",
     )
     if not isinstance(cases, list):
         return
@@ -522,48 +715,104 @@ def validate_routing(repo_root: Path, validation: Validation) -> None:
         validation.require(isinstance(case, dict), f"{path}: each case must be object")
         if not isinstance(case, dict):
             continue
-        case_id = str(case.get("id", ""))
+        case_id_value = case.get("id")
+        validation.require(
+            isinstance(case_id_value, str), f"{path}: case id must be string"
+        )
+        case_id = case_id_value if isinstance(case_id_value, str) else ""
         validation.require(
             bool(case_id) and case_id not in ids,
             f"{path}: missing/duplicate case id {case_id!r}",
         )
         ids.add(case_id)
-        route = str(case.get("route", ""))
+        route_value = case.get("route")
+        validation.require(
+            isinstance(route_value, str), f"{path}: {case_id} route must be string"
+        )
+        route = route_value if isinstance(route_value, str) else ""
         seen_routes.add(route)
         validation.require(route in EXPECTED_ROUTES, f"{path}: unknown route {route!r}")
         expected = EXPECTED_ROUTES.get(route)
-        if expected:
+        primary_skills = case.get("primary_skills")
+        validation.require(
+            isinstance(primary_skills, list)
+            and all(isinstance(item, str) for item in primary_skills),
+            f"{path}: {case_id} primary_skills must be a string array",
+        )
+        if expected is not None and isinstance(primary_skills, list):
             validation.require(
-                tuple(case.get("primary_skills", [])) == expected,
+                tuple(primary_skills) == expected,
                 f"{path}: {case_id} primary skill mismatch",
             )
+        task = case.get("task")
         validation.require(
-            bool(str(case.get("task", "")).strip()), f"{path}: {case_id} task missing"
+            isinstance(task, str) and bool(task.strip()),
+            f"{path}: {case_id} task missing",
         )
+        existing_skills = case.get("existing_skills")
         validation.require(
-            isinstance(case.get("existing_skills"), list),
-            f"{path}: {case_id} existing_skills must be array",
+            isinstance(existing_skills, list)
+            and all(isinstance(item, str) for item in existing_skills),
+            f"{path}: {case_id} existing_skills must be a string array",
         )
+        specialist = case.get("specialist")
         validation.require(
-            isinstance(case.get("required_gates"), list)
-            and bool(case.get("required_gates")),
+            specialist is None or isinstance(specialist, str),
+            f"{path}: {case_id} specialist must be string or null",
+        )
+        required_gates = case.get("required_gates")
+        validation.require(
+            isinstance(required_gates, list)
+            and bool(required_gates)
+            and all(isinstance(item, str) for item in required_gates),
             f"{path}: {case_id} gates missing",
         )
     validation.require(
         set(EXPECTED_ROUTES).issubset(seen_routes),
         f"{path}: missing routes {sorted(set(EXPECTED_ROUTES) - seen_routes)}",
     )
+    by_id = {
+        str(case.get("id")): case for case in cases if isinstance(case, dict)
+    }
+    for case_id, expected_gates in REQUIRED_VERIFICATION_CASE_GATES.items():
+        case = by_id.get(case_id)
+        validation.require(case is not None, f"{path}: required case {case_id!r} missing")
+        if isinstance(case, dict):
+            required_gates = case.get("required_gates")
+            if not (
+                isinstance(required_gates, list)
+                and all(isinstance(item, str) for item in required_gates)
+            ):
+                continue
+            actual_gates = set(required_gates)
+            validation.require(
+                expected_gates.issubset(actual_gates),
+                f"{path}: {case_id} missing gates {sorted(expected_gates - actual_gates)}",
+            )
     conflict = next(
-        (case for case in cases if isinstance(case, dict) and case.get("id") == "godot-fps-version-conflict"),
+        (
+            case
+            for case in cases
+            if isinstance(case, dict)
+            and case.get("id") == "godot-fps-version-conflict"
+        ),
         None,
     )
     validation.require(conflict is not None, f"{path}: version conflict case missing")
     if isinstance(conflict, dict):
-        gates = set(conflict.get("required_gates", []))
-        validation.require(
-            {"engine-version-check", "project-source-wins", "conceptual-only-on-conflict"}.issubset(gates),
-            f"{path}: version conflict precedence gates missing",
-        )
+        required_gates = conflict.get("required_gates")
+        if isinstance(required_gates, list) and all(
+            isinstance(item, str) for item in required_gates
+        ):
+            gates = set(required_gates)
+            validation.require(
+                {
+                    "engine-version-check",
+                    "project-source-wins",
+                    "conceptual-only-on-conflict",
+                }.issubset(gates),
+                f"{path}: version conflict precedence gates missing",
+            )
 
 
 def tree_hash(path: Path) -> str:
@@ -611,7 +860,9 @@ def validate(repo_root: Path) -> Validation:
     repo_root = repo_root.resolve()
     skills_root = resolve_contained(repo_root, repo_root / "skills", validation, "skills root")
     for name in SKILL_NAMES:
-        skill_dir = resolve_contained(skills_root, skills_root / name, validation, f"skill {name}")
+        skill_dir = resolve_contained(
+            skills_root, skills_root / name, validation, f"skill {name}"
+        )
         validation.require(skill_dir.is_dir(), f"missing skill directory: {skill_dir}")
         skill_file = skill_dir / "SKILL.md"
         validation.require(skill_file.is_file(), f"missing SKILL.md: {skill_file}")
@@ -620,14 +871,20 @@ def validate(repo_root: Path) -> Validation:
                 frontmatter_name(skill_file, validation) == name,
                 f"{skill_file}: name must be {name}",
             )
-    if all((skills_root / name).is_dir() for name in SKILL_NAMES):
-        validate_links(skills_root, validation)
-        for name in VENDORED_NAMES:
+
+    validate_links(skills_root, validation)
+    for name in VENDORED_NAMES:
+        if (skills_root / name).is_dir():
             validate_upstream(skills_root / name, validation)
+    if (skills_root / "game-designer").is_dir():
         validate_origin(repo_root, skills_root / "game-designer", validation)
-        validate_routing(repo_root, validation)
+    validate_router_content(repo_root, validation)
+    validate_verifier_content(skills_root, validation)
+    validate_routing(repo_root, validation)
+    if all((skills_root / name).is_dir() for name in SKILL_NAMES):
         validate_idempotence(skills_root, validation)
-        validate_host_duplicates(skills_root, validation)
+    validate_host_duplicates(skills_root, validation)
+
     for relative in POINTER_FILES:
         path = repo_root / relative
         validation.require(path.is_file(), f"pointer file missing: {path}")
@@ -637,6 +894,20 @@ def validate(repo_root: Path) -> Validation:
                 content.count(POINTER_TEXT) == 1,
                 f"{path}: expected one thin gamedev pointer",
             )
+            for marker in POINTER_TRIGGER_MARKERS:
+                validation.require(
+                    marker in content,
+                    f"{path}: missing gamedev trigger marker {marker!r}",
+                )
+
+    readme_path = repo_root / "README.md"
+    validation.require(readme_path.is_file(), f"README missing: {readme_path}")
+    if readme_path.is_file():
+        readme = readme_path.read_text(encoding="utf-8")
+        validation.require(
+            README_MARKER in readme,
+            f"{readme_path}: missing verifier discovery marker {README_MARKER!r}",
+        )
     validation.require(
         (repo_root / "skills/byond-projects/SKILL.md").is_file(),
         "existing BYOND routing target no longer resolves",

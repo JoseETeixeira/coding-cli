@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verify 3D Animation"
+  short_description: "Verify source fidelity across animation frames"
+  default_prompt: "Use $verify-3d-animation to compare this game model or animation with its source and verify every required frame before completion."
