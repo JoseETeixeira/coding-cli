@@ -17,6 +17,7 @@ import logging
 import os
 import sys
 import threading
+from pathlib import Path
 from typing import Optional
 
 import anyio
@@ -26,8 +27,11 @@ from mcp.server.fastmcp import Context, FastMCP
 from .code_index import (
     BackgroundIndexer,
     CodeIndex,
+    GitUnavailable,
+    ProgressRegistry,
     RepoInfo,
     RepoUnresolved,
+    WorktreeIdentityUnavailable,
     candidates_from_roots,
     resolve_repo,
 )
@@ -46,6 +50,7 @@ _engine: MemoryEngine | None = None
 _engine_lock = threading.Lock()
 _code_index: CodeIndex | None = None
 _code_lock = threading.Lock()
+_progress_registry = ProgressRegistry()
 
 
 def engine() -> MemoryEngine:
@@ -62,13 +67,13 @@ def code_index() -> CodeIndex:
     global _code_index
     with _code_lock:
         if _code_index is None:
-            _code_index = CodeIndex(cfg)
+            _code_index = CodeIndex(cfg, progress_registry=_progress_registry)
         return _code_index
 
 
 def _fresh_code_index() -> CodeIndex:
     """A CodeIndex with its own Qdrant/OpenAI clients, for the indexer thread."""
-    return CodeIndex(cfg)
+    return CodeIndex(cfg, progress_registry=_progress_registry)
 
 
 _indexer = BackgroundIndexer(_fresh_code_index)
@@ -124,13 +129,16 @@ async def resolve_repo_for_call(ctx: Context | None, repo: str = "") -> RepoInfo
         return resolve_repo(candidates[0], cfg)
     if len(candidates) > 1:
         # Prefer the root containing cwd; otherwise refuse rather than pick.
-        inside = [c for c in candidates if os.path.normcase(cwd).startswith(os.path.normcase(str(c)))]
+        cwd_path = Path(cwd).resolve()
+        inside = [c for c in candidates if c.resolve() == cwd_path or c.resolve() in cwd_path.parents]
         if len(inside) == 1:
             return resolve_repo(inside[0], cfg)
         tried.append(f"{len(candidates)} workspace roots (ambiguous): " + ", ".join(str(c) for c in candidates))
 
     try:
         return resolve_repo(cwd, cfg)
+    except (GitUnavailable, WorktreeIdentityUnavailable):
+        raise
     except RepoUnresolved as exc:
         tried.append(f"cwd={cwd} ({exc})")
 
@@ -138,6 +146,16 @@ async def resolve_repo_for_call(ctx: Context | None, repo: str = "") -> RepoInfo
         "could not resolve which repository to use. Pass repo=\"<path>\" explicitly, or set "
         "MNEMO_REPO for a project-scoped registration. Tried: " + "; ".join(tried)
     )
+
+
+def _repo_error(exc: RepoUnresolved) -> dict:
+    if isinstance(exc, GitUnavailable):
+        error = "git_unavailable"
+    elif isinstance(exc, WorktreeIdentityUnavailable):
+        error = "worktree_identity_unavailable"
+    else:
+        error = "repo_unresolved"
+    return {"error": error, "detail": str(exc)}
 
 
 async def _autoindex(ctx: Context | None) -> None:
@@ -287,7 +305,7 @@ async def code_search(
     path_contains: str = "",
     ctx: Context = None,
 ) -> dict:
-    """Semantic search over the CURRENT REPOSITORY'S SOURCE CODE, shared across agents.
+    """Semantic search over the current worktree's scope, shared by its agents.
 
     Use it to LOCATE code by intent when you don't know the exact symbol or path
     ("where are retries handled", "how does the save system persist state").
@@ -306,9 +324,28 @@ async def code_search(
     try:
         info = await resolve_repo_for_call(ctx, repo)
     except RepoUnresolved as exc:
-        return {"error": "repo_unresolved", "detail": str(exc)}
-    idx = code_index()
-    _indexer.kick(info)  # keep it warm; returns immediately
+        return _repo_error(exc)
+    try:
+        idx = code_index()
+    except Exception:
+        log.exception(
+            "code search initialization failed for %s scope %s",
+            info.name,
+            info.code_index_scope[4:12],
+        )
+        return {
+            "error": "search_failed",
+            "detail": "code search failed; check mnemo server logs",
+            **info.as_dict(),
+        }
+    try:
+        _indexer.kick(info)  # keep it warm; returns immediately
+    except Exception:
+        log.exception(
+            "code-search background kick failed for %s scope %s",
+            info.name,
+            info.code_index_scope[4:12],
+        )
     try:
         results = idx.search(
             query=query,
@@ -317,37 +354,57 @@ async def code_search(
             language=language or None,
             path_contains=path_contains or None,
         )
-    except Exception as exc:
-        return {"error": "search_failed", "detail": str(exc), **info.as_dict()}
+        status = idx.status(info)
+    except Exception:
+        log.exception("code search failed for %s scope %s", info.name, info.code_index_scope[4:12])
+        return {
+            "error": "search_failed",
+            "detail": "code search failed; check mnemo server logs",
+            **info.as_dict(),
+        }
     out = {
         **info.as_dict(),
         "count": len(results),
         "results": results,
+        "index_state": status.get("index_state", "error"),
+        "last_index": status.get("last_index"),
+        "snapshot_head": status.get("snapshot_head"),
+        "snapshot_semantics": status.get("snapshot_semantics"),
         "note": "Index locates, source decides. Open each path+line span and verify before citing or editing.",
     }
     if not results:
-        prog = idx.progress(info.repo_id)
-        if prog.state in ("running", "idle"):
+        if out["index_state"] in ("unindexed", "building", "building_elsewhere", "interrupted"):
             out["hint"] = (
-                "No hits. The index may still be building — check code_index_status, "
-                "and fall back to grep/glob meanwhile."
+                f"No hits from this worktree scope ({out['index_state']}). "
+                "Check code_index_status and fall back to grep/glob meanwhile."
             )
     return out
 
 
 @mcp.tool()
 async def code_index_status(repo: str = "", ctx: Context = None) -> dict:
-    """Code-index health for the current repository: files indexed, chunk count,
-    last index time, and live progress. Use it when code_search returns nothing,
-    to tell 'not indexed yet' apart from 'genuinely absent'."""
+    """Scope identity, last completed snapshot, counts, and live progress.
+
+    Use it when code_search returns nothing to distinguish an unindexed/building
+    worktree from a scope-local search with no matches.
+    """
     try:
         info = await resolve_repo_for_call(ctx, repo)
     except RepoUnresolved as exc:
-        return {"error": "repo_unresolved", "detail": str(exc)}
+        return _repo_error(exc)
     try:
         return code_index().status(info)
-    except Exception as exc:
-        return {"error": "status_failed", "detail": str(exc), **info.as_dict()}
+    except Exception:
+        log.exception(
+            "code index status failed for %s scope %s",
+            info.name,
+            info.code_index_scope[4:12],
+        )
+        return {
+            "error": "status_failed",
+            "detail": "code index status failed; check mnemo server logs",
+            **info.as_dict(),
+        }
 
 
 @mcp.tool()
@@ -361,12 +418,21 @@ async def code_reindex(repo: str = "", full: bool = False, ctx: Context = None) 
     try:
         info = await resolve_repo_for_call(ctx, repo)
     except RepoUnresolved as exc:
-        return {"error": "repo_unresolved", "detail": str(exc)}
-    state = _indexer.kick(info, full=full, min_interval=0.0)
+        return _repo_error(exc)
+    try:
+        state = _indexer.kick(info, full=full, min_interval=0.0)
+    except Exception:
+        log.exception("code reindex failed for %s scope %s", info.name, info.code_index_scope[4:12])
+        return {
+            "error": "reindex_failed",
+            "detail": "code reindex failed; check mnemo server logs",
+            **info.as_dict(),
+        }
     return {
         **info.as_dict(),
         "started": state,
         "full": full,
+        "index_state": "building",
         "note": "Indexing runs in the background; poll code_index_status for progress.",
     }
 

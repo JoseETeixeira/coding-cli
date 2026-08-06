@@ -71,3 +71,27 @@ _Avoid_: Resolution, quality, image size
 **Segment Optical Cache**:
 Content-addressed store of already-rendered pages that makes re-rendering an append-only history O(N) instead of O(N-squared).
 _Avoid_: Image cache, memoized context, transcript store
+
+**Repository Family**:
+Git working trees mapped to one existing repository-scoped durable-memory namespace. Code-index work does not redefine how that namespace is selected.
+_Avoid_: Working tree, code-index scope
+
+**Working Tree**:
+One concrete Git working directory whose checked-out and locally modified source may differ from every other directory in the same repository family.
+_Avoid_: Repository family, branch
+
+**Code-Index Scope**:
+The isolated, rebuildable source-search cache belonging to exactly one working tree.
+_Avoid_: Memory namespace, repository-wide index
+
+**Worktree Incarnation**:
+One lifecycle instance of a working tree. Removing and recreating a working directory at the same path creates a new incarnation.
+_Avoid_: Branch, commit, repository family
+
+**Index Snapshot**:
+The last successfully completed reconciliation of eligible files and searchable chunks for one code-index scope; it may lag later edits in that same working tree.
+_Avoid_: Current source, verified working tree
+
+**Legacy Code-Index Partition**:
+A pre-worktree-aware cache keyed only by repository history and therefore not safe to query as one working tree's source.
+_Avoid_: Current code-index scope, durable memory
